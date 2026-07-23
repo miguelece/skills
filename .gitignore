@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------
+# Private source material — NEVER COMMITTED
+# ---------------------------------------------------------------------------
+# This repo is the published one. Nothing private should ever reach it, but
+# the same guard as skill-lab applies here as defence in depth.
+#
+#   refs/       source material a skill was derived from
+#   _private/   anything else that must stay local
+#
+# WARNING: `refs/` is NOT `references/`.
+#   refs/        private, ignored, never shipped.
+#   references/  part of the skill's published payload, always committed.
+refs/
+_private/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Environments
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
