@@ -1,0 +1,6 @@
+interface:
+  display_name: Write Handoff
+  short_description: Write a resumable handoff doc to disk
+  default_prompt: Use $handoff to write a handoff for this work.
+policy:
+  allow_implicit_invocation: true

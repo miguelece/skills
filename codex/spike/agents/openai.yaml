@@ -1,0 +1,6 @@
+interface:
+  display_name: Spike
+  short_description: Throwaway prototype to answer one question
+  default_prompt: Use $spike to prototype this in scratch space and report what it answers.
+policy:
+  allow_implicit_invocation: true
