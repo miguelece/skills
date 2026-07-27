@@ -1,0 +1,6 @@
+interface:
+  display_name: Orchestrate Task Set
+  short_description: Plan and run a coherent set of board tasks
+  default_prompt: Use $orchestrate-implementation to plan and run the next set of tasks from the board.
+policy:
+  allow_implicit_invocation: true

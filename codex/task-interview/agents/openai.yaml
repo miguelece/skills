@@ -1,0 +1,6 @@
+interface:
+  display_name: Interview Task Into Scope
+  short_description: Resolve a task's open questions into decisions
+  default_prompt: Use $task-interview to interview me on this task until it is fully scoped.
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,6 @@
+interface:
+  display_name: Raise Board Task
+  short_description: Write a grounded task spec onto the board
+  default_prompt: Use $to-task to write this up as a task on the board.
+policy:
+  allow_implicit_invocation: true

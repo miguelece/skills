@@ -1,0 +1,6 @@
+interface:
+  display_name: Triage Task Board
+  short_description: Reconcile board state with the repository
+  default_prompt: Use $task-board-triage to audit this task board against the repository.
+policy:
+  allow_implicit_invocation: true

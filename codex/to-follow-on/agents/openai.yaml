@@ -1,0 +1,6 @@
+interface:
+  display_name: Split Follow-On Task
+  short_description: Carve a follow-on task off its parent
+  default_prompt: Use $to-follow-on to split this work off the task we are on.
+policy:
+  allow_implicit_invocation: true

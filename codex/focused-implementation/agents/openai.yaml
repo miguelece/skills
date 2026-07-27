@@ -1,0 +1,6 @@
+interface:
+  display_name: Implement One Task
+  short_description: Take a single scoped board task to done
+  default_prompt: Use $focused-implementation to implement this task from the board.
+policy:
+  allow_implicit_invocation: true

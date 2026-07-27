@@ -1,0 +1,189 @@
+# Frontmatter contract for one task document.
+#
+# Read by scripts/validate_board.py. Prose explanation of every field, and of
+# why the folder is derived rather than authored, is in references/board-model.md.
+
+fields:
+  id:
+    type: string
+    required: true
+    pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+    note: must equal the filename stem
+
+  title:
+    type: string
+    required: true
+    min_length: 8
+
+  kind:
+    type: enum
+    required: false
+    default: ticket
+    values: [ticket, spec]
+    note: >-
+      ticket = a role/portion (usually implementation, sometimes research or a
+      spike); spec = architecture/composition/vision. Does not affect folder
+      derivation.
+
+  status:
+    type: enum
+    required: true
+    values: [draft, scoped, in-progress, done, superseded]
+
+  gate:
+    type: enum
+    required: true
+    values: [none, manual, owner]
+    note: >-
+      manual = a person must perform an action; owner = a person must make a
+      decision. Non-none only while status is draft, scoped, or in-progress.
+
+  priority:
+    type: enum
+    required: true
+    values: [high, medium, low]
+
+  category:
+    type: string
+    required: true
+    note: free text; the index groups by it within each folder
+
+  created:
+    type: date
+    required: true
+    format: "YYYY-MM-DD"
+
+  updated:
+    type: date
+    required: true
+    format: "YYYY-MM-DD"
+    note: must not precede created
+
+  parent:
+    type: string
+    required: false
+    default: null
+    note: "lineage: id of the task this was split from; must resolve"
+
+  part-of:
+    type: string
+    required: false
+    default: null
+    note: >-
+      composition: the single task this is a component of; must resolve, no
+      cycles. Distinct from parent (lineage). Works at any depth — a subticket is
+      a ticket that is part-of another ticket.
+
+  blocked-by:
+    type: list
+    required: false
+    default: []
+    note: >-
+      ids of tasks that must reach done first. Waiting on the board, not on a
+      person. Unlike every other field, this one's folder effect depends on
+      another task's status, so the bucket clears itself when the blocker
+      closes. Survives on a finished task as a record of what it came after.
+
+  supersedes:
+    type: list
+    required: false
+    default: []
+    note: ids this task replaces; each must resolve
+
+  superseded-by:
+    type: string
+    required: false
+    default: null
+    note: required when status is superseded; must resolve
+
+  revisit:
+    type: boolean
+    required: false
+    default: false
+    note: true only when status is done; requires an Upgrade paths section
+
+  outcome:
+    type: string
+    required: when status is done
+    default: null
+    min_length: 15
+    note: >-
+      One line: what changed and how it was confirmed. The archive index is
+      generated from this, so a finished task without one pushes its summary
+      back into hand-maintained prose, which is what drifts.
+
+# First match wins. See references/board-model.md for the reasoning.
+#
+# Human gates outrank blocked-by: a task waiting on both a sibling and a person
+# stays un-startable when the sibling closes, so it files by the person. The
+# done checks outrank it too, so blocked-by can persist as provenance.
+folder_mapping:
+  - when: {status: superseded}
+    folder: superseded
+  - when: {gate: manual}
+    folder: manual-blocked
+  - when: {gate: owner}
+    folder: owner-deferred
+  - when: {status: done, revisit: true}
+    folder: revisit
+  - when: {status: done}
+    folder: completed
+  - when: {blocked-by: unresolved}
+    folder: task-blocked
+  - when: {}
+    folder: ""
+
+required_sections:
+  always:
+    - Why this exists
+    - Plan
+    - Open questions
+    - Owner
+  when_revisit:
+    - Upgrade paths
+  when_done:
+    - Execution log
+
+rules:
+  - id: gate-implies-unfinished
+    check: gate != none requires status in [draft, scoped, in-progress]
+  - id: draft-has-open-questions
+    check: status == draft requires at least one unresolved open question
+  - id: scoped-has-no-unresolved
+    check: status in [scoped, in-progress, done] requires every open question resolved
+  - id: superseded-has-successor
+    check: status == superseded requires superseded-by to resolve
+  - id: revisit-implies-done
+    check: revisit == true requires status == done
+  - id: outcome-required
+    check: status == done requires a non-empty outcome
+  - id: outcome-too-thin
+    check: >-
+      an outcome shorter than 15 characters is a label, not a summary
+      ("done", "shipped")
+  - id: references-resolve
+    check: parent, part-of, supersedes, superseded-by, blocked-by ids all exist
+  - id: id-matches-filename
+    check: id equals the filename stem
+  - id: kind-invalid
+    check: kind, when present, is one of [ticket, spec]
+  - id: part-of-self
+    check: part-of does not name the task itself
+  - id: part-of-cycle
+    check: the part-of composition graph is acyclic
+  - id: part-of-too-deep
+    check: "warning: the part-of chain is deeper than 3 (policy nudge, not an error)"
+  - id: spec-done-open-tickets
+    check: "warning: a done spec still has open ticket descendants (triage note)"
+  - id: folder-matches-frontmatter
+    check: the file sits in the folder the mapping derives
+  - id: blocked-by-self
+    check: blocked-by does not name the task itself
+  - id: blocked-by-cycle
+    check: >-
+      the blocked-by graph is acyclic; no task in a cycle can ever become
+      actionable and nothing else on the board would surface that
+  - id: blocker-superseded
+    check: >-
+      a blocker that was superseded is repointed at its successor rather than
+      waiting on a replaced spec
