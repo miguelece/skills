@@ -1,0 +1,30 @@
+schema_version: 1
+run:
+  id: null
+  mode: migrate
+  status: planned
+  started_at: null
+  completed_at: null
+repository:
+  baseline_revision: null
+  current_revision: null
+  dirty_paths: []
+scope:
+  docs_domain: docs
+  locale: en-US
+  excluded_paths: []
+approved_policies:
+  write_approved: false
+  archive_retention: retain
+  archive_deletion_approved: false
+  approved_plan: null
+claim_authorities: []
+section_ledger: []
+evidence: []
+findings: []
+verification: []
+update_baseline:
+  revision: null
+archive:
+  path: null
+  status: not_created

@@ -1,0 +1,6 @@
+interface:
+  display_name: Diataxis Documentation Manager
+  short_description: Diagnose and orchestrate Diataxis documentation work
+  default_prompt: Use $diataxis-manage-docs to diagnose this repository and route the correct documentation phases.
+policy:
+  allow_implicit_invocation: true

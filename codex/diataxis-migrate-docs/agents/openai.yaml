@@ -1,0 +1,6 @@
+interface:
+  display_name: Diataxis Documentation Migration
+  short_description: Migrate legacy docs into an auditable Diataxis structure
+  default_prompt: Use $diataxis-migrate-docs to restructure this repository's existing documentation safely.
+policy:
+  allow_implicit_invocation: true

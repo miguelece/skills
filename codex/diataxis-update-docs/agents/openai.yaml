@@ -1,0 +1,6 @@
+interface:
+  display_name: Diataxis Documentation Update
+  short_description: Update Diataxis docs from shipped code behavior
+  default_prompt: Use $diataxis-update-docs to synchronize these docs with shipped repository behavior.
+policy:
+  allow_implicit_invocation: true

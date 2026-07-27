@@ -1,0 +1,6 @@
+interface:
+  display_name: Diataxis Documentation Audit
+  short_description: Audit Diataxis docs for accuracy and complete coverage
+  default_prompt: Use $diataxis-audit-docs to verify this structured documentation against its sources.
+policy:
+  allow_implicit_invocation: true
