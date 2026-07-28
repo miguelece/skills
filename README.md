@@ -113,3 +113,8 @@ each skill is written once and projected onto both runtimes. That is why the
 two subtrees are identical apart from frontmatter, and it means edits made
 directly to a bundle here would be overwritten by the next publish — adjust
 your installed copy instead.
+
+## License
+
+[MIT](LICENSE). Use, adapt, and redistribute these skills freely; keep the
+copyright notice.
