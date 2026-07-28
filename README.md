@@ -1,58 +1,115 @@
 # Skills
 
-Published agent skills. This repo is the distribution point — skills are
-developed and iterated on in [`skill-lab`](../skill-lab/), then published here
-once they are worth using.
+Agent skills for Claude Code and Codex — 15 of them, covering three workflows:
+turning work into tracked tasks and running them, keeping documentation honest
+against the code, and the daily loop of committing, handing off, and cleaning up.
+
+A skill is a folder of instructions an agent loads when a task matches it. It
+does not run code on its own or change how the agent is configured; it tells the
+agent how to do one job carefully, and it is inert until something invokes it.
 
 ## Layout
 
-One directory per skill, under a subtree per agent runtime:
+One directory per skill, under a subtree per runtime:
 
 ```text
 skills/
 ├── claude/
-│   └── <skill>/            # SKILL.md (+ references/, scripts/, assets/)
+│   └── <skill>/        # SKILL.md + references/, scripts/, assets/
 └── codex/
-    └── <skill>/            # same SKILL.md, plus agents/openai.yaml sidecar
+    └── <skill>/        # same SKILL.md, plus agents/openai.yaml
 ```
 
-A skill is authored once, platform-neutrally, in the lab; the build projects it
-onto each runtime. The two subtrees hold those projections — the same body with
-the frontmatter and sidecars each runtime expects.
+Both subtrees hold the same skill bodies. They differ only in the frontmatter
+and sidecar metadata each runtime expects, so install from the one that matches
+your agent rather than cloning the repo wholesale.
 
-## Installing a skill
+## Installing
 
-Copy the skill directory into the runtime's skills directory — for Claude Code,
-`claude/<skill>/` into `~/.claude/skills/<skill>/`; for Codex, `codex/<skill>/`
-into `~/.codex/skills/<skill>/`. The subtrees keep the two runtimes' variants
-from colliding, so the repo is installed from per-runtime, not cloned wholesale.
+Copy the skill directory you want into your runtime's skills directory:
 
-## Publishing
+```bash
+# Claude Code
+cp -r claude/<skill> ~/.claude/skills/<skill>
 
-`skill-lab/tools/publish.py` is the one-way sync from lab to here. For each
-skill it builds the requested platform fresh from canonical sources, runs a leak
-guard, writes `skills/<platform>/<skill>/`, and commits.
-
-```powershell
-python tools/publish.py projects/<project> --yes                 # all platforms
-python tools/publish.py projects/<project> --platform claude --yes
+# Codex
+cp -r codex/<skill> ~/.codex/skills/<skill>
 ```
 
-Building fresh means a publish can never ship a stale or hand-edited bundle.
+For Claude Code, `~/.claude/skills/` makes a skill available everywhere;
+`<project>/.claude/skills/` scopes it to one repository. Copy the whole
+directory — `references/`, `scripts/`, and `assets/` are part of the skill, and
+a `SKILL.md` on its own will fail partway through.
 
-## Source material
+Every skill triggers on description match, so you can simply describe the job
+("audit the task board", "write a handoff"). The one exception is **commit**,
+which is deliberately invocation-only — call it as `/commit` in Claude Code or
+`$commit` in Codex, so it never fires on its own against a live working tree.
 
-Skills are often built against real, private material. That material never
-belongs here. `refs/` and `_private/` are gitignored at any depth as a backstop,
-the publish build reads only the skill's own sources (never `refs/`), and the
-leak guard refuses a bundle carrying real emails, absolute home paths, or any
-term in an optional private denylist. The rule remains: private inputs stay in
-the lab.
+## The skills
 
-## What's published
+### Task board
 
-Sourced from these lab projects — see the directory tree for the current set:
+A file-based task board that lives in the repository, so the plan and the code
+travel together and survive losing a session. Start with **task-board-init**;
+the rest operate on the board it creates.
 
-- `diataxis-doc-migration` — Diataxis documentation lifecycle skills.
-- `task-board-management` — file-based in-repo task board skills.
-- `quality-of-life` — dev-workflow conveniences (commit, handoff, spike, audit).
+| Skill | What it does |
+| --- | --- |
+| `task-board-init` | Create a board, or adopt scattered planning docs into one |
+| `to-task` | Write a grounded, self-contained task spec onto the board |
+| `task-interview` | Grill a draft task until its open questions become decisions |
+| `focused-implementation` | Take one scoped task to done, in tested slices |
+| `orchestrate-implementation` | Group several non-interfering tasks and run them together |
+| `to-follow-on` | Carve work off an in-flight task into its own task |
+| `task-board-triage` | Reconcile board state with what the repo actually shows |
+
+### Diataxis documentation
+
+Restructure and maintain documentation under the
+[Diataxis](https://diataxis.fr) framework, treating existing docs as something
+to migrate with an audit trail rather than rewrite. **diataxis-manage-docs**
+diagnoses which of the others a repository needs.
+
+| Skill | What it does |
+| --- | --- |
+| `diataxis-manage-docs` | Diagnose doc maturity and route to the right phase |
+| `diataxis-migrate-docs` | Migrate legacy docs into Diataxis, preserving coverage |
+| `diataxis-audit-docs` | Check migrated docs for drift, gaps, and coverage |
+| `diataxis-update-docs` | Sync docs with shipped behavior since a baseline |
+
+### Daily workflow
+
+Independent of the other two families; each is useful on its own.
+
+| Skill | What it does |
+| --- | --- |
+| `commit` | Split the working tree into clean, revertible commits |
+| `handoff` | Write a handoff doc a fresh session can resume from |
+| `post-creation-audit` | Test, document, clean up, and land a block of work |
+| `spike` | Throwaway prototype in scratch space to answer one question |
+
+## Conventions these skills assume
+
+Several skills encode opinions. They are stated in each skill's `references/`
+so you can see and change them:
+
+- **Commit format** — `type(topic): summary` over a four-type vocabulary
+  (`fix`, `feat`, `test`, `chore`). Used by `commit`, `post-creation-audit`,
+  `handoff`, and `spike`.
+- **Authorship** — the commit convention defaults to recording no agent as
+  author or co-author. It is a stated default with its reasoning, not a mandate;
+  invert that section if your project requires AI-contribution disclosure.
+- **Task frontmatter** — the board skills share one task schema and filing
+  rule. Changing it means changing it for all of them.
+
+Read the skill before installing it. These are instructions your agent will
+follow on your repository, and they are short enough to review.
+
+## About these bundles
+
+The directories here are generated from a separate authoring repository, where
+each skill is written once and projected onto both runtimes. That is why the
+two subtrees are identical apart from frontmatter, and it means edits made
+directly to a bundle here would be overwritten by the next publish — adjust
+your installed copy instead.
