@@ -16,9 +16,9 @@ follow it exactly; do not restate or reinterpret it here.
 
 - **Commit only. Never push.** Publishing is the user's call, and a push is not
   reversible the way a local commit is.
-- Never record an agent as author or co-author. This is absolute — see the
-  convention's Authorship section. If the tooling appends such a trailer by
-  default, strip it.
+- Follow the convention's Authorship section exactly, whichever way it is set.
+  Its default is no agent author or co-author; if the tooling appends such a
+  trailer by default, strip it.
 - Do not amend or rebase existing commits unless asked. Add new ones.
 - Do not commit on the default branch. If `git status` shows `main`, `master`, or
   `trunk`, stop and offer to branch first.

@@ -56,13 +56,18 @@ is usually three commits that each need one line.
 
 ## Authorship
 
-**Never record an agent as an author or co-author, in any form.** No
-`Co-Authored-By` trailer naming a tool or model, no "generated with" footer, no
-agent name in the author or committer field.
+This convention's default: **no agent recorded as an author or co-author, in any
+form.** No `Co-Authored-By` trailer naming a tool or model, no "generated with"
+footer, no agent name in the author or committer field.
 
-This is a hard rule of this repository's history, not a preference. It applies to
-every commit made under this convention regardless of how the change was produced,
-and it overrides any default trailer a tool would otherwise append.
+The reasoning: `Co-Authored-By` identifies a contactable human, a model version
+string is not durable provenance, and tool trailers distort contributor history.
+This deliberately overrides the trailer some agent harnesses append by default —
+stripping it is intentional, not an oversight.
+
+If your project requires AI-contribution disclosure, invert this section; the
+rest of the convention is unaffected. Either way the policy is explicit rather
+than incidental: do not let a tool's default decide your history for you.
 
 ## Splitting a session into commits
 
