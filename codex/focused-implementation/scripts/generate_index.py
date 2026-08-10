@@ -33,8 +33,10 @@ part of a board worth keeping; the per-task lines are the part worth generating.
 `--check` rewrites nothing and exits 1 if either index is stale, for use in CI
 or as a triage gate.
 
-Imports the folder mapping from validate_board.py rather than restating it, so
-the two can never disagree about where a task belongs. Standard library only.
+Imports the folder mapping and the generated-index filenames from
+validate_board.py rather than restating them, so the two can never disagree
+about where a task belongs or about which files here are indexes rather than
+tasks. Standard library only.
 """
 
 from __future__ import annotations
@@ -44,6 +46,9 @@ import sys
 from pathlib import Path
 
 from validate_board import (
+    ARCHIVE_NAME,
+    README_NAME,
+    TREE_NAME,
     blocker_ids,
     collect_tasks,
     derive_folder,
@@ -100,25 +105,21 @@ ARCHIVE_GROUPS: tuple[tuple[str, str], ...] = (
 # and cannot be silently dropped from both.
 ARCHIVE_FOLDERS = frozenset(folder for folder, _ in ARCHIVE_GROUPS)
 
-ARCHIVE_NAME = "ARCHIVE.md"
-
 ARCHIVE_SCAFFOLD = f"""# Archive
 
 Completed and superseded tasks, grouped by the month they closed. Kept for
 provenance: read one before re-researching a problem it already covers.
 
-Live work is indexed in [README.md](README.md).
+Live work is indexed in [{README_NAME}]({README_NAME}).
 
 {BEGIN}
 {END}
 """
 
-TREE_NAME = "TREE.md"
-
 TREE_SCAFFOLD = f"""# Composition tree
 
 Specs and the tickets and subtickets that compose them, nested by `part-of`
-regardless of status. Where [README.md](README.md) groups by what a task is
+regardless of status. Where [{README_NAME}]({README_NAME}) groups by what a task is
 waiting on, this groups by what it is a piece of.
 
 {BEGIN}
@@ -354,9 +355,9 @@ def main() -> int:
         print(f"not a directory: {board}", file=sys.stderr)
         return 2
 
-    readme = board / "README.md"
+    readme = board / README_NAME
     if not readme.is_file():
-        print(f"no README.md on the board: {readme}", file=sys.stderr)
+        print(f"no {README_NAME} on the board: {readme}", file=sys.stderr)
         return 2
 
     tasks = load_tasks(board)

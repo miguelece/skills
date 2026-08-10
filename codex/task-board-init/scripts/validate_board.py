@@ -59,8 +59,20 @@ DERIVED_FOLDERS = (
 
 REQUIRED_SECTIONS = ("why this exists", "plan", "open questions", "owner")
 
-# Files on the board that are not task documents.
-NON_TASK = {"readme.md", "index.md", "archive.md"}
+# The generated indexes. Named here rather than in generate_index.py so the
+# script that writes one and the skip-set that must ignore it cannot disagree:
+# the generator imports these back. TREE.md was that disagreement -- the
+# generator learned to write it, the skip-set never learned its name, and every
+# run on a board with composition reported it as a task with no frontmatter.
+README_NAME = "README.md"
+ARCHIVE_NAME = "ARCHIVE.md"
+TREE_NAME = "TREE.md"
+GENERATED_INDEXES = (README_NAME, ARCHIVE_NAME, TREE_NAME)
+
+# Files on the board that are not task documents: every generated index, plus
+# index.md for a board that carries a hand-written one under that name. Matched
+# case-insensitively, so TREE.md and tree.md both skip.
+NON_TASK = {name.lower() for name in GENERATED_INDEXES} | {"index.md"}
 
 # An outcome shorter than this is a label, not a summary: "done", "shipped".
 MIN_OUTCOME = 15
