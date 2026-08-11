@@ -193,8 +193,12 @@ def render_live(tasks: list[dict]) -> str:
         for task in group:
             by_category.setdefault(str(task.get("category") or "uncategorized"), []).append(task)
 
+        # A real heading, not bold text. Category labels structure the group, so
+        # emphasis-as-heading (markdownlint MD036) both lints as an error and
+        # leaves them out of any generated table of contents. H4 because the
+        # group heading above is H3 -- keep the two in step if either moves.
         for category in sorted(by_category):
-            lines += [f"**{category}**", ""]
+            lines += [f"#### {category}", ""]
             for task in sorted(by_category[category], key=lambda t: str(t.get("id"))):
                 lines.append(entry_line(task))
             lines.append("")
