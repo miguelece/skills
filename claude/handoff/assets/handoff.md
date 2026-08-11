@@ -4,6 +4,28 @@ Written <YYYY-MM-DD>. Starting point for a fresh session with no prior context.
 
 ---
 
+## Next session — start here
+
+<The agenda, when the invocation carried a trailing directive — `/handoff into
+<what the next session should do>`. If it carried none, write "No directive
+given; see The task below." and keep the heading.>
+
+**Agenda, verbatim:** <the directive exactly as it was typed, unedited. This is
+the authority. Do not tidy it, shorten it, or turn a list into a summary.>
+
+**What it resolves to today:** <what this session checked the directive refers
+to — the actual task id, branch, file, or command, with its path — and how that
+was checked. If it could not be resolved, say so and say why. Never guess: a
+wrong resolution is worse than an unresolved one, because the verbatim text
+above is the only thing that can correct it.>
+
+**Before acting on it:** <the preconditions. Anything unresolved under Open
+questions below outranks this agenda — a directive never settles a question the
+writing session left open. If the agenda needs a choice the user has not made,
+say that the next session must ask before starting.>
+
+---
+
 ## Orientation
 
 <Where the work lives. Repository, branch, whether the tree is clean. A directory

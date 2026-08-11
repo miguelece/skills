@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Write a self-contained handoff document to disk so a fresh session can resume the work with no memory of the conversation — carrying the conventions, the exact commands, the dead ends, and what is still undecided. Use when asked to "write a handoff", "change shift", "hand this off", "write a handoff and clear", or when context is running short mid-task.
+description: Write a self-contained handoff document to disk so a fresh session can resume the work with no memory of the conversation — carrying the conventions, the exact commands, the dead ends, and what is still undecided. Use when asked to "write a handoff", "change shift", "hand this off", "write a handoff and clear", or when context is running short mid-task. A trailing `into` clause names the next session's agenda rather than work to do now — "/handoff into next task" means record that directive in the document, not act on it.
 ---
 
 # Write a handoff
@@ -30,24 +30,50 @@ Start from [assets/handoff.md](assets/handoff.md).
 
 ## What must be in it
 
-1. **Orientation.** Where the work lives. A directory tree if the layout is not
+1. **Next session — start here.** First, above everything. The agenda, when the
+   invocation carried a trailing directive (see below). Record it **verbatim**,
+   then what you verified it resolves to, then the preconditions for acting on
+   it. When there was no directive, say so — do not drop the section.
+2. **Orientation.** Where the work lives. A directory tree if the layout is not
    obvious. Which repository, which branch, whether anything is uncommitted.
-2. **The task.** What is being done and how far it got. Split cleanly into done,
+3. **The task.** What is being done and how far it got. Split cleanly into done,
    in progress, and not started.
-3. **Conventions that are not negotiable** — with the reason for each. A rule
+4. **Conventions that are not negotiable** — with the reason for each. A rule
    without its reason gets "improved" by the next session. If a test or a hook
    enforces it, say which.
-4. **Commands.** The exact invocations, with the directory to run each from.
+5. **Commands.** The exact invocations, with the directory to run each from.
    Copy-pasteable. Not "run the tests" — the actual command line.
-5. **Traps found the hard way.** Every dead end, wrong assumption, and
+6. **Traps found the hard way.** Every dead end, wrong assumption, and
    non-obvious failure this session hit. **This is the highest-value section** and
    the one a summary always loses. Each entry: what looked true, what was actually
    true, and how it was found.
-6. **Loose ends.** Everything deliberately left undone, with its current state and
+7. **Loose ends.** Everything deliberately left undone, with its current state and
    why it was left. A table works well.
-7. **Open questions.** What the next session must decide or ask before proceeding.
+8. **Open questions.** What the next session must decide or ask before proceeding.
    Mark these unmistakably — a placeholder that reads as a decision is worse than
    an empty section.
+
+## The `into` grammar
+
+`/handoff into <something>` names **the next session's agenda**. It is content
+for the document, not a work order for now:
+
+```text
+/handoff into next task
+/handoff into the new tasks
+```
+
+Record the clause verbatim under *Next session — start here*, then add what you
+verified it resolves to. Both halves matter — the verbatim text preserves what
+was asked, the resolution saves the fresh session from re-deriving it.
+
+Executing the directive instead is the failure this section exists to prevent,
+and it is expensive exactly when it happens: the invocation exists *because*
+context is nearly gone, so spending what remains on the work is the outcome the
+request was trying to avoid.
+
+Only a trailing `into` clause is a directive. Other phrasings are ordinary
+conversation — act on them normally.
 
 ## Steps
 
@@ -63,6 +89,12 @@ Start from [assets/handoff.md](assets/handoff.md).
 
 ## Clearing and resuming
 
+This is continuing **the same work** in a fresh session — not `into`, which
+names *different* work for the next session. The two wear similar words and mean
+opposite things: `change shift` keeps the task and drops the context;
+`into <topic>` keeps the context long enough to write it down and changes the
+task. An invocation can be both, and then it does both.
+
 When the request is to hand off *and continue* (`change shift`, "write a handoff
 and clear"):
 
@@ -75,6 +107,12 @@ and clear"):
 
 ## Guardrails
 
+- Do not carry out a trailing `into` directive. It is the next session's agenda,
+  and the document is where it goes. This holds for a list of them too — a
+  sequence of imperatives reads like a work order and is not one.
+- Do not resolve a directive by guessing. Record it verbatim and say what could
+  not be checked.
+- Do not let an agenda override an unresolved open question.
 - Do not write a handoff that assumes the reader saw the conversation.
 - Do not omit the traps because the work eventually succeeded. They are the reason
   it succeeded.
