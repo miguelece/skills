@@ -44,8 +44,16 @@ MAX_PART_OF_LEVELS = 3
 
 ID_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-LIST_ITEM = re.compile(r"^\s*(?:[-*]|\d+[.)])\s+\S")
+# A question is a *top-level* item: no leading whitespace. The earlier pattern
+# began `^\s*`, which made every nested bullet its own question.
+TOP_LEVEL_ITEM = re.compile(r"^(?:[-*]|\d+[.)])\s+\S")
+FENCE = re.compile(r"^\s*(?:```|~~~)")
 HEADING = re.compile(r"^#{2,}\s+(.+?)\s*$")
+
+# Folded scalars (`>`) join to a single line, which every consumer of `outcome`
+# requires; literal ones (`|`) keep newlines and are refused. The chomping
+# indicator is irrelevant here because the value is stripped either way.
+BLOCK_SCALAR = re.compile(r"^([>|])([-+]?)$")
 
 # Folders the board owns. Anything else at depth 1 is reported as unknown.
 DERIVED_FOLDERS = (
@@ -134,10 +142,55 @@ def _inline_list(raw: str) -> list:
     return [_scalar(part) for part in inner.split(",")]
 
 
+def _indent(line: str) -> int:
+    return len(line) - len(line.lstrip())
+
+
+def _consume_block(header: list[str], index: int, key_indent: int) -> tuple[list[str], int, bool]:
+    """Collect the continuation lines of a block scalar opened at key_indent.
+
+    A continuation is indented *strictly more* than its key; the block ends at
+    the first line indented at or below it. Also reports whether the block held
+    a blank line -- YAML folds one to a newline, so a folded value containing
+    one cannot survive as the single line every consumer requires.
+    """
+    parts: list[str] = []
+    saw_blank = False
+    while index < len(header):
+        line = header[index]
+        if not line.strip():
+            ahead = index + 1
+            while ahead < len(header) and not header[ahead].strip():
+                ahead += 1
+            # A blank line belongs to the block only if the block resumes after it.
+            if ahead < len(header) and _indent(header[ahead]) > key_indent:
+                saw_blank = True
+                index = ahead
+                continue
+            break
+        if _indent(line) <= key_indent:
+            break
+        parts.append(line.strip())
+        index += 1
+    return parts, index, saw_blank
+
+
 def parse_frontmatter(text: str) -> tuple[dict | None, str]:
     """Split a task document into (frontmatter, body).
 
     Returns (None, text) when the document has no frontmatter block.
+
+    Block scalars are handled by halves, deliberately. `>`/`>-`/`>+` fold their
+    continuation lines into one space-joined value, which is what `outcome`'s
+    consumers require. `|`/`|-`/`|+` keep newlines and are refused, as is a
+    blank line inside a folded block. Refusals are recorded under the reserved
+    `_errors` key -- the parser has no reporter, and changing its return
+    signature would break both other callers.
+
+    Consuming these blocks explicitly is what stops a continuation line from
+    reaching the `key: value` branch below: prose containing a colon used to be
+    promoted to a real frontmatter key, silently, and could overwrite a genuine
+    field such as `status`.
     """
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
@@ -151,8 +204,12 @@ def parse_frontmatter(text: str) -> tuple[dict | None, str]:
         return None, text
 
     data: dict = {}
+    errors: list[tuple[str, str]] = []
     pending_key: str | None = None
-    for line in header:
+    cursor = 0
+    while cursor < len(header):
+        line = header[cursor]
+        cursor += 1
         if not line.strip() or line.lstrip().startswith("#"):
             continue
         if pending_key and line.startswith((" ", "\t")) and line.lstrip().startswith("- "):
@@ -166,13 +223,23 @@ def parse_frontmatter(text: str) -> tuple[dict | None, str]:
         key = key.strip()
         raw = raw.strip()
         pending_key = None
-        if not raw:
+        marker = BLOCK_SCALAR.match(raw)
+        if marker:
+            folded, cursor, saw_blank = _consume_block(header, cursor, _indent(line))
+            data[key] = " ".join(folded).strip()
+            if marker.group(1) == "|":
+                errors.append((key, "literal"))
+            elif saw_blank:
+                errors.append((key, "blank"))
+        elif not raw:
             data[key] = []
             pending_key = key
         elif raw.startswith("[") and raw.endswith("]"):
             data[key] = _inline_list(raw)
         else:
             data[key] = _scalar(raw)
+    if errors:
+        data["_errors"] = errors
     return data, body
 
 
@@ -192,19 +259,30 @@ def sections(body: str) -> dict[str, list[str]]:
 
 
 def question_counts(lines: list[str]) -> tuple[int, int]:
-    """Return (total, unresolved) list items in an Open questions section.
+    """Return (total, unresolved) questions in an Open questions section.
 
-    A question counts as resolved once its item text carries the literal marker
-    RESOLVED -- a deliberate token, not incidental prose.
+    A question is one *top-level* list item together with every line beneath it,
+    up to the next top-level item; the literal marker RESOLVED anywhere in that
+    block resolves it -- a deliberate token, not incidental prose.
+
+    The unit is the block rather than the line because a decision that records
+    why the alternatives lost is naturally written as a paragraph under its
+    question. Counting per line reported those as unresolved and forced authors
+    to flatten real reasoning onto one line, and counted each nested bullet as
+    an extra unresolved question. Lines inside a fenced code block are skipped
+    so that a sample containing a bullet cannot register as a question.
     """
-    total = unresolved = 0
+    blocks: list[list[str]] = []
+    in_fence = False
     for line in lines:
-        if not LIST_ITEM.match(line):
-            continue
-        total += 1
-        if "RESOLVED" not in line:
-            unresolved += 1
-    return total, unresolved
+        if FENCE.match(line):
+            in_fence = not in_fence
+        elif not in_fence and TOP_LEVEL_ITEM.match(line):
+            blocks.append([])
+        if blocks:
+            blocks[-1].append(line)
+    unresolved = sum(1 for block in blocks if not any("RESOLVED" in line for line in block))
+    return len(blocks), unresolved
 
 
 # ---------------------------------------------------------------------------
@@ -328,6 +406,24 @@ def validate_one(
     if front is None:
         report("frontmatter-missing", "no YAML frontmatter block")
         return findings
+
+    # Parser refusals come back out-of-band; report them before the field rules
+    # so the finding names the real cause instead of the downstream symptom (a
+    # refused `outcome` would otherwise surface as outcome-too-thin).
+    for key, reason in front.pop("_errors", []):
+        if reason == "literal":
+            report(
+                "frontmatter-multiline",
+                f"{key} uses a literal block scalar; multi-line values are not "
+                f"supported because the generated index emits {key} as one line "
+                "-- write it on one line, or fold it with '>-'",
+            )
+        else:
+            report(
+                "frontmatter-multiline",
+                f"{key} has a blank line inside a folded block, which YAML folds "
+                "to a newline; a frontmatter value must stay on one line",
+            )
 
     stem = path.stem
     task_id = front.get("id")

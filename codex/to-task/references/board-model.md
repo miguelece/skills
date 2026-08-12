@@ -215,6 +215,20 @@ Write it for someone scanning a hundred finished tasks who will **not** open the
 file. "Done" and "shipped" are rejected — an outcome under fifteen characters is a
 label, not a summary.
 
+A one-line *value* need not be a one-line *source*. Wrap it with a folded scalar
+and the parser joins it back into one line:
+
+```yaml
+outcome: >-
+  Rewrote the frontmatter parser so folded values survive,
+  confirmed by 16 new tests and a dogfood pass over this board.
+```
+
+`>`, `>-` and `>+` all fold. The literal forms `|`, `|-` and `|+` are **refused**,
+as is a blank line inside a folded block: both keep newlines, and the generated
+index emits `outcome` as a single continuation line beneath a list item, so a
+value containing one would break the list it lands in.
+
 This field exists to remove a maintenance surface rather than add one. Without it,
 every completion means writing the doc *and* hand-writing a summary line into an
 index somewhere — a second copy of the same fact, in the one place that has no
