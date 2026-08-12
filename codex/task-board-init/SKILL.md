@@ -46,8 +46,11 @@ here.
    carries the same markers and holds the history, so the README stays about live
    work however long the board runs.
 
-4. Copy [assets/task.md](assets/task.md) to the board as `_template.md`, or point the
-   user at it in place.
+4. Copy [assets/task.md](assets/task.md) to the board as `_template.md`. Both board
+   scripts skip that name, so the copy costs nothing and is not indexed as a task.
+   Do it rather than pointing at the bundled copy: the bundle lives at a
+   machine-specific path outside the repository, so a board that only points at it
+   stops describing its own format the moment someone else opens the repo.
 5. Run both scripts to prove the empty board is valid:
 
    ```text

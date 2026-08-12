@@ -77,10 +77,21 @@ ARCHIVE_NAME = "ARCHIVE.md"
 TREE_NAME = "TREE.md"
 GENERATED_INDEXES = (README_NAME, ARCHIVE_NAME, TREE_NAME)
 
-# Files on the board that are not task documents: every generated index, plus
-# index.md for a board that carries a hand-written one under that name. Matched
-# case-insensitively, so TREE.md and tree.md both skip.
-NON_TASK = {name.lower() for name in GENERATED_INDEXES} | {"index.md"}
+# The blank task document task-board-init step 4 copies onto the board. Deliberately
+# not in GENERATED_INDEXES: no script writes it, an instruction does -- and the tests
+# that hold GENERATED_INDEXES to "files the generator writes" would be wrong about it.
+# Its placeholder frontmatter is not valid task frontmatter and is not meant to be;
+# the file is a form to fill in, not work to do. Following step 4 used to leave a
+# board reporting four errors on a file its own init skill had just created.
+TEMPLATE_NAME = "_template.md"
+
+# Files on the board that are not task documents: every generated index, the init
+# skill's template, plus index.md for a board that carries a hand-written one under
+# that name. Matched case-insensitively, so TREE.md and tree.md both skip.
+NON_TASK = {name.lower() for name in GENERATED_INDEXES} | {
+    TEMPLATE_NAME.lower(),
+    "index.md",
+}
 
 # An outcome shorter than this is a label, not a summary: "done", "shipped".
 MIN_OUTCOME = 15
