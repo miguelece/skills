@@ -54,7 +54,9 @@ repositories and which are plain folders.>
 
 - <item>
 
-### Open questions — must be resolved before proceeding
+---
+
+## Open questions — must be resolved before proceeding
 
 <Anything genuinely undecided. Mark it unmistakably. If the next session must ask
 the user something, write the question here in the form it should be asked. If

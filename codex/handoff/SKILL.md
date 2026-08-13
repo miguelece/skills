@@ -38,20 +38,26 @@ Start from [assets/handoff.md](assets/handoff.md).
    obvious. Which repository, which branch, whether anything is uncommitted.
 3. **The task.** What is being done and how far it got. Split cleanly into done,
    in progress, and not started.
-4. **Conventions that are not negotiable** — with the reason for each. A rule
-   without its reason gets "improved" by the next session. If a test or a hook
-   enforces it, say which.
-5. **Commands.** The exact invocations, with the directory to run each from.
+4. **Open questions — must be resolved before proceeding.** What the next session
+   must decide, or ask the user, before it starts. Mark these unmistakably — a
+   placeholder that reads as a decision is worse than an empty section. This
+   section outranks the agenda, so it sits near the top where it will be read.
+5. **Non-negotiable conventions.** Each with the reason it exists. A rule without
+   its reason gets "improved" by the next session. If a test or a hook enforces
+   it, say which.
+6. **Commands.** The exact invocations, with the directory to run each from.
    Copy-pasteable. Not "run the tests" — the actual command line.
-6. **Traps found the hard way.** Every dead end, wrong assumption, and
+7. **Traps found the hard way.** Every dead end, wrong assumption, and
    non-obvious failure this session hit. **This is the highest-value section** and
    the one a summary always loses. Each entry: what looked true, what was actually
    true, and how it was found.
-7. **Loose ends.** Everything deliberately left undone, with its current state and
+8. **Loose ends.** Everything deliberately left undone, with its current state and
    why it was left. A table works well.
-8. **Open questions.** What the next session must decide or ask before proceeding.
-   Mark these unmistakably — a placeholder that reads as a decision is worse than
-   an empty section.
+9. **Verified state.** The facts checked against the repository immediately before
+   writing, not recalled: commits, the test suite's real result, build and lint
+   status, anything uncommitted. Being explicitly a dated snapshot is what makes
+   this the one section where exact counts belong — stated anywhere else they go
+   stale without anything noticing.
 
 ## The `into` grammar
 
