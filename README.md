@@ -1,6 +1,6 @@
 # Skills
 
-Agent skills for Claude Code and Codex — 15 of them, covering three workflows:
+Agent skills for Claude Code and Codex — 16 of them, covering three workflows:
 turning work into tracked tasks and running them, keeping documentation honest
 against the code, and the daily loop of committing, handing off, and cleaning up.
 
@@ -80,13 +80,17 @@ diagnoses which of the others a repository needs.
 
 ### Daily workflow
 
-Independent of the other two families; each is useful on its own.
+Independent of the other two families. Each is useful on its own except
+**handoff** and **resume-handoff**, which are the two halves of one cycle —
+one writes the document at a context boundary, the other picks it up on the
+far side.
 
 | Skill | What it does |
 | --- | --- |
 | `commit` | Split the working tree into clean, revertible commits |
 | `handoff` | Write a handoff doc a fresh session can resume from |
 | `post-creation-audit` | Test, document, clean up, and land a block of work |
+| `resume-handoff` | Resume from a handoff: verify, check in, then act |
 | `spike` | Throwaway prototype in scratch space to answer one question |
 
 ## Conventions these skills assume
