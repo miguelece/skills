@@ -50,6 +50,29 @@ TOP_LEVEL_ITEM = re.compile(r"^(?:[-*]|\d+[.)])\s+\S")
 FENCE = re.compile(r"^\s*(?:```|~~~)")
 HEADING = re.compile(r"^#{2,}\s+(.+?)\s*$")
 
+# A Markdown link target. The class is `[^)\s]+` and deliberately not `[^)#]+`:
+# the latter stops at '#', which silently skips every citation carrying a line
+# range -- a third of a mature board's links. The fragment is split off after
+# the match rather than excluded during it. Stopping at whitespace also ends the
+# target before an optional "title".
+LINK_TARGET = re.compile(r"\]\(\s*([^)\s]+)")
+
+# A scheme (`https:`, `mailto:`) or a protocol-relative `//` means the target is
+# not a path on this filesystem and there is nothing to resolve.
+EXTERNAL_TARGET = re.compile(r"^(?:[a-z][a-z0-9+.\-]*:|//)", re.IGNORECASE)
+
+# Inline code spans. Link syntax quoted inside backticks is documentation
+# *about* a link, not a link -- and this board carries exactly that, in a task
+# document about link checking.
+CODE_SPAN = re.compile(r"`+[^`]*`+")
+
+# Generated regions inside a hand-written file, per the repo-wide convention:
+# the generator owns what sits between the markers and nothing outside. Matched
+# by shape rather than by importing one generator's constants, so a region any
+# generator emits is covered -- including the slice rollup a spec carries.
+REGION_BEGIN = re.compile(r"^\s*<!--\s*BEGIN\b")
+REGION_END = re.compile(r"^\s*<!--\s*END\b")
+
 # Folded scalars (`>`) join to a single line, which every consumer of `outcome`
 # requires; literal ones (`|`) keep newlines and are refused. The chomping
 # indicator is irrelevant here because the value is stripped either way.
@@ -267,6 +290,48 @@ def sections(body: str) -> dict[str, list[str]]:
         if current is not None:
             found[current].append(line)
     return found
+
+
+def body_link_targets(body: str) -> list[str]:
+    """Relative link targets in body prose, in order, with fragments stripped.
+
+    Three kinds of text are not prose and are skipped, each a false-positive
+    source that was observed before this rule existed rather than imagined:
+    fenced blocks, inline code spans, and generated regions. The code-span case
+    is the one that bites -- writing link syntax literally to document it mints
+    a phantom broken link, which is how a checker's own documentation degrades
+    the ratio it exists to protect.
+
+    Only the path is returned. Whether a cited line range still quotes what the
+    citing prose claims is a different defect needing a different fix, and the
+    fragment is discarded here deliberately rather than by oversight.
+    """
+    targets: list[str] = []
+    in_fence = False
+    in_region = False
+    for line in body.splitlines():
+        if FENCE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if REGION_BEGIN.match(line):
+            in_region = True
+            continue
+        if REGION_END.match(line):
+            in_region = False
+            continue
+        if in_region:
+            continue
+        for match in LINK_TARGET.finditer(CODE_SPAN.sub("", line)):
+            target = match.group(1)
+            if EXTERNAL_TARGET.match(target):
+                continue
+            # A bare '#anchor' points inside this document; there is no path.
+            path_part = target.split("#", 1)[0]
+            if path_part:
+                targets.append(path_part)
+    return targets
 
 
 def question_counts(lines: list[str]) -> tuple[int, int]:
@@ -632,6 +697,25 @@ def validate_one(
                 "blocker-superseded",
                 f"blocker {blocker!r} was superseded; repoint blocked-by at its "
                 "successor rather than waiting on a replaced spec",
+            )
+
+    # --- link targets ------------------------------------------------------
+    # Every rule above resolves an *id*. This one resolves a *path*, which is
+    # the half that breaks when a status change derives a file into a new
+    # folder: the moved file is under attention, the files citing it are not.
+    #
+    # A warning rather than an error, because the window between `git mv` and
+    # repairing the links is ordinary and nobody mid-close wants a red board.
+    # The cost is recorded rather than argued away -- a warning nobody must act
+    # on is how a set of broken links survived a whole session unnoticed. What
+    # makes it acceptable is that the alternative was silence, not a discipline
+    # that already worked.
+    for target in body_link_targets(body):
+        if not (path.parent / target).exists():
+            report(
+                "link-target-missing",
+                f"link target {target!r} does not exist",
+                severity="warning",
             )
 
     return findings
