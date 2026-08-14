@@ -300,11 +300,29 @@ Every id referenced by `parent`, `part-of`, `blocked-by`, `supersedes`, or
 `superseded-by` must resolve to a task that exists on the board. A dangling
 reference is a validation error.
 
+The prose links are checked too, but as a **warning** rather than an error. Every
+relative Markdown link in a task's body is resolved against that task's own
+directory; one whose target no longer exists is reported without failing the run.
+The asymmetry is deliberate: an id is inert text that only a person edits, while a
+relative path breaks on its own. Setting `status: done` derives the file into
+`completed/`, stranding every link that pointed at it and every link it carried —
+and the inbound half is silent, because the file that moved is the one under
+attention and the files citing it are not. A hard failure would redden the board
+during the ordinary window between the move and the repair.
+
+Existence only. Whether a cited `#L` range still quotes what the citing prose
+claims is a different defect and is not checked. Links inside fenced blocks,
+inline code spans, and generated regions are skipped — quoted link syntax is
+documentation about a link, not a link, and a generated region is repaired by
+regeneration.
+
 ## What the scripts own
 
 - `scripts/validate_board.py` — parses every task, checks the schema, the folder
   mapping, the gate/status rule, the required sections, cross-reference
-  resolution, and the dependency graph. Exits non-zero with a list of findings.
+  resolution, the dependency graph, and the relative link targets each body
+  cites. Exits non-zero with a list of findings; link targets are the one check
+  that warns rather than fails.
 - `scripts/generate_index.py` — rewrites every generated region: the `README.md`
   and `ARCHIVE.md` indexes, the `TREE.md` composition view, and each opted-in task's
   in-place `## Slices` rollup. `--check` reports staleness without writing.
