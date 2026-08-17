@@ -38,6 +38,36 @@ KINDS = ("ticket", "spec")
 DEFAULT_KIND = "ticket"
 UNFINISHED = ("draft", "scoped", "in-progress")
 
+# Every field `shared/schema/task.schema.yaml` declares under `fields:`. Held
+# equal to that block by a test rather than at runtime -- ALLOWED_IMPORTS admits
+# no YAML parser, and the schema sits at a different relative path in a bundle
+# (references/) than in source (../schema/), so a runtime read would have to
+# guess between two layouts.
+#
+# Seven of these are legitimately optional, which is the whole reason the check
+# below has to exist: absence carries no signal, so a misspelling of one of them
+# leaves nothing anywhere to disagree with.
+KNOWN_KEYS = frozenset(
+    {
+        "id",
+        "title",
+        "kind",
+        "status",
+        "gate",
+        "priority",
+        "category",
+        "created",
+        "updated",
+        "parent",
+        "part-of",
+        "blocked-by",
+        "supersedes",
+        "superseded-by",
+        "revisit",
+        "outcome",
+    }
+)
+
 # Composition depth is a policy nudge, not a mechanism limit: the model allows
 # any depth, the validator warns past this to steer toward flat trees.
 MAX_PART_OF_LEVELS = 3
@@ -56,6 +86,28 @@ HEADING = re.compile(r"^#{2,}\s+(.+?)\s*$")
 # the match rather than excluded during it. Stopping at whitespace also ends the
 # target before an optional "title".
 LINK_TARGET = re.compile(r"\]\(\s*([^)\s]+)")
+
+# The whole link, text and target. `body_links` is the single traversal both the
+# link-target rule and the citation rule read from: the fragment the first
+# discards is exactly the second's input, so this is one pass over the body
+# rather than two that could disagree about what counts as prose.
+LINK_FULL = re.compile(r"\[([^\]]*)\]\(\s*([^)\s]+)")
+
+# A citation names what it points at, written `filename.ext:name`. The name may
+# carry spaces (a Markdown heading) or dots (a key path). Link text without this
+# shape is an ordinary link -- a task title, a prose phrase -- and is not a
+# citation, which is what keeps this rule off the board's own cross-references.
+CITATION_TEXT = re.compile(r"^([\w.\-]+\.[A-Za-z0-9]+):(.+)$")
+
+# The historical form: the name as it was, plus the commit it was true at. It is
+# recognised and skipped, never resolved -- ALLOWED_IMPORTS admits no subprocess,
+# so a bundled script cannot ask git what a file held at a commit. The value is an
+# exemption that is written down and greppable rather than a citation that quietly
+# stops meaning anything.
+COMMIT_PIN = re.compile(r"^(.+)@([0-9a-f]{7,40})$")
+
+# What this rule abolishes. A range is in bounds and wrong in the same moment.
+LINE_RANGE = re.compile(r"^L\d+(?:-L\d+)?$")
 
 # A scheme (`https:`, `mailto:`) or a protocol-relative `//` means the target is
 # not a path on this filesystem and there is nothing to resolve.
@@ -292,8 +344,8 @@ def sections(body: str) -> dict[str, list[str]]:
     return found
 
 
-def body_link_targets(body: str) -> list[str]:
-    """Relative link targets in body prose, in order, with fragments stripped.
+def body_links(body: str) -> list[tuple[str, str]]:
+    """(link text, raw target) for every relative link in body prose, in order.
 
     Three kinds of text are not prose and are skipped, each a false-positive
     source that was observed before this rule existed rather than imagined:
@@ -302,11 +354,15 @@ def body_link_targets(body: str) -> list[str]:
     a phantom broken link, which is how a checker's own documentation degrades
     the ratio it exists to protect.
 
-    Only the path is returned. Whether a cited line range still quotes what the
-    citing prose claims is a different defect needing a different fix, and the
-    fragment is discarded here deliberately rather than by oversight.
+    The fenced-block skip carries a second load now that citations are checked:
+    a document illustrating what a citation *looks like* writes the old form
+    inside a fence on purpose, and a pass that read it would rewrite the record
+    of what the convention replaced.
+
+    The target is returned raw, fragment included, because the two rules that
+    read this need different halves of it.
     """
-    targets: list[str] = []
+    links: list[tuple[str, str]] = []
     in_fence = False
     in_region = False
     for line in body.splitlines():
@@ -323,14 +379,26 @@ def body_link_targets(body: str) -> list[str]:
             continue
         if in_region:
             continue
-        for match in LINK_TARGET.finditer(CODE_SPAN.sub("", line)):
-            target = match.group(1)
+        for match in LINK_FULL.finditer(CODE_SPAN.sub("", line)):
+            text, target = match.group(1), match.group(2)
             if EXTERNAL_TARGET.match(target):
                 continue
-            # A bare '#anchor' points inside this document; there is no path.
-            path_part = target.split("#", 1)[0]
-            if path_part:
-                targets.append(path_part)
+            links.append((text, target))
+    return links
+
+
+def body_link_targets(body: str) -> list[str]:
+    """Relative link targets in body prose, in order, with fragments stripped.
+
+    The path half of `body_links`. Kept as its own name because the link-target
+    rule wants only paths, and because a bare '#anchor' points inside this
+    document and has no path to resolve.
+    """
+    targets: list[str] = []
+    for _, target in body_links(body):
+        path_part = target.split("#", 1)[0]
+        if path_part:
+            targets.append(path_part)
     return targets
 
 
@@ -500,6 +568,26 @@ def validate_one(
                 f"{key} has a blank line inside a folded block, which YAML folds "
                 "to a newline; a frontmatter value must stay on one line",
             )
+
+    # Deliberately after the `_errors` pop above and not before it. `_errors` is
+    # the parser's own out-of-band channel, so a check placed higher would report
+    # it as an unknown field on exactly the documents that already have a real
+    # problem, naming the wrong cause. The exclusion costs nothing but is
+    # load-bearing on statement order, so a test pins the ordering.
+    #
+    # `error`, not `warning`, unlike link-target-missing: that rule is a warning
+    # because there is a legitimate window between a `git mv` and repairing the
+    # links. A typo has no legitimate window, and a warning exits 0 -- which on
+    # the blocked-by case would name the defect while still letting the task be
+    # scheduled as actionable.
+    unknown = sorted(set(front) - KNOWN_KEYS)
+    if unknown:
+        report(
+            "frontmatter-unknown-key",
+            f"unknown frontmatter key(s) {unknown}; a misspelled field name is "
+            f"silently a new field nobody reads, while the field intended stays "
+            f"unset at its default -- declared fields are {sorted(KNOWN_KEYS)}",
+        )
 
     stem = path.stem
     task_id = front.get("id")
@@ -716,6 +804,51 @@ def validate_one(
                 "link-target-missing",
                 f"link target {target!r} does not exist",
                 severity="warning",
+            )
+
+    # --- citations ----------------------------------------------------------
+    # A citation names a thing and asserts it still exists in the file cited.
+    # This is `error` where the rule above is `warning`, and the asymmetry is
+    # deliberate rather than an inconsistency: a moved file leaves a legitimate
+    # window between the `git mv` and the repair, while a citation naming
+    # something that does not exist has none -- a rename and its citations are
+    # edited in one pass by one person, and where they are not, the citation is
+    # a false statement in the record for as long as nobody looks.
+    #
+    # Simpler than the range form it replaces: no bounds arithmetic, no fragment
+    # parsing, no range splitting. The convention, with all four written forms,
+    # is in references/board-model.md.
+    for text, target in body_links(body):
+        path_part, _, fragment = target.partition("#")
+        if LINE_RANGE.match(fragment):
+            report(
+                "citation-line-range",
+                f"citation {text!r} points at a line range; name the thing "
+                "instead -- a range goes wrong when anything above it is edited, "
+                "while the path stays valid and nothing reports it",
+            )
+            continue
+        match = CITATION_TEXT.match(text.strip())
+        if not match:
+            continue
+        name = match.group(2).strip()
+        if COMMIT_PIN.match(name):
+            # Recognised, never resolved. See board-model.md.
+            continue
+        cited = path.parent / path_part
+        if not path_part or not cited.is_file():
+            continue  # a missing path is link-target-missing's finding, not this
+        try:
+            source = cited.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if not re.search(rf"(?<!\w){re.escape(name)}(?!\w)", source):
+            report(
+                "citation-name-missing",
+                f"citation {text!r} names {name!r}, which does not appear in "
+                f"{path_part} -- repair it to the current name, or pin it to the "
+                "commit it was true at if the document deliberately describes "
+                "code that has since been superseded",
             )
 
     return findings

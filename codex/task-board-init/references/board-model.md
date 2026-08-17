@@ -310,11 +310,45 @@ and the inbound half is silent, because the file that moved is the one under
 attention and the files citing it are not. A hard failure would redden the board
 during the ordinary window between the move and the repair.
 
-Existence only. Whether a cited `#L` range still quotes what the citing prose
-claims is a different defect and is not checked. Links inside fenced blocks,
-inline code spans, and generated regions are skipped — quoted link syntax is
-documentation about a link, not a link, and a generated region is repaired by
-regeneration.
+Existence only, for the path itself. Links inside fenced blocks, inline code
+spans, and generated regions are skipped — quoted link syntax is documentation
+about a link, not a link, and a generated region is repaired by regeneration.
+
+### Citations name things, never line ranges
+
+A citation into source is written `filename:name`, and it asserts that **the named
+thing still exists in the file the link points at**. A line range is not a
+citation, and one is reported as an error.
+
+A range rots without anything moving or being deleted. An edit *above* the cited
+region shifts every number below it while the path, the file, and the quoted prose
+all stay valid, so nothing reports a problem — nothing is broken except the claim.
+A path check cannot see it, because the path never moved.
+
+Four forms, and nothing else:
+
+| Form | Written | Used for |
+| --- | --- | --- |
+| name | `validate_board.py:parse_frontmatter` | a symbol in code, a heading in prose |
+| key path | `project.yaml:skills` | a structured file, where a key is the stable unit |
+| bare file | `install.py` | where no single name encloses the target — an import block, a comment region, a span crossing several top-level names |
+| commit-pinned | `validate_board.py:LIST_ITEM@8c43768` | a closed task that deliberately describes superseded code |
+
+The **commit-pinned form is recognised and skipped, not resolved.** A bundled
+script may import only the standard library, so it cannot ask git what a file
+looked like at a commit. What the form buys is an exemption that is written down,
+greppable and auditable, instead of a citation that quietly fails to mean
+anything — and an exemption you have to type a commit hash into is not one anybody
+reaches for by accident. Use it only where naming today's symbol would make a
+closed document describe a bug that never existed.
+
+**This rule is an error while `link-target-missing` beside it is only a warning,
+and the asymmetry is deliberate.** A moved file leaves a legitimate window between
+the `git mv` and the repair, so a hard failure there would redden the board during
+ordinary work. A citation naming something that does not exist has no such window:
+a rename and its citations are edited in one pass by one person, and where they
+are not, the citation is a false statement in the record for as long as nobody
+looks.
 
 ## What the scripts own
 
