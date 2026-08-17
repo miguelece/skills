@@ -342,6 +342,16 @@ anything — and an exemption you have to type a commit hash into is not one any
 reaches for by accident. Use it only where naming today's symbol would make a
 closed document describe a bug that never existed.
 
+**The reach is narrower than "reported as an error" makes it sound, and the
+limit is the one stated just above.** Both citation rules read the same link
+traversal as `link-target-missing`, so both inherit its skips. Fenced blocks and
+generated regions are meant to be skipped. The code-span skip left a real gap: a
+line range written as a bare code span, with no link around it, is not a link at
+all, so neither rule could ever see it — and instances survived on this board
+while every check passed. `citation-code-span-range` closes that gap with a
+separate scan over raw lines, matching a code span that holds a filename, a
+colon and digits. Requiring the digits is what keeps it off the four forms above.
+
 **This rule is an error while `link-target-missing` beside it is only a warning,
 and the asymmetry is deliberate.** A moved file leaves a legitimate window between
 the `git mv` and the repair, so a hard failure there would redden the board during
@@ -349,6 +359,40 @@ ordinary work. A citation naming something that does not exist has no such windo
 a rename and its citations are edited in one pass by one person, and where they
 are not, the citation is a false statement in the record for as long as nobody
 looks.
+
+## Severity: two kinds of warning, and everything else an error
+
+The asymmetry above is one instance of a general rule, written down here so the
+next rule is not argued from scratch. **A rule reports at `warning` when it is
+one of exactly two things:**
+
+| Category | Meaning | Rules in it |
+| --- | --- | --- |
+| **Advisory** | The finding indicates **no defect**. The board is valid in this state; the rule is a policy nudge or a triage note, and a reader may legitimately decide to do nothing. | `part-of-too-deep`, `spec-done-open-tickets` |
+| **Transient** | A **real defect** that a prescribed workflow produces and repairs in the same session. Failing the run would make a practice this repository recommends illegal. | `link-target-missing` |
+
+**Every other rule is an error, and the test is whether a legitimate workflow
+produces the state.** If none does, there is no window to tolerate and no reason
+to exit 0 on it.
+
+This is a description of the rules as they stand, not a preference imposed on
+them — it was derived by reading all of them and finding that the warnings fell
+into exactly these two groups. That is the evidence for it, and it is also the
+reason it is worth pinning: a rule added at `warning` without fitting either
+category is either a miscategorised error or a new category that has to be
+argued for explicitly.
+
+**The two clear differently, which is why they are not one bucket.** An advisory
+finding may stand forever without anything being wrong. A transient one is
+expected to be gone by the end of the session that caused it — and a transient
+warning that is *still there* next session is a defect that got missed, not a
+state anyone chose. Collapsing them into "things that do not fail the build"
+loses exactly that distinction.
+
+**What this does not settle.** Whether a warning on a board is in fact acted on
+in practice is unmeasured, and deliberately so: the only way to measure it is to
+leave a population of findings standing that nobody must act on, which corrupts
+the channel being measured. The principle above does not depend on the answer.
 
 ## What the scripts own
 

@@ -118,6 +118,13 @@ EXTERNAL_TARGET = re.compile(r"^(?:[a-z][a-z0-9+.\-]*:|//)", re.IGNORECASE)
 # document about link checking.
 CODE_SPAN = re.compile(r"`+[^`]*`+")
 
+# A line range written as a bare code span, with no link around it. The two
+# citation rules cannot reach this form for two independent reasons: the span is
+# stripped before they run, and a span is not a link in the first place. Digits
+# after the colon are what identify it, which is exactly what the name and
+# commit-pinned forms do not have there -- so the prescribed forms cannot trip it.
+CODE_SPAN_RANGE = re.compile(r"`([\w.\-/]+\.[A-Za-z0-9]+:\d+(?:-\d+)?)`")
+
 # Generated regions inside a hand-written file, per the repo-wide convention:
 # the generator owns what sits between the markers and nothing outside. Matched
 # by shape rather than by importing one generator's constants, so a region any
@@ -170,6 +177,12 @@ NON_TASK = {name.lower() for name in GENERATED_INDEXES} | {
 
 # An outcome shorter than this is a label, not a summary: "done", "shipped".
 MIN_OUTCOME = 15
+
+# A title shorter than this is not readable out of context, which is the one job
+# a title has in a generated index. Named rather than inlined so the schema can
+# be asserted against it -- as a bare literal it was declared in two places with
+# nothing checking that they agreed.
+MIN_TITLE = 8
 
 
 class Finding:
@@ -402,6 +415,41 @@ def body_link_targets(body: str) -> list[str]:
     return targets
 
 
+def code_span_line_ranges(body: str) -> list[str]:
+    """Bare code spans in body prose holding a `file.ext:123` line range.
+
+    Deliberately its own traversal rather than a relaxation of `body_links`.
+    That function strips code spans before extracting links, because quoting
+    link syntax in prose would otherwise mint a phantom broken link -- a strip
+    this board needs and that has to stay. Reading the same pass for both
+    purposes would mean one contract answering two questions about what counts
+    as prose, which is the drift its docstring says it exists to prevent.
+
+    Fences and generated regions are skipped for the reasons they always are: a
+    document illustrating the retired form writes it inside a fence on purpose,
+    and a generated region is repaired by regeneration rather than by hand.
+    """
+    found: list[str] = []
+    in_fence = False
+    in_region = False
+    for line in body.splitlines():
+        if FENCE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if REGION_BEGIN.match(line):
+            in_region = True
+            continue
+        if REGION_END.match(line):
+            in_region = False
+            continue
+        if in_region:
+            continue
+        found.extend(match.group(1) for match in CODE_SPAN_RANGE.finditer(line))
+    return found
+
+
 def question_counts(lines: list[str]) -> tuple[int, int]:
     """Return (total, unresolved) questions in an Open questions section.
 
@@ -602,8 +650,11 @@ def validate_one(
             report("id-matches-filename", f"id {task_id!r} != filename stem {stem!r}")
 
     title = front.get("title")
-    if not title or len(str(title).strip()) < 8:
-        report("title-missing", "title is absent or shorter than 8 characters")
+    if not title or len(str(title).strip()) < MIN_TITLE:
+        report(
+            "title-missing",
+            f"title is absent or shorter than {MIN_TITLE} characters",
+        )
 
     if front.get("kind") is not None and front.get("kind") not in KINDS:
         report("kind-invalid", f"kind {front.get('kind')!r} not one of {list(KINDS)}")
@@ -798,6 +849,18 @@ def validate_one(
     # on is how a set of broken links survived a whole session unnoticed. What
     # makes it acceptable is that the alternative was silence, not a discipline
     # that already worked.
+    #
+    # TRANSIENT, in the two-category sense of references/board-model.md, and the
+    # only rule in that category: unlike the two advisory warnings, this one
+    # reports a real defect. It warns because the repository's own prescribed
+    # two-pass close produces it and repairs it in the same session, so failing
+    # the run would make a recommended practice illegal. That is a category test
+    # anyone can apply, rather than an appeal to not wanting a red board -- and
+    # it is why one still standing next session is a miss, not a decision.
+    #
+    # The route to promoting this to `error` is not a severity change: resolving
+    # a target against the pre-move path would remove the transient window
+    # entirely. That is a feature nobody has needed enough to build.
     for target in body_link_targets(body):
         if not (path.parent / target).exists():
             report(
@@ -850,6 +913,28 @@ def validate_one(
                 "commit it was true at if the document deliberately describes "
                 "code that has since been superseded",
             )
+
+    # --- line ranges the two rules above cannot reach ------------------------
+    # Both rules above read links. This one reads the form that is not a link,
+    # and is therefore invisible to them by construction rather than by
+    # oversight -- which is why the convention in references/board-model.md used
+    # to promise more than anything enforced.
+    #
+    # `error`, matching the two rules above rather than link-target-missing. It
+    # shipped at `warning` for exactly as long as it took to clear the instances
+    # it found -- a landing posture, so the rule and the migration did not have
+    # to be one commit or a knowingly-red pair. The steady state is `error`
+    # under the two-category principle: a warning is for a rule that is advisory
+    # or transient, and this is neither. No workflow produces a code-span line
+    # range, so there is no window to tolerate.
+    for span in code_span_line_ranges(body):
+        report(
+            "citation-code-span-range",
+            f"`{span}` is a line range inside a code span; name the thing "
+            "instead -- a range goes wrong when anything above it is edited, "
+            "and this form is invisible to the citation rules because a code "
+            "span is not a link",
+        )
 
     return findings
 
@@ -923,6 +1008,10 @@ def validate_board(board: Path) -> list[Finding]:
 
     # Depth is a policy nudge (warning), not a mechanism limit. Guard the walk
     # against cycles (already reported above) with a visited set.
+    #
+    # ADVISORY, in the two-category sense of references/board-model.md: the
+    # finding indicates no defect. A board with a deep chain is valid, and a
+    # reader may legitimately look at this and decide to do nothing.
     for task_id in sorted(part_graph):
         levels, node, seen = 1, task_id, {task_id}
         while part_graph.get(node):
@@ -944,6 +1033,10 @@ def validate_board(board: Path) -> list[Finding]:
 
     # A done spec may legitimately keep open ticket descendants (deferred or
     # revisit work), so this is a triage note, never a failure.
+    #
+    # ADVISORY, in the two-category sense of references/board-model.md: the
+    # finding indicates no defect. Spec completion is more than "all tickets
+    # done", which is exactly why this cannot be promoted to an error.
     for spec_id, status in statuses.items():
         if kinds.get(spec_id) != "spec" or status != "done":
             continue

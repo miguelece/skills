@@ -1,7 +1,21 @@
 # Frontmatter contract for one task document.
 #
-# Read by scripts/validate_board.py. Prose explanation of every field, and of
-# why the folder is derived rather than authored, is in references/board-model.md.
+# This file is the authoritative declaration of that contract: what each field
+# is, every rule the validator can report, and how the folder is derived.
+#
+# It is documentation, not configuration. The validator does not read it -- it
+# hard-codes its own constants -- so editing this file changes no behaviour.
+# What keeps the two in agreement is a test in the authoring repository, which
+# parses this file and asserts it against those constants and against every rule
+# id the validator reports. Nothing here is merely intended; it is checked.
+#
+# Every rule appears in exactly one of the two blocks at the bottom: `rules:`
+# for the ones this file states itself, `implied_rules:` for the ones another
+# block already expresses. The union is what the test pins, so a rule cannot be
+# added to the validator without being classified into one or the other.
+#
+# Prose explanation of every field, and of why the folder is derived rather than
+# authored, is in references/board-model.md.
 
 fields:
   id:
@@ -187,3 +201,60 @@ rules:
     check: >-
       a blocker that was superseded is repointed at its successor rather than
       waiting on a replaced spec
+  - id: updated-before-created
+    check: updated is not earlier than created
+
+  # Structural: the document's shape, which no field declaration describes.
+  - id: frontmatter-missing
+    check: the document opens with a frontmatter block
+  - id: frontmatter-multiline
+    check: >-
+      no frontmatter value spans more than one line; the generated index emits
+      each on a single line, so fold with '>-' rather than a literal block
+  - id: id-duplicate
+    check: no two task files on the board declare the same id
+  - id: folder-unknown
+    check: the file sits in a directory the folder mapping can derive
+
+  # Content integrity: claims a task's body makes about files outside itself.
+  - id: link-target-missing
+    check: >-
+      "warning: every relative link in the body resolves (transient -- the
+      prescribed two-pass close produces this and repairs it in the same
+      session)"
+  - id: citation-line-range
+    check: a citation in link form names a thing rather than a line range
+  - id: citation-name-missing
+    check: the thing a citation names still exists in the file it points at
+  - id: citation-code-span-range
+    check: >-
+      no bare code span holds a file-and-line-range; that form is not a link, so
+      the two citation rules above cannot see it
+
+# Rules this file does not state itself, because another block above already
+# expresses them. Declared anyway so the classification is exhaustive: `rules:`
+# and `implied_rules:` together must equal every id the validator reports, which
+# is what makes adding a rule without documenting it a test failure rather than
+# a silent gap. `link-target-missing` sat undeclared for three days on exactly
+# that gap, and two citation rules repeated it.
+implied_rules:
+  - id: id-missing
+    expressed_by: fields
+  - id: id-format
+    expressed_by: fields
+  - id: title-missing
+    expressed_by: fields
+  - id: status-invalid
+    expressed_by: fields
+  - id: gate-invalid
+    expressed_by: fields
+  - id: priority-invalid
+    expressed_by: fields
+  - id: category-missing
+    expressed_by: fields
+  - id: revisit-invalid
+    expressed_by: fields
+  - id: frontmatter-unknown-key
+    expressed_by: fields
+  - id: section-missing
+    expressed_by: required_sections
