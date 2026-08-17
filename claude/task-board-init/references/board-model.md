@@ -390,6 +390,36 @@ how an effort decomposes. `TREE.md` exists only when the board has composition.
 before someone re-researches a problem it already settled; filed into an archive
 nobody reads, it stops doing its job.
 
+### Generated output lints clean under default markdownlint rules
+
+**An adopting repo needs no markdownlint configuration**, and that is a contract
+rather than a courtesy: a generated region is one a human is forbidden to edit, so
+if it fails a lint rule nobody can fix it — hand-editing is against the model and
+the next run would revert it anyway. Two rules are in play, handled differently on
+purpose.
+
+**Duplicate headings are prevented structurally.** Every heading the generator
+emits is qualified by the group it sits under — `Active — <category>` in the live
+index, `Completed — <month>` in the archive. The same category routinely appears
+in two folder groups, and the same month in both archive groups, which would
+otherwise emit byte-identical headings. That is markdownlint MD024, and worse: two
+indistinguishable table-of-contents entries pointing at different sections, in a
+document whose job is orientation.
+
+**Line length is suppressed, narrowly.** An entry line carries a title, a link, a
+status and a priority together, and an archive entry adds a prose `outcome`
+beneath it. Wrapping those would break scanning, which is the index's whole job;
+truncating titles would lose information. So the generator emits a markdownlint
+disable comment naming the line-length rule immediately inside each opening
+marker, and the matching enable immediately before the closing one. **The
+suppression names that one rule only** — a later duplicate-heading regression still
+surfaces as a failure instead of being masked.
+
+The enable is emitted **inside** the region on purpose. A disable with no matching
+enable would switch the rule off for every hand-written line below the block,
+which is prose the board owner does own. Prose outside the markers is never
+covered by this contract and stays the owner's to wrap or accept.
+
 ## Completed tasks are frozen
 
 A finished task is a **dated record, not living documentation**. Its claims describe
