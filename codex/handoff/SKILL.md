@@ -44,7 +44,10 @@ Start from [assets/handoff.md](assets/handoff.md).
    section outranks the agenda, so it sits near the top where it will be read.
 5. **Non-negotiable conventions.** Each with the reason it exists. A rule without
    its reason gets "improved" by the next session. If a test or a hook enforces
-   it, say which.
+   it, say which. **Number them, and say in the section that the numbering is
+   local to the document and must never be cited from a tracked file** — an
+   ordinal reads like a stable identifier, so work written during the session
+   cites it, and the next handoff renumbers and strands every one.
 6. **Commands.** The exact invocations, with the directory to run each from.
    Copy-pasteable. Not "run the tests" — the actual command line.
 7. **Traps found the hard way.** Every dead end, wrong assumption, and

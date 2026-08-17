@@ -69,6 +69,13 @@ there are none, write "None." — do not delete the section.>
 <Numbered. Each with the reason it exists, and what enforces it. A rule without a
 reason gets "improved" by the next session.>
 
+**Cite these by name, never by number. The numbering is local to this document
+and dies when it is replaced.** An ordinal reads exactly like a stable
+identifier, so work written during the session picks it up — and the next
+handoff renumbers or reorganises this list, leaving every one of those citations
+pointing at nothing. Inside this document, refer by number freely; in anything
+tracked, name the rule.
+
 1. **<Rule>** — <why it exists>. <What enforces it: a test name, a hook, a
    gitignore rule.>
 
