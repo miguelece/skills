@@ -125,6 +125,22 @@ CODE_SPAN = re.compile(r"`+[^`]*`+")
 # commit-pinned forms do not have there -- so the prescribed forms cannot trip it.
 CODE_SPAN_RANGE = re.compile(r"`([\w.\-/]+\.[A-Za-z0-9]+:\d+(?:-\d+)?)`")
 
+# A line reference written as ordinary prose. This is the form the three rules
+# above cannot reach for three independent reasons: it is not a link target, not
+# link text, and not a code span. It rots exactly as a range does -- an edit
+# above it moves the target while the path, the prose and the link all stay
+# valid, so nothing reports it.
+PROSE_LINE_REF = re.compile(r"\blines?\s+\*{0,2}(\d+)", re.IGNORECASE)
+
+# What separates a rotted citation from a sentence *about* one, and it is
+# syntactic rather than semantic. A citation points at a single line; a mention
+# describing how a range rotted carries two numbers by its nature -- a span, a
+# before-and-after, or a pair. Requiring the second number to be absent drops
+# every mention with no allowlist to maintain and nothing written down about
+# them anywhere. A word-joined before-and-after is the one form this misses, and
+# the safe harbour for it is a code span.
+PROSE_LINE_SPAN = re.compile(r"^\*{0,2}\s*(?:to|and|[-–—]|->|→)\s*\d", re.IGNORECASE)
+
 # Generated regions inside a hand-written file, per the repo-wide convention:
 # the generator owns what sits between the markers and nothing outside. Matched
 # by shape rather than by importing one generator's constants, so a region any
@@ -447,6 +463,53 @@ def code_span_line_ranges(body: str) -> list[str]:
         if in_region:
             continue
         found.extend(match.group(1) for match in CODE_SPAN_RANGE.finditer(line))
+    return found
+
+
+def prose_line_references(body: str) -> list[str]:
+    """Line references written as ordinary prose, carrying a single number.
+
+    Its own traversal for the same reason `code_span_line_ranges` is one:
+    `body_links` strips code spans before extracting links and has to keep doing
+    so, and one pass answering two questions about what counts as prose is the
+    drift that function's docstring exists to prevent.
+
+    Code spans are stripped rather than read, which is what makes a code span the
+    safe harbour for the one sentence that legitimately carries this shape --
+    `CODE_SPAN_RANGE` needs a colon before its digits and a prose reference has
+    none, so a form moved in there is invisible to both rules.
+
+    A reference followed by a second number is a *mention* -- a span, or the
+    before-and-after of a description of how a range rotted -- and is skipped.
+    Nothing has to understand that such a sentence is *about* a rotted range; it
+    only has to count numbers.
+
+    Fences and generated regions are skipped as everywhere else: a document
+    illustrating the form writes it inside a fence on purpose, and a generated
+    region is repaired by regeneration rather than by hand.
+    """
+    found: list[str] = []
+    in_fence = False
+    in_region = False
+    for line in body.splitlines():
+        if FENCE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if REGION_BEGIN.match(line):
+            in_region = True
+            continue
+        if REGION_END.match(line):
+            in_region = False
+            continue
+        if in_region:
+            continue
+        prose = CODE_SPAN.sub(" ", line)
+        for match in PROSE_LINE_REF.finditer(prose):
+            if PROSE_LINE_SPAN.match(prose[match.end() :]):
+                continue
+            found.append(match.group(0).strip())
     return found
 
 
@@ -934,6 +997,29 @@ def validate_one(
             "instead -- a range goes wrong when anything above it is edited, "
             "and this form is invisible to the citation rules because a code "
             "span is not a link",
+        )
+
+    # --- the form that is not a link, a name, or a span ----------------------
+    # The three rules above read link targets, link text and code spans. A
+    # sentence claiming a symbol sits at a numbered line is none of those, so it
+    # was invisible to all three by construction -- and instances survived on
+    # this board while every check passed, missed by three deliberate hand
+    # sweeps in a row, including one performed by the task written to describe
+    # the undercounting.
+    #
+    # `error`, landing directly rather than at `warning` first. The
+    # warn-then-promote posture its neighbour used existed to absorb a large
+    # population; this one is cleared before the rule lands. It is also the only
+    # classification the two-category principle permits: a rotted line reference
+    # is neither advisory nor transient, because no prescribed workflow produces
+    # one.
+    for reference in prose_line_references(body):
+        report(
+            "citation-prose-line-reference",
+            f"{reference!r} is a line reference in prose; name the thing "
+            "instead -- a number goes wrong when anything above it is edited, "
+            "and this form is invisible to the other citation rules because it "
+            "is neither a link nor a code span",
         )
 
     return findings

@@ -230,6 +230,12 @@ rules:
     check: >-
       no bare code span holds a file-and-line-range; that form is not a link, so
       the two citation rules above cannot see it
+  - id: citation-prose-line-reference
+    check: >-
+      no line reference is written as ordinary prose; that form is neither a
+      link nor a code span, so the three rules above cannot see it, and a
+      reference carrying a second number is a mention of a rotted range rather
+      than a citation and is skipped
 
 # Rules this file does not state itself, because another block above already
 # expresses them. Declared anyway so the classification is exhaustive: `rules:`

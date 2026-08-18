@@ -343,14 +343,33 @@ reaches for by accident. Use it only where naming today's symbol would make a
 closed document describe a bug that never existed.
 
 **The reach is narrower than "reported as an error" makes it sound, and the
-limit is the one stated just above.** Both citation rules read the same link
-traversal as `link-target-missing`, so both inherit its skips. Fenced blocks and
-generated regions are meant to be skipped. The code-span skip left a real gap: a
-line range written as a bare code span, with no link around it, is not a link at
-all, so neither rule could ever see it — and instances survived on this board
-while every check passed. `citation-code-span-range` closes that gap with a
+limit is the one stated just above.** The first two citation rules read the same
+link traversal as `link-target-missing`, so both inherit its skips. Fenced blocks
+and generated regions are meant to be skipped. The code-span skip left a real
+gap: a line range written as a bare code span, with no link around it, is not a
+link at all, so neither rule could ever see it — and instances survived on this
+board while every check passed. `citation-code-span-range` closes that gap with a
 separate scan over raw lines, matching a code span that holds a filename, a
 colon and digits. Requiring the digits is what keeps it off the four forms above.
+
+**A fourth rule closes the last of the gap, and what it deliberately leaves
+alone is part of its design rather than an oversight.** A line reference written
+as ordinary prose — a sentence claiming a symbol sits at a numbered line, with
+no link and no backticks — is none of the three things the rules above read, so
+it was invisible to all of them by construction. It rots exactly as a range
+does. `citation-prose-line-reference` scans raw lines for the word followed by a
+single number, and it is an `error` like its neighbours.
+
+**It skips a reference carrying a second number, and that exclusion is
+load-bearing.** A citation points at one line; a sentence *about* how a range
+rotted carries two by its nature — a span, a before-and-after, or a pair. This
+board keeps a population of such sentences on purpose, as the record of how
+citations rot, and counting numbers drops every one of them without an allowlist
+and without anything written down about them. **Do not "tighten" the rule to
+catch them.** A before-and-after joined by a word rather than an arrow is the
+one shape this misses; the safe harbour for it is a code span, which is
+invisible to `citation-code-span-range` too because that rule needs a colon
+before its digits and a prose reference has none.
 
 **This rule is an error while `link-target-missing` beside it is only a warning,
 and the asymmetry is deliberate.** A moved file leaves a legitimate window between
