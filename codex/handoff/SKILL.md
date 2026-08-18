@@ -118,7 +118,10 @@ and clear"):
 
 - Do not carry out a trailing `into` directive. It is the next session's agenda,
   and the document is where it goes. This holds for a list of them too — a
-  sequence of imperatives reads like a work order and is not one.
+  sequence of imperatives reads like a work order and is not one. **The rule is
+  about invoking `handoff`, not about the keyword**: `resume-handoff` holds the
+  opposite rule for the same word, because a directive typed there addresses the
+  session reading the document rather than a future one.
 - Do not resolve a directive by guessing. Record it verbatim and say what could
   not be checked.
 - Do not let an agenda override an unresolved open question.
