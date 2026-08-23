@@ -352,13 +352,51 @@ board while every check passed. `citation-code-span-range` closes that gap with 
 separate scan over raw lines, matching a code span that holds a filename, a
 colon and digits. Requiring the digits is what keeps it off the four forms above.
 
-**A fourth rule closes the last of the gap, and what it deliberately leaves
+**A fourth rule closes the line-reference gap, and what it deliberately leaves
 alone is part of its design rather than an oversight.** A line reference written
 as ordinary prose — a sentence claiming a symbol sits at a numbered line, with
 no link and no backticks — is none of the three things the rules above read, so
 it was invisible to all of them by construction. It rots exactly as a range
 does. `citation-prose-line-reference` scans raw lines for the word followed by a
 single number, and it is an `error` like its neighbours.
+
+**That paragraph used to say "the last of the gap", and the overstatement is
+what kept the next one invisible.** Three rules read line *references*; only one
+read a citation in the prescribed **name** form, and it reached it solely
+through link text. The same citation, naming the same thing, was checked when
+someone wrapped it in link syntax and unchecked when they wrote it as a bare
+code span — which is the ordinary way to mention one in prose. Nothing about
+the citation differed, so a reader had no way to tell the two apart, and an
+instance survived a full audit in which every check passed.
+`citation-code-span-name-missing` closes it, as a fifth rule and an `error`.
+
+**Its resolution is permissive, and the reason is the population rather than
+taste.** A link carries a path; a code span carries a basename. Strict
+resolution — check only a basename unique in the tree — is blind to
+`conftest.py` and `project.yaml`, which are the files a mature board cites most
+often after the scripts themselves, so what it fails to cover is not a random
+tail. The citation is therefore satisfied when the cited name appears in **at
+least one** file of that basename, searched from the board's parent directory
+and skipping generated output. Skipping generated output is load-bearing: a
+tree routinely holds a built copy of the file a citation means, and resolving
+against the copy is the one-canonical-copy rule reappearing as a correctness
+bug.
+
+**Three things it does not cover, written down here so the wording does not
+overstate again by exactly the mechanism this rule exists to fix.**
+
+- **A basename matching no file at all is skipped, not reported.** This mirrors
+  the link rule, which leaves a missing path to `link-target-missing` rather
+  than answering two questions at once. A bare basename has no such companion
+  rule, and that is a known gap rather than a covered case.
+- **Where a basename repeats, the wrong copy can satisfy a citation.** A name
+  from one project's `conftest.py` resolves a citation aimed at another's.
+  Requiring a path does not fix it — every project has a `tests/conftest.py`, so
+  only a full project-relative path disambiguates, which is a convention change
+  rather than a checker change.
+- **The prose form is still unreachable.** A sentence naming a symbol with no
+  backticks and no link is not syntactically a citation, and no rule here reads
+  it. Unlike the four forms above, there is nothing to key on.
 
 **It skips a reference carrying a second number, and that exclusion is
 load-bearing.** A citation points at one line; a sentence *about* how a range

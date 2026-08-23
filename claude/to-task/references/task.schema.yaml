@@ -236,6 +236,13 @@ rules:
       link nor a code span, so the three rules above cannot see it, and a
       reference carrying a second number is a mention of a rotted range rather
       than a citation and is skipped
+  - id: citation-code-span-name-missing
+    check: >-
+      the thing a citation names still exists, when the citation is written as a
+      bare code span rather than as a link; resolution is permissive (the name
+      must appear in at least one file of that basename, searched from the
+      board's parent and skipping generated output), and a basename matching no
+      file is skipped as the link rule skips a missing path
 
 # Rules this file does not state itself, because another block above already
 # expresses them. Declared anyway so the classification is exhaustive: `rules:`

@@ -125,6 +125,23 @@ CODE_SPAN = re.compile(r"`+[^`]*`+")
 # commit-pinned forms do not have there -- so the prescribed forms cannot trip it.
 CODE_SPAN_RANGE = re.compile(r"`([\w.\-/]+\.[A-Za-z0-9]+:\d+(?:-\d+)?)`")
 
+# A citation in the prescribed *name* form, written as a bare code span. The
+# rule above is deliberately blind to it -- digits after the colon are what keep
+# that rule off all four permitted forms -- and `citation-name-missing` is blind
+# to it because `body_links` strips code spans before extracting links. So a
+# citation whose name is false is checked when someone wrapped it in link syntax
+# and unchecked when they did not, with nothing about the citation itself
+# differing. Two colons is the pytest node-id form: matching it here rather than
+# skipping it is what stops a naive split manufacturing a phantom on a name that
+# resolves perfectly well.
+CODE_SPAN_NAME = re.compile(r"`([\w.\-/]+\.[A-Za-z0-9]+):{1,2}([^`]+)`")
+
+# What separates this rule from `citation-code-span-range`: the two partition the
+# code-span population rather than overlapping it. A name that is only digits is
+# a line range and belongs to that rule alone, or one defect would be reported
+# twice and the severity partition would stop being readable.
+BARE_RANGE_NAME = re.compile(r"^\d+(?:-\d+)?$")
+
 # A line reference written as ordinary prose. This is the form the three rules
 # above cannot reach for three independent reasons: it is not a link target, not
 # link text, and not a code span. It rots exactly as a range does -- an edit
@@ -164,6 +181,35 @@ DERIVED_FOLDERS = (
 )
 
 REQUIRED_SECTIONS = ("why this exists", "plan", "open questions", "owner")
+
+# Directories the code-span resolution index never descends into. A code span
+# carries a basename with no path, so resolving one means searching the tree the
+# board sits in -- and a tree routinely holds generated copies of the very files
+# a citation means. Resolving against a copy is the one-canonical-copy rule
+# reappearing as a correctness bug: measured on this board, indexing generated
+# output put 60 citations on an ambiguous basename where excluding it puts 20,
+# and the difference was entirely installed duplicates of three bundled scripts.
+# Version-control and cache directories are skipped for cost rather than
+# correctness -- descending .git dominates the run and can resolve nothing.
+RESOLUTION_SKIP_DIRS = frozenset(
+    {
+        ".git",
+        ".hg",
+        ".svn",
+        ".claude",
+        ".codex",
+        "build",
+        "dist",
+        "node_modules",
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".tox",
+        ".venv",
+        "venv",
+    }
+)
 
 # The generated indexes. Named here rather than in generate_index.py so the
 # script that writes one and the skip-set that must ignore it cannot disagree:
@@ -466,6 +512,131 @@ def code_span_line_ranges(body: str) -> list[str]:
     return found
 
 
+def code_span_name_citations(body: str) -> list[tuple[str, str, str]]:
+    """(whole span, file part, name) for name-form citations in bare code spans.
+
+    Its own traversal for the reason its two siblings are: `body_links` strips
+    code spans before extracting links and has to keep doing so, and one pass
+    answering two questions about what counts as prose is the drift that
+    function's docstring exists to prevent.
+
+    A name that is only digits is dropped rather than returned. That form is a
+    line range and belongs to `citation-code-span-range` alone -- the two rules
+    partition the code-span population, and reporting one span under both would
+    double-count a single defect.
+
+    Fences and generated regions are skipped as everywhere else: a document
+    illustrating a retired citation writes it inside a fence on purpose, which
+    is the exemption this rule's own specifying task needed.
+    """
+    found: list[tuple[str, str, str]] = []
+    in_fence = False
+    in_region = False
+    for line in body.splitlines():
+        if FENCE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if REGION_BEGIN.match(line):
+            in_region = True
+            continue
+        if REGION_END.match(line):
+            in_region = False
+            continue
+        if in_region:
+            continue
+        for match in CODE_SPAN_NAME.finditer(line):
+            name = match.group(2).strip()
+            if not name or BARE_RANGE_NAME.match(name):
+                continue
+            found.append((match.group(0), match.group(1), name))
+    return found
+
+
+def name_appears(name: str, source: str) -> bool:
+    """Whether a cited name occurs in a file as a whole word.
+
+    Shared by the link-form rule and the code-span rule rather than written
+    twice, because the whole premise of the second is that the same citation is
+    checked the same way whichever syntax it was written in. Two copies of this
+    test could drift into disagreeing, which would make the pair of rules answer
+    differently on identical text.
+
+    The guards are non-word lookarounds rather than `\\b`, so a name ending in a
+    non-word character -- a key path, a heading, a phrase -- still anchors.
+    """
+    return bool(re.search(rf"(?<!\w){re.escape(name)}(?!\w)", source))
+
+
+def basename_index(root: Path) -> dict[str, list[Path]]:
+    """Every file under `root` grouped by basename, pruned of generated output.
+
+    A code span carries a basename and no path, so resolving one needs a search
+    of the tree the board sits in. Directories are pruned on the way down rather
+    than filtered afterwards: `rglob` would descend the whole of `.git` to throw
+    every result away, which dominates the run on any mature repository.
+    """
+    index: dict[str, list[Path]] = {}
+
+    def walk(directory: Path) -> None:
+        try:
+            entries = sorted(directory.iterdir())
+        except OSError:
+            return
+        for entry in entries:
+            if entry.name in RESOLUTION_SKIP_DIRS:
+                continue
+            if entry.is_dir():
+                walk(entry)
+            elif entry.is_file():
+                index.setdefault(entry.name, []).append(entry)
+
+    walk(root)
+    return index
+
+
+class NameResolver:
+    """Resolves a code-span citation permissively: any file of that basename.
+
+    Permissive rather than strict, decided on the measured population. Strict
+    resolution -- check only a basename unique in the tree -- is blind to
+    `conftest.py` and `project.yaml`, which are the files this kind of board
+    cites most often after the scripts themselves, so the population it fails to
+    cover is not a random tail.
+
+    The weakening is bounded and visible: where a basename repeats, a name from
+    the wrong copy can satisfy a citation aimed at another. That is accepted
+    because the alternative in the same measurement was worse, and because
+    requiring a path does not fix it -- every project here has a
+    `tests/conftest.py`, so only a full project-relative path disambiguates.
+
+    Contents are cached because one file is a candidate for many citations, and
+    a board cites the same handful of scripts repeatedly.
+    """
+
+    __slots__ = ("_index", "_cache")
+
+    def __init__(self, root: Path) -> None:
+        self._index = basename_index(root)
+        self._cache: dict[Path, str] = {}
+
+    def candidates(self, file_part: str) -> list[Path]:
+        """Files whose basename matches the citation's, ignoring any path."""
+        return self._index.get(file_part.rsplit("/", 1)[-1], [])
+
+    def resolves(self, file_part: str, name: str) -> bool:
+        return any(name_appears(name, self._read(path)) for path in self.candidates(file_part))
+
+    def _read(self, path: Path) -> str:
+        if path not in self._cache:
+            try:
+                self._cache[path] = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                self._cache[path] = ""
+        return self._cache[path]
+
+
 def prose_line_references(body: str) -> list[str]:
     """Line references written as ordinary prose, carrying a single number.
 
@@ -649,6 +820,7 @@ def validate_one(
     known_ids: set[str],
     statuses: dict[str, str],
     resolved_ids: frozenset[str],
+    resolver: NameResolver,
 ) -> list[Finding]:
     rel = path.relative_to(board).as_posix()
     findings: list[Finding] = []
@@ -968,7 +1140,7 @@ def validate_one(
             source = cited.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        if not re.search(rf"(?<!\w){re.escape(name)}(?!\w)", source):
+        if not name_appears(name, source):
             report(
                 "citation-name-missing",
                 f"citation {text!r} names {name!r}, which does not appear in "
@@ -997,6 +1169,40 @@ def validate_one(
             "instead -- a range goes wrong when anything above it is edited, "
             "and this form is invisible to the citation rules because a code "
             "span is not a link",
+        )
+
+    # --- the permitted form the link rule cannot reach -----------------------
+    # The companion to `citation-name-missing`, not a relaxation of it. That
+    # rule reads link text; this one reads the same citation written as a bare
+    # code span, which is the ordinary way to mention one in prose. Nothing
+    # about the citation differs between the two -- only whether someone wrapped
+    # it in link syntax -- so the gap was invisible to a reader by construction,
+    # which is how an instance survived a full audit in which every check passed.
+    #
+    # A basename that exists in no file at all is skipped rather than reported,
+    # mirroring the link rule's decision that a missing path is
+    # link-target-missing's finding. Reporting it here would make this rule
+    # answer two questions where its counterpart answers one, and the premise of
+    # the pair is that the same citation is checked the same way either way.
+    #
+    # `error`, like every rule in this family. Under the two-category principle
+    # in references/board-model.md a warning is for a rule that is advisory or
+    # transient, and this is neither: no prescribed workflow produces a citation
+    # naming something that does not exist, so there is no window to tolerate.
+    for span, file_part, name in code_span_name_citations(body):
+        if COMMIT_PIN.match(name):
+            # Recognised, never resolved. See board-model.md.
+            continue
+        if not resolver.candidates(file_part):
+            continue  # a basename nothing matches is not this rule's finding
+        if resolver.resolves(file_part, name):
+            continue
+        report(
+            "citation-code-span-name-missing",
+            f"{span} names {name!r}, which appears in no file called "
+            f"{file_part.rsplit('/', 1)[-1]!r} -- repair it to the current name, "
+            "or pin it to the commit it was true at if the document deliberately "
+            "describes code that has since been superseded",
         )
 
     # --- the form that is not a link, a name, or a span ----------------------
@@ -1148,9 +1354,21 @@ def validate_board(board: Path) -> list[Finding]:
                 )
             )
 
+    # Built once and shared, not per task. A board cites the same handful of
+    # files from dozens of documents, so a per-task index would walk the tree
+    # once per task and re-read every candidate.
+    #
+    # Rooted at the board's *parent*, because every file a board cites sits
+    # outside the board -- a board-rooted index would resolve nothing and report
+    # every code-span citation as unchecked, which reads identically to the rule
+    # being broken.
+    resolver = NameResolver(board.parent)
+
     findings: list[Finding] = []
     for path in paths:
-        findings.extend(validate_one(path, board, known_ids, statuses, resolved_ids))
+        findings.extend(
+            validate_one(path, board, known_ids, statuses, resolved_ids, resolver)
+        )
     return findings + structural
 
 
