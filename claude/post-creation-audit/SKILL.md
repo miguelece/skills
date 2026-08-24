@@ -74,6 +74,13 @@ Order matters: the audit's own corrections (tests, docs, cleanup) are part of th
 work and get committed alongside it, grouped by kind rather than dumped into one
 "address review" commit.
 
+## Reporting the audit
+
+Shape the report per [references/report-form.md](references/report-form.md).
+The honesty rules below govern what may be claimed; that file governs the form
+the claim takes — and its guardrails matter here, because a shortened audit
+report is exactly where a "not checked" turns into silence.
+
 ## Guardrails
 
 - Do not report the audit passed on a section you did not actually walk. Say "not
@@ -91,3 +98,5 @@ work and get committed alongside it, grouped by kind rather than dumped into one
 
 - Commit format, type vocabulary, splitting rules, authorship:
   [references/commit-convention.md](references/commit-convention.md)
+- Emphasis, headings, and what must survive a shortened report:
+  [references/report-form.md](references/report-form.md)

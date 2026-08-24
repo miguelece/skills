@@ -129,6 +129,11 @@ Report, in this order:
    either. When the document records no agenda, there is nothing to contradict,
    so the typed clause simply is the agenda and no warning is due.
 
+Shape the check-in per
+[references/report-form.md](references/report-form.md). The ordering above is
+fixed; what that file governs is the form — emphasis, headings, and the
+guardrails that keep a shortened report honest.
+
 Then wait. An unnecessary check-in costs one message; acting on a stale premise
 costs whatever the session then builds on it.
 

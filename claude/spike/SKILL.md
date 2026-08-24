@@ -73,3 +73,8 @@ Report, in this order: the question, what was built and where, the evidence with
 real numbers, the answer, anything that contradicted the premise, and the
 disposition you took. If the box ran out first, say so and say what would settle
 it.
+
+Shape that report per [references/report-form.md](references/report-form.md) —
+ration emphasis, add headings once it runs long, and never let a hedge or a
+negation be dropped to make it shorter. The evidence and the caveats are most of
+what a spike report is worth.
