@@ -44,7 +44,9 @@ value of a constant.
    constrain which others. Note which are code-answerable and which need the user.
 3. **Close the code-answerable ones yourself.** Investigate, then record the answer
    with its citation and `RESOLVED`. Report what you closed rather than asking about
-   it.
+   it, shaped per [references/report-form.md](references/report-form.md) — this
+   report sits between the user and the next question, so it earns its headings
+   and it must not drop a hedge.
 4. **Interview relentlessly on the rest.** One branch at a time, to a real decision —
    not a preference gesture. Push back when an answer is ambiguous or when it
    contradicts something already settled. Follow each answer to the questions it
@@ -91,3 +93,5 @@ value of a constant.
 - The state model and folder mapping:
   [references/board-model.md](references/board-model.md)
 - Field-by-field contract: [references/task.schema.yaml](references/task.schema.yaml)
+- Emphasis, headings, and what must survive a shortened report:
+  [references/report-form.md](references/report-form.md)

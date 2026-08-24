@@ -46,7 +46,9 @@ Then apply the rules that keep a set honest:
   owner-gated work last, so its gate has the longest possible time to clear.
 
 Present the proposed set, the streams, and the excluded tasks with the reason each
-was left out. Get agreement before starting.
+was left out. Get agreement before starting. Shape that presentation per
+[references/report-form.md](references/report-form.md) — it is the longest report
+this skill emits and the one the user decides from.
 
 ## The plan document
 
@@ -107,3 +109,5 @@ its execution log intact.
   [references/board-model.md](references/board-model.md)
 - Field-by-field contract: [references/task.schema.yaml](references/task.schema.yaml)
 - Plan document template: [assets/task.md](assets/task.md)
+- Emphasis, headings, and what must survive a shortened report:
+  [references/report-form.md](references/report-form.md)

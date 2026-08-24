@@ -52,7 +52,10 @@ Set `status: in-progress` and update `updated` before starting.
    skip caching, and disable optimizations. Anything you measure in counts must be
    measured against a production-equivalent build.
 7. **Verify against the budget from step 2.** Every assertion, run, with the result
-   recorded. Report shortfalls as shortfalls.
+   recorded. Report shortfalls as shortfalls, shaped per
+   [references/report-form.md](references/report-form.md) — a shortfall is a
+   negation, and that file's first guardrail is the one that keeps it from being
+   trimmed away.
 8. **Handle what implementation turns up.** Work discovered mid-task that the task
    should not absorb gets split with `to-follow-on`, not quietly added.
 
@@ -106,3 +109,5 @@ Set `status: in-progress` and update `updated` before starting.
 - The state model and folder mapping:
   [references/board-model.md](references/board-model.md)
 - Field-by-field contract: [references/task.schema.yaml](references/task.schema.yaml)
+- Emphasis, headings, and what must survive a shortened report:
+  [references/report-form.md](references/report-form.md)

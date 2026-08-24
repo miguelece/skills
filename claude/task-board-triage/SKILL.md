@@ -104,6 +104,11 @@ Present, in this order:
 - Tasks whose status you changed, with the evidence for each.
 - Anything you could not verify, stated as unverified rather than assumed.
 
+Shape that report per [references/report-form.md](references/report-form.md).
+The order above is fixed; that file governs the form — and its guardrails carry
+the weight here, because "could not verify" is exactly the line that disappears
+when a report is shortened.
+
 ## Guardrails
 
 - Do not batch-fix folder mismatches without reading each task. The mismatch is
@@ -122,3 +127,5 @@ Present, in this order:
 - The state model and folder mapping:
   [references/board-model.md](references/board-model.md)
 - Field-by-field contract: [references/task.schema.yaml](references/task.schema.yaml)
+- Emphasis, headings, and what must survive a shortened report:
+  [references/report-form.md](references/report-form.md)
