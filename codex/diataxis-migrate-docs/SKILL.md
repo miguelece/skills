@@ -55,7 +55,10 @@ scripts exactly as described there.
    configuration affected by each move.
 7. Present one concrete plan listing every create, move, modify, retire, archive,
    redirect, and link-update path; baseline failures; blocked claims; dirty-path
-   protections; verification commands; and bounded resumable batches.
+   protections; verification commands; and bounded resumable batches. Shape that
+   presentation per [references/report-form.md](references/report-form.md); it is
+   long, it is what approval is given against, and none of its blockers may be
+   compressed away.
 8. Ask for explicit approval of that exact plan. Approval is required before
    creating `.docs-migration`, copying originals, changing a non-doc config file,
    or making any other write. A general request to "migrate the docs" is not

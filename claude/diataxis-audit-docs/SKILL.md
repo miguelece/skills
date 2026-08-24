@@ -54,7 +54,9 @@ or a plausible explanation as proof of audit completion.
    check instead; do not claim broader verification.
 7. Present findings and a concrete remediation plan listing every affected path,
    proposed claim resolution, ledger disposition, verification command, dirty
-   path protection, and whether any blocker requires user evidence.
+   path protection, and whether any blocker requires user evidence. Shape that
+   presentation per [references/report-form.md](references/report-form.md); a
+   blocking finding must never be shortened into a caveat.
 8. Wait for explicit approval before any write.
 
 ## Remediate and verify

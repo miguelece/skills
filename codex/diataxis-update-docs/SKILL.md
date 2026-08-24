@@ -58,7 +58,10 @@ proposal hopes will ship.
 6. Record probable code defects as durable findings with evidence. Do not write
    documentation that presents uncertain reachability as shipped.
 7. Present exact creates/modifications, evidence, excluded proposals, checks,
-   dirty-path protections, and baseline advancement rules. Wait for approval.
+   dirty-path protections, and baseline advancement rules. Shape that
+   presentation per [references/report-form.md](references/report-form.md); the
+   excluded proposals and their reasons are the part a shortened report loses.
+   Wait for approval.
 
 ## Apply and verify
 

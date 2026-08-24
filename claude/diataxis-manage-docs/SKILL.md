@@ -61,7 +61,9 @@ reason; it does not always require an owner decision.
 ## Plan and orchestration
 
 1. Present selected domain, locale, maturity evidence, exclusions, baseline
-   failures, blockers, proposed phase sequence, and approval gates.
+   failures, blockers, proposed phase sequence, and approval gates. Shape that
+   presentation, and every later phase report, per
+   [references/report-form.md](references/report-form.md).
 2. Wait for approval.
 3. Invoke or instruct the applicable phase skill using the same
    `.docs-migration/manifest.yaml`. The phase skill performs its own read-only
