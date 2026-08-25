@@ -320,6 +320,14 @@ A citation into source is written `filename:name`, and it asserts that **the nam
 thing still exists in the file the link points at**. A line range is not a
 citation, and one is reported as an error.
 
+Those are two rules rather than one. `citation-name-missing` reports a citation
+whose named thing no longer resolves in the file it points at, and
+`citation-line-range` reports a citation that gives a line range where a name
+belongs. **Neither gets a passage of its own below, and that is a judgement
+rather than an omission**: a line range is not a citation and a named thing must
+exist, so there is nothing further to explain. The three rules after them earned
+their length by carrying exclusions a reader cannot infer.
+
 A range rots without anything moving or being deleted. An edit *above* the cited
 region shifts every number below it while the path, the file, and the quoted prose
 all stay valid, so nothing reports a problem — nothing is broken except the claim.
@@ -453,14 +461,59 @@ the channel being measured. The principle above does not depend on the answer.
 
 ## What the scripts own
 
-- `scripts/validate_board.py` — parses every task, checks the schema, the folder
-  mapping, the gate/status rule, the required sections, cross-reference
-  resolution, the dependency graph, and the relative link targets each body
-  cites. Exits non-zero with a list of findings; link targets are the one check
-  that warns rather than fails.
+- `scripts/validate_board.py` — parses every task and reports findings by rule
+  id, enumerated by family below. Exits non-zero when any finding is an error.
 - `scripts/generate_index.py` — rewrites every generated region: the `README.md`
   and `ARCHIVE.md` indexes, the `TREE.md` composition view, and each opted-in task's
   in-place `## Slices` rollup. `--check` reports staleness without writing.
+
+**Every rule the validator reports is named here, and the enumeration is the
+point.** A summary that describes the checking without naming the checks is how
+the whole citation family went unmentioned across two separate rule additions
+while three of its five rules were being explained at length four sections
+above. The ids sit inside the prose rather than replacing it; what is pinned is
+that each one appears, not where.
+
+**Frontmatter.** That the block is there at all (`frontmatter-missing`) and that
+no value spans more than one line (`frontmatter-multiline`), then each field in
+turn: `id-missing`, `id-format`, `title-missing`, `status-invalid`,
+`gate-invalid`, `priority-invalid`, `category-missing`, `revisit-invalid` and
+`kind-invalid` — plus `frontmatter-unknown-key` for anything unrecognised that
+has crept in.
+
+**The document's shape.** The id equals the filename stem
+(`id-matches-filename`) and no two tasks declare the same one (`id-duplicate`);
+the four required body sections are present, with the two conditional ones added
+for `revisit` and `done` (`section-missing`); the file sits in a directory the
+mapping knows (`folder-unknown`) and in the one its own frontmatter derives
+(`folder-matches-frontmatter`).
+
+**Lifecycle coherence — the rules the field declarations cannot state on their
+own.** A gate means the work is unfinished (`gate-implies-unfinished`); a draft
+owes at least one unresolved question and everything past draft owes none
+(`draft-has-open-questions`, `scoped-has-no-unresolved`); `revisit` is only for
+finished work (`revisit-implies-done`); a finished task owes a real outcome
+rather than a label (`outcome-required`, `outcome-too-thin`); a superseded one
+owes a successor that resolves (`superseded-has-successor`); and `updated` never
+precedes `created` (`updated-before-created`).
+
+**The cross-reference graph.** Every id in `parent`, `part-of`, `blocked-by`,
+`supersedes` and `superseded-by` resolves (`references-resolve`); neither
+relation names its own task (`part-of-self`, `blocked-by-self`); neither graph
+closes a cycle (`part-of-cycle`, `blocked-by-cycle`); a blocker that was
+replaced is repointed at its successor (`blocker-superseded`); a composition
+chain deeper than three is flagged (`part-of-too-deep`); and a done spec still
+carrying open descendants is noted (`spec-done-open-tickets`).
+
+**What a body claims about files outside itself.** The relative links each task
+cites (`link-target-missing`), and the five citation rules described above:
+`citation-line-range`, `citation-name-missing`, `citation-code-span-range`,
+`citation-prose-line-reference` and `citation-code-span-name-missing`.
+
+**Three of those rules report at `warning` rather than failing the run**, not
+one: `link-target-missing` as transient, `part-of-too-deep` and
+`spec-done-open-tickets` as advisory. The severity section above is where the
+two categories are separated and why.
 
 Narrative outside those blocks — retrospectives, why a decision was made, what a
 session found — is hand-written and is never touched by the generator. That
