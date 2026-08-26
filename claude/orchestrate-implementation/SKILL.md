@@ -102,6 +102,10 @@ its execution log intact.
   criterion. Report the set as partially complete and name what is outstanding.
 - Do not push to a remote unless the user explicitly asks.
 - Do not carry a task forward into the next set by default. Re-run selection.
+  A queue recorded per [references/session-queue.md](references/session-queue.md)
+  supplies an ordering, never a pre-approved set — an item reaching the front of
+  it is a claim about priority and never about eligibility, so selection still
+  runs. This guardrail is unchanged by that file.
 
 ## Resources
 
@@ -111,3 +115,5 @@ its execution log intact.
 - Plan document template: [assets/task.md](assets/task.md)
 - Emphasis, headings, and what must survive a shortened report:
   [references/report-form.md](references/report-form.md)
+- Ordering work across sessions, and where a boundary belongs:
+  [references/session-queue.md](references/session-queue.md)
