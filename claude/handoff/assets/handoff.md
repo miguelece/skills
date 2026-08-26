@@ -24,6 +24,26 @@ questions below outranks this agenda — a directive never settles a question th
 writing session left open. If the agenda needs a choice the user has not made,
 say that the next session must ask before starting.>
 
+### What is pending
+
+<Always present, whether or not a directive was given. The ranked shortlist of
+what the next session could actually pick up. This is what makes a directive
+with an open referent — `/handoff into continuing` — satisfiable: it names the
+candidates, so the reading session does not rebuild them from the board.>
+
+<Not the same as two sections below that look similar. *Loose ends* is
+exhaustive and unranked; *The task → Not started* is a status list. This is the
+filtered, ordered subset that is startable now, and it is worth its own slot
+precisely because neither of those answers "what should I do next".>
+
+- **<candidate>** — <why it is startable, what it costs, and its gate: ungated,
+  or waiting on a named person or task. Name the owner when it is not
+  engineering's to take.>
+
+<Then, separately, what is deliberately NOT a candidate and why — parked,
+deferred, or someone else's. A reader who cannot see why something was excluded
+will re-propose it, which is the cost this list exists to stop paying.>
+
 ---
 
 ## Orientation

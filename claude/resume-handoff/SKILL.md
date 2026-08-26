@@ -62,7 +62,7 @@ by another tool, will be missing some.
 
 | Section | What to take from it |
 | --- | --- |
-| `Next session — start here` | The recorded agenda: the verbatim directive, what the writing session resolved it to, and the preconditions for acting. |
+| `Next session — start here` | The recorded agenda: the verbatim directive, what the writing session resolved it to, and the preconditions for acting. Its `What is pending` subsection is the ranked shortlist of candidates — carry it into the check-in rather than rebuilding one. When the document omits it, say so and stop; do not build the list yourself. |
 | `Orientation` | Which repositories exist and where. This is the list the cheap tier iterates over. |
 | `The task` | What is done, what is in progress and exactly where it stopped, and what is not started. |
 | `Open questions — must be resolved before proceeding` | Blockers. These **outrank the agenda** — carry any that are unresolved into the check-in. |

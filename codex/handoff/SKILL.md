@@ -34,6 +34,12 @@ Start from [assets/handoff.md](assets/handoff.md).
    invocation carried a trailing directive (see below). Record it **verbatim**,
    then what you verified it resolves to, then the preconditions for acting on
    it. When there was no directive, say so — do not drop the section.
+   It also carries a `### What is pending` subsection: the ranked shortlist of
+   what could be picked up next, each candidate with its gate and its owner,
+   and separately what is deliberately not a candidate. Write it **whether or
+   not** a directive was given. Its value does not depend on one — gating it on
+   a directive is what left three consecutive sessions rebuilding the list by
+   hand.
 2. **Orientation.** Where the work lives. A directory tree if the layout is not
    obvious. Which repository, which branch, whether anything is uncommitted.
 3. **The task.** What is being done and how far it got. Split cleanly into done,
@@ -75,6 +81,14 @@ for the document, not a work order for now:
 Record the clause verbatim under *Next session — start here*, then add what you
 verified it resolves to. Both halves matter — the verbatim text preserves what
 was asked, the resolution saves the fresh session from re-deriving it.
+
+A clause naming no concrete work — `/handoff into continuing` — is **satisfied,
+not unresolved**. Its referent is the *What is pending* enumeration the section
+carries anyway, so record the clause verbatim and resolve it to that list. The
+directive means *enumerate what is pending, and ask*; the enumeration is the
+answer to it rather than a substitute for one. Recording it as an agenda you
+failed to resolve mislabels a satisfied directive, which is what happened three
+sessions running.
 
 Executing the directive instead is the failure this section exists to prevent,
 and it is expensive exactly when it happens: the invocation exists *because*
