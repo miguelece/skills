@@ -39,7 +39,9 @@ Start from [assets/handoff.md](assets/handoff.md).
    and separately what is deliberately not a candidate. Write it **whether or
    not** a directive was given. Its value does not depend on one — gating it on
    a directive is what left three consecutive sessions rebuilding the list by
-   hand.
+   hand. For how to order those candidates, and for what a stopping point must
+   buy beyond context relief, follow
+   [references/session-queue.md](references/session-queue.md).
 2. **Orientation.** Where the work lives. A directory tree if the layout is not
    obvious. Which repository, which branch, whether anything is uncommitted.
 3. **The task.** What is being done and how far it got. Split cleanly into done,
@@ -150,3 +152,5 @@ and clear"):
 ## Resources
 
 - Template: [assets/handoff.md](assets/handoff.md)
+- Ordering work across sessions, and where a boundary belongs:
+  [references/session-queue.md](references/session-queue.md)
