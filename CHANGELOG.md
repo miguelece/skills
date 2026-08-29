@@ -16,6 +16,18 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-08-29 — task-board-management
+
+- **Behaviour change.** `references/report-form.md` gains a fourth preservation
+  guardrail: never fold an open question into the prose around it. An item the
+  reader has to decide something about goes under its own heading, carrying what
+  was observed, what was deliberately not done about it, and the decision being
+  asked for. Here it reaches `task-board-triage`, `task-interview`,
+  `focused-implementation` and `orchestrate-implementation`.
+- No skill body in this project changed. The guardrail arrives through the
+  shared reference those four already cite, which is why a publish with no
+  source edit of its own still changes behaviour.
+
 ### 2026-08-29 — quality-of-life (report form and `+question`)
 
 - **Behaviour change.** `post-creation-audit` and `resume-handoff` now separate
