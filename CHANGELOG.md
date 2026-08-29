@@ -16,6 +16,17 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-08-29 — diataxis-doc-migration
+
+- **Behaviour change.** `references/report-form.md` gains a fourth preservation
+  guardrail: never fold an open question into the prose around it. An item the
+  reader has to decide something about goes under its own heading, carrying what
+  was observed, what was deliberately not done about it, and the decision being
+  asked for. Here it reaches all four migration skills.
+- No skill body in this project changed. This is the third and last publish
+  carrying the same shared-reference edit; the guardrail is now live in all
+  eleven skills that cite `report-form.md`.
+
 ### 2026-08-29 — task-board-management
 
 - **Behaviour change.** `references/report-form.md` gains a fourth preservation

@@ -78,10 +78,12 @@ produced heading medians of 0.0 and 3.5 on one prompt set and 4.0 and 4.0 on
 another. A heading floor measured on one body of material says nothing about
 another, so no figure here should be carried across corpora.
 
-## Always — the three preservation guardrails
+## Always — the four preservation guardrails
 
 These are not structuring rules and they are not in tiers. They hold whenever a
-report is made shorter, by any means, and they cost nothing.
+report is made shorter, by any means, and they cost nothing. The fourth holds
+even where nothing was shortened, because a question can be folded into prose on
+the first pass.
 
 1. Never drop `not`, `never`, `no`, `only` or `except`. On this material the
    inversion risk is about eleven times the hedge surface, and a dropped
@@ -91,11 +93,28 @@ report is made shorter, by any means, and they cost nothing.
 3. Never strip a hedge to sound more certain than the evidence supports.
    Verbosity tracks uncertainty, so deleting the hedge hides the signal without
    improving the answer.
+4. Never fold an open question into the prose around it. An item the reader has
+   to decide something about goes under its own heading, carrying what was
+   observed, what was deliberately not done about it, and the decision being
+   asked for. Absorbed into a paragraph it reads as an observation, and an
+   observation asks nothing of anyone.
 
 The third is the one that fails quietly. In a measured round trip, every item
 carrying a modal marker lost it while purely factual items survived intact — an
 assumption the writer had gone on to overturn came back as a current belief.
 Expansion cannot restore a distinction that deletion destroyed.
+
+The fourth is the newest, and it is the only one of the four that rests on a
+report rather than a measurement. It sits in this untiered category rather than
+beside the two rules above because those are tiered by evidence and this one has
+none to declare — and because the failure it guards is the second guardrail's
+shape rather than a new one: a category of content whose meaning does not
+survive being absorbed into a paragraph.
+
+What qualifies is narrow on purpose. The test is whether the reader would have
+to decide something, not whether the session happened to notice something.
+Applied to anything noticed, this either captures nothing or captures the whole
+report, and both failures look like compliance.
 
 ## Not shipped — answer-first ordering
 
