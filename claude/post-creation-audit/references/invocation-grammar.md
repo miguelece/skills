@@ -72,6 +72,33 @@ The obligation that comes with redefining a base: it is visible in the skill's
 `description`, not only in its body. Someone who invokes the skill the way they
 always have must be able to see that it now stops short.
 
+### A flag that adds a side-effecting capability confirms first
+
+Nothing constrains who composes an invocation. A model invoking a skill writes
+its own argument string, so a flag on the line is not evidence that a person
+asked for what it adds, and a flag that adds a side-effecting capability hands
+the model whatever that capability reaches.
+
+No declarative key can close that. Frontmatter is static, so it cannot vary with
+who typed the argument: restricting the capability removes it from the user as
+well, and disabling model invocation removes the safe default along with it.
+Every declarative option is all-or-nothing, which is why this rule is prose.
+
+So before an operation that cannot be taken back, ask. **Confirm before pushing
+to a public remote.** Reversible operations do not ask — a commit can be
+reverted and a merge can be undone, and a prompt in front of every one of them
+is how a confirmation stops being read at all.
+
+Key the confirmation on the operation, never on who composed the invocation.
+Keying it on the invoker means keying it on the model's own account of who typed
+the flag, and a model composing its own invocation is exactly the case the rule
+exists for.
+
+Coverage is deliberately partial. `+git` implies `+commit`, so an escalated
+invocation has already committed by the time it reaches the push. The
+confirmation does not reach that commit, and the gap is accepted rather than
+overlooked: committing is reversible and publishing is not.
+
 ### A flag means the same thing in every holder
 
 `+question` is held by `post-creation-audit` and `resume-handoff` and means the

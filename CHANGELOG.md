@@ -16,6 +16,27 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-08-29 — quality-of-life (push confirmation)
+
+- **Behaviour change.** `post-creation-audit` now confirms before pushing to a
+  public remote under `+git`. A flag on the invocation line is not evidence that
+  a person asked for the push — a model composing its own invocation writes its
+  own flags — and a push to a public remote cannot be taken back. This narrows
+  the first `quality-of-life` entry below, which said nothing but a branch
+  deletion asks.
+- Visibility is resolved by probing `gh repo view --json visibility`, and by
+  asking when the probe cannot answer. Only a positive *private* answer
+  suppresses the confirmation: a failed, errored or unauthenticated probe is not
+  evidence of privacy, and reading it as one would disable the safeguard in
+  exactly the case it exists for.
+- Coverage is push only. `+git` implies `+commit`, so an escalated invocation
+  has already committed by the time it reaches the push. That gap is accepted
+  rather than overlooked — committing is reversible and publishing is not.
+- `references/invocation-grammar.md` states the general rule behind it: a flag
+  that adds a side-effecting capability confirms before an operation that cannot
+  be taken back, keyed on the operation and never on who composed the
+  invocation. It reaches `handoff`, `resume-handoff` and `post-creation-audit`.
+
 ### 2026-08-29 — diataxis-doc-migration
 
 - **Behaviour change.** `references/report-form.md` gains a fourth preservation
