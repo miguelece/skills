@@ -1,6 +1,6 @@
 ---
 name: post-creation-audit
-description: 'Close out a work session with a repo hygiene pass — confirm new behavior is tested at the right levels, update every document the change contradicted, and delete mid-development artifacts. Use when asked to "audit the session", "do a post-creation audit", "wrap this up", "run repo hygiene", or before finishing a block of work. It audits and stops by default: "/post-creation-audit +commit" also lands the session as clean commits, and "/post-creation-audit +git" adds merging, pushing, worktrees and pruning stale branches.'
+description: 'Close out a work session with a repo hygiene pass — confirm new behavior is tested at the right levels, update every document the change contradicted, and delete mid-development artifacts. Use when asked to "audit the session", "do a post-creation audit", "wrap this up", "run repo hygiene", or before finishing a block of work. It audits and stops by default: "/post-creation-audit +commit" also lands the session as clean commits, and "/post-creation-audit +git" adds merging, pushing, worktrees and pruning stale branches. "/post-creation-audit +question" asks about what it noticed but did not fix.'
 ---
 
 # Post-creation audit
@@ -17,6 +17,7 @@ was found.
 | --- | --- |
 | `+commit` | step 4 — splits the session into commits |
 | `+git` | implies `+commit`, and adds step 5 — merge, push, worktrees, pruning |
+| `+question` | asks each *Needs a decision* item instead of listing it |
 
 `+git` implies `+commit` because a mode that merges and pushes but does not
 commit is incoherent. An implication only ever adds; no flag ever switches
@@ -142,6 +143,38 @@ The honesty rules below govern what may be claimed; that file governs the form
 the claim takes — and its guardrails matter here, because a shortened audit
 report is exactly where a "not checked" turns into silence.
 
+### Needs a decision
+
+This skill produces decidable items by construction. Its boundaries forbid
+fixing what it notices, so every audit that notices anything ends holding a
+residue it may not act on. Left in the body of the report those read as
+observations, and an observation asks nothing of anyone.
+
+End the report with a section under this heading, **even without `+question`**,
+carrying one entry per item:
+
+- what was observed, and where;
+- what was deliberately not done about it, and under which boundary;
+- the decision being asked for.
+
+**The test for inclusion is whether the reader would have to decide
+something** — not whether the audit happened to notice something. Applied to
+anything noticed, this either captures nothing or captures the whole report.
+Everything else stays where it was.
+
+**An empty section is omitted, not written empty.** Nothing to decide is a
+legitimate result, and a heading over nothing trains the reader to skip the one
+that matters.
+
+`+question` adds the ask. Put each item to the user as its own answerable
+question — the observation, what was not done, and the decision — rather than
+listing them for a reply in prose. **State the form, never a tool:** a harness
+with a structured prompt renders it that way, one without asks in numbered
+prose, and the skill reads identically on both.
+
+**It changes nothing about which items are listed** — the separation above
+happens either way.
+
 ## Guardrails
 
 - Do not report the audit passed on a section you did not actually walk. Say "not
@@ -164,6 +197,12 @@ report is exactly where a "not checked" turns into silence.
 - Do not turn that confirmation into a confirm-everything mode. Commit, merge
   and push do not ask; only deletion does, and the reason is that only deletion
   is irreversible.
+- Do not gate the *Needs a decision* section on `+question`. The flag adds the
+  ask and never the separation; gating it would make the flag subtract, and
+  would drop the section in exactly the sessions where nobody thought to type
+  it.
+- Do not fold a decidable item back into the body of the report because the
+  section looks thin. One entry under its own heading is the point.
 
 ## Resources
 

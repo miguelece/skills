@@ -16,6 +16,27 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-08-29 — quality-of-life (report form and `+question`)
+
+- **Behaviour change.** `post-creation-audit` and `resume-handoff` now separate
+  the items a reader has to decide about into their own *Needs a decision*
+  section, on every run. Each entry carries what was observed, what was
+  deliberately not done about it, and the decision being asked for. The
+  separation is not gated on a flag, so it reaches the sessions where nobody
+  thought to ask for it.
+- **Behaviour change.** Both skills take `+question`, which asks each of those
+  items as its own answerable question instead of listing them. It changes
+  nothing about which items are listed. It names no harness tool — the skill
+  states the form of the ask — so it degrades on its own where no structured
+  prompt exists.
+- `references/report-form.md` gains a fourth preservation guardrail: never fold
+  an open question into the prose around it. It lands in that file's untiered
+  category rather than beside the two evidence-tiered rules, because it rests on
+  a report rather than a measurement. In this project it reaches
+  `post-creation-audit`, `resume-handoff` and `spike`.
+- `references/invocation-grammar.md` records `+question` for both holders, and
+  adds the rule that a flag means the same thing in every skill that takes it.
+
 ### 2026-08-29 — quality-of-life
 
 - **Behaviour change.** `post-creation-audit` no longer commits by default. It

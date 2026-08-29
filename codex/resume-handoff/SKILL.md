@@ -1,6 +1,6 @@
 ---
 name: resume-handoff
-description: Read the handoff document a previous session left on disk and resume from it — verify the repository still matches what the document claims, report what moved, then check in before acting on the agenda. Use when opening a fresh session with "resume the handoff", "read .scratch/handoff.md and continue", "pick up where we left off", or "continue from the handoff". This is the reading half of the cycle handoff writes. "/resume-handoff from .scratch/old.md" resumes from a document other than the default one, and "/resume-handoff into next steps" makes that the session's agenda, warning first when it contradicts the agenda the document already recorded.
+description: Read the handoff document a previous session left on disk and resume from it — verify the repository still matches what the document claims, report what moved, then check in before acting on the agenda. Use when opening a fresh session with "resume the handoff", "read .scratch/handoff.md and continue", "pick up where we left off", or "continue from the handoff". This is the reading half of the cycle handoff writes. "/resume-handoff from .scratch/old.md" resumes from a document other than the default one, and "/resume-handoff into next steps" makes that the session's agenda, warning first when it contradicts the agenda the document already recorded. "/resume-handoff +question" asks about what verification turned up instead of listing it.
 ---
 
 # Resume from a handoff
@@ -18,6 +18,7 @@ different sessions and share nothing but the file on disk.
 /resume-handoff from .scratch/old.md                  explicit source
 /resume-handoff into next steps                       typed agenda
 /resume-handoff from .scratch/old.md into next steps  both
+/resume-handoff +question                             ask the open items, don't list them
 ```
 
 `from` takes **one token, a path**. `into` takes **the rest of the line, an
@@ -128,6 +129,8 @@ Report, in this order:
    agenda. Name both plainly and let the user choose. Do not silently prefer
    either. When the document records no agenda, there is nothing to contradict,
    so the typed clause simply is the agenda and no warning is due.
+5. **Whatever this session's own verification turned up that needs a
+   decision**, under its own heading. See below. **This is not item 2.**
 
 Shape the check-in per
 [references/report-form.md](references/report-form.md). The ordering above is
@@ -136,6 +139,43 @@ guardrails that keep a shortened report honest.
 
 Then wait. An unnecessary check-in costs one message; acting on a stale premise
 costs whatever the session then builds on it.
+
+### Needs a decision
+
+Verification produces decidable items by construction. The cheap tier compares a
+document against a repository, and anything that disagrees is one: a path the
+agenda names that no longer exists, a section the document is missing, a claim
+the tree contradicts. Left inside item 3 they sit beside routine facts and read
+as observations, and an observation asks nothing of anyone.
+
+Report them under their own heading, **even without `+question`**, one entry
+each:
+
+- what was observed, and where;
+- what was deliberately not done about it;
+- the decision being asked for.
+
+**This is not item 2, and the two are never merged into one list.** Item 2
+carries the questions the *writing* session recorded, and they outrank the
+agenda. These are the ones *this* session generated while verifying. Merged,
+the report loses which session owns each item — and the ranking that goes with
+it.
+
+**The test for inclusion is whether the user would have to decide something.** A
+commit delta, a clean tree, a matching `HEAD`: those are item 3 and stay there.
+
+**An empty section is omitted, not written empty.** A resume against an
+untouched tree legitimately has nothing here, and a heading over nothing trains
+the reader to skip the one that matters.
+
+`+question` adds the ask. Put each item as its own answerable question — the
+observation, what was not done, and the decision — rather than listing them for
+a reply in prose. **State the form, never a tool:** a harness with a structured
+prompt renders it that way, one without asks in numbered prose, and the skill
+reads identically on both.
+
+**It changes nothing about which items are listed**, and it does not make the
+check-in stop — the check-in already stops unconditionally.
 
 ## Phase 3 — Act
 
@@ -161,6 +201,12 @@ them.
   cheap tier is what makes it true now.
 - Do not let a typed `into` clause override an unresolved open question.
 - Do not re-run the whole *Verified state* block on every resume.
+- Do not merge the *Needs a decision* items into item 2. The document's
+  questions and this session's are different material with different owners,
+  and item 2 outranks the agenda while these do not.
+- Do not gate the *Needs a decision* section on `+question`. The flag adds the
+  ask and never the separation; gating it would make the flag subtract, and
+  would drop the section in exactly the sessions where nobody typed it.
 
 ## Resources
 

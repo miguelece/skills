@@ -11,8 +11,8 @@ not carry it, and that is the point of the holder list below.
 | Skill | Parameters |
 | --- | --- |
 | `handoff` | `into <agenda>` |
-| `resume-handoff` | `from <path>`, `into <agenda>` |
-| `post-creation-audit` | `+commit`, `+git` |
+| `resume-handoff` | `from <path>`, `into <agenda>`, `+question` |
+| `post-creation-audit` | `+commit`, `+git`, `+question` |
 
 A skill absent from this table does not take a parameter. Adding one to a skill
 that is not listed is a change to this document as well as to that skill.
@@ -71,6 +71,18 @@ something the flag does. Once the base is redefined, `+` only ever adds to it.
 The obligation that comes with redefining a base: it is visible in the skill's
 `description`, not only in its body. Someone who invokes the skill the way they
 always have must be able to see that it now stops short.
+
+### A flag means the same thing in every holder
+
+`+question` is held by `post-creation-audit` and `resume-handoff` and means the
+same in both: stop and ask about the items that need a decision, rather than
+only listing them. This mirrors `into`, whose meaning is fixed across its two
+holders while only the addressee differs.
+
+What it does not control is whether those items are surfaced. Both skills
+separate them under their own heading on every run, flagged or not. The flag
+adds the interruption and never the separation — `+` never subtracting, applied
+to a flag that arrived after the behaviour it modifies.
 
 ## Where a parameter is taught
 
