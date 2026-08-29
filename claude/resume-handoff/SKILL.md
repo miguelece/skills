@@ -165,3 +165,5 @@ them.
 ## Resources
 
 - The document read here is the one `handoff` writes.
+- What `from` and `into` mean, and the rules every invocation parameter follows:
+  [references/invocation-grammar.md](references/invocation-grammar.md)

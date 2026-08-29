@@ -154,3 +154,6 @@ and clear"):
 - Template: [assets/handoff.md](assets/handoff.md)
 - Ordering work across sessions, and where a boundary belongs:
   [references/session-queue.md](references/session-queue.md)
+- What `into` means across both halves of the cycle, and the rules every
+  invocation parameter follows:
+  [references/invocation-grammar.md](references/invocation-grammar.md)
