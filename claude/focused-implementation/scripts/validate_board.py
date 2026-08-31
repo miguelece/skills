@@ -684,6 +684,55 @@ def prose_line_references(body: str) -> list[str]:
     return found
 
 
+# A script path in a scratch directory or a session scratchpad. Both sit outside
+# every repository this board lives in, so nothing versions them, nothing backs
+# them up and no test reads them.
+UNVERSIONED_SCRIPT = re.compile(
+    r"[\w./\\-]*(?:\.scratch|scratchpad)[\w./\\-]*\.(?:py|sh|ps1)\b"
+)
+
+
+def unversioned_scripts(body: str) -> list[str]:
+    """Script paths a task names that sit outside version control.
+
+    A task that records a scan, a probe or a measurement is recording a number
+    somebody may need to reproduce, and it can only be reproduced through the
+    instrument that produced it. An instrument in a scratch directory is not
+    recoverable: this board has one case where two implementations of one
+    recorded anchor disagreed by a figure and the original had already been
+    lost, so nothing could say which reading was intended.
+
+    Code spans are read rather than stripped, unlike `prose_line_references`.
+    The path form this looks for is almost always written as a code span, so
+    stripping them would make the rule blind to its only real instance.
+
+    Fences and generated regions are skipped as everywhere else in this file.
+    The accepted cost is that a command block invoking an uncommitted script is
+    not reported; the consistency is worth more than the extra reach, and the
+    prose reference beside such a block is what this catches.
+    """
+    found: list[str] = []
+    in_fence = False
+    in_region = False
+    for line in body.splitlines():
+        if FENCE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if REGION_BEGIN.match(line):
+            in_region = True
+            continue
+        if REGION_END.match(line):
+            in_region = False
+            continue
+        if in_region:
+            continue
+        for match in UNVERSIONED_SCRIPT.finditer(line):
+            found.append(match.group(0))
+    return found
+
+
 def question_counts(lines: list[str]) -> tuple[int, int]:
     """Return (total, unresolved) questions in an Open questions section.
 
@@ -1226,6 +1275,40 @@ def validate_one(
             "instead -- a number goes wrong when anything above it is edited, "
             "and this form is invisible to the other citation rules because it "
             "is neither a link nor a code span",
+        )
+
+    # --- an instrument this board depends on must be recoverable ------------
+    # A recorded measurement is reproducible only through the instrument that
+    # produced it. This board has already paid for the alternative: an anchored
+    # scan was resolved by running a probe, the anchor was written down in prose,
+    # the probe was not kept, and a later re-implementation of the same recorded
+    # anchor returned a different count. Three separate one-off rule differences
+    # each reproduce the rival figure, so nothing can say which reading was
+    # intended, and the evidence that would decide it no longer exists.
+    #
+    # `error`, not `warning`, and the classification is forced rather than
+    # chosen. Under the two-category principle in references/board-model.md a
+    # warning is advisory or transient. This is not advisory -- the board is not
+    # valid in this state, because a figure it records cannot be reproduced. It
+    # is not transient either: the repair is committing a file, which is not
+    # something a prescribed workflow does and undoes within one session. A rule
+    # fitting neither category is an error, and the single live instance was
+    # cleared before this landed rather than tolerated behind a warning.
+    #
+    # THE REACH IS PARTIAL AND THE MESSAGE SAYS SO. This validator reads the
+    # board it is given and nothing else, so a scan recorded in
+    # research/findings/ is invisible to it -- and that directory has no test
+    # surface at all. A check that swept the board and reported nothing would be
+    # reporting a compliance it never measured, which is the exact failure this
+    # research line exists to catch.
+    for script in unversioned_scripts(body):
+        report(
+            "instrument-outside-the-repository",
+            f"{script!r} names a script no repository holds, so a figure this "
+            "task records cannot be reproduced once the file is gone -- commit "
+            "the instrument and cite the committed path. This rule reads the "
+            "board only; a scan recorded in research/findings/ is outside its "
+            "reach and is not covered by it passing",
         )
 
     return findings

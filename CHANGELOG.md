@@ -16,6 +16,30 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-08-31 — task-board-management (instrument recoverability)
+
+- **Behaviour change.** `validate_board.py` reports a new **error**,
+  `instrument-outside-the-repository`: a task must not name a script path in a
+  scratch directory or a session scratchpad. A run that passed before can now
+  fail, which is the point — a figure produced by an instrument no repository
+  holds stops being reproducible the moment that file is gone.
+- The trigger is a script extension inside such a path, not the path itself. A
+  handoff document lives in a scratch directory by design and is referenced
+  across many board documents; flagging those would leave a permanent finding
+  nobody can act on. Fenced blocks are skipped, as they are by every other body
+  rule, and the accepted cost of that is recorded in the source.
+- It lands at `error` rather than `warning` because neither warning category
+  admits it. Not advisory: a board recording a figure nobody can reproduce is
+  not valid in that state. Not transient: the repair is committing a file, which
+  no prescribed workflow does and undoes within one session.
+- **Its reach is the board and nothing else, and the finding says so in its own
+  message.** A scan recorded outside the board is beyond it. A rule that swept
+  the board and reported nothing would otherwise be read as covering a
+  population it never measured.
+- `task.schema.yaml` and `references/board-model.md` both declare the rule, so
+  the schema, the reference and the validator cannot drift apart. Reaches all
+  seven skills in this project, none of which changed its own body.
+
 ### 2026-08-31 — diataxis-doc-migration
 
 - `references/report-form.md` now names the counting rule and the measurement

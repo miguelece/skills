@@ -510,6 +510,24 @@ cites (`link-target-missing`), and the five citation rules described above:
 `citation-line-range`, `citation-name-missing`, `citation-code-span-range`,
 `citation-prose-line-reference` and `citation-code-span-name-missing`.
 
+**Whether an instrument this board depends on can be recovered**
+(`instrument-outside-the-repository`). A task naming a script path in a scratch
+directory or a session scratchpad is naming something no repository holds, so a
+figure it records stops being reproducible the moment that file is gone. This
+board has paid for it once: an anchored scan was resolved by running a probe,
+the anchor was written down in prose, the probe was not kept, and a later
+re-implementation of the same recorded anchor returned a different count with
+nothing left to say which reading was intended.
+
+It reports at `error` because the two categories below admit it nowhere else.
+It is not advisory — the board is not valid in a state where a recorded figure
+cannot be reproduced — and it is not transient, because the repair is committing
+a file rather than something a prescribed workflow does and undoes inside one
+session. **Its reach is the board and nothing else**, so a scan recorded in a
+finding is outside it; the rule's own message says so, because a check that
+swept the board and reported nothing would otherwise be read as covering a
+population it never saw.
+
 **Three of those rules report at `warning` rather than failing the run**, not
 one: `link-target-missing` as transient, `part-of-too-deep` and
 `spec-done-open-tickets` as advisory. The severity section above is where the

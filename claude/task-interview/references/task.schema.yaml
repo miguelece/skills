@@ -243,6 +243,14 @@ rules:
       must appear in at least one file of that basename, searched from the
       board's parent and skipping generated output), and a basename matching no
       file is skipped as the link rule skips a missing path
+  - id: instrument-outside-the-repository
+    check: >-
+      no task names a script path in a scratch directory or a session
+      scratchpad; a figure produced by an instrument no repository holds cannot
+      be reproduced once the file is gone, which this board has already paid for
+      once when two implementations of one recorded anchor disagreed and the
+      original had been lost. Reads the board only, so a scan recorded outside
+      it is beyond this rule's reach and is not covered by it passing
 
 # Rules this file does not state itself, because another block above already
 # expresses them. Declared anyway so the classification is exhaustive: `rules:`
