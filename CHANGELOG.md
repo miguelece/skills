@@ -16,6 +16,27 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-08-31 — quality-of-life
+
+- `references/report-form.md` now names the counting rule and the measurement
+  date beside every figure it quotes. It previously gave each figure with the
+  corpus it was measured on and named neither the rule nor the date, which made
+  it the sharpest live instance found by a sweep of this lab's published figures
+  — and the only one that ships to anyone.
+- **Not a behaviour change.** The rules the file teaches are untouched: ration
+  emphasis, add headings past roughly 150 words, and the four preservation
+  guardrails all read exactly as before. What changed is the labelling of the
+  evidence beneath them. Here it reaches `post-creation-audit`, `resume-handoff`
+  and `spike`.
+- No value is re-issued. The published 9.03% is correct under the counting rule
+  in force when it was measured; a later rule change moves that pair to 9.10%,
+  and the file now says so rather than restating the figure. Re-issuing it would
+  put two counting rules inside one passage, which is the failure this research
+  line is named for.
+- The file points at a new register of counting rules in
+  `output-compression-technique-package`, which names the rule, the date and the
+  re-checkability of every live figure that finding carries.
+
 ### 2026-08-29 — quality-of-life (push confirmation)
 
 - **Behaviour change.** `post-creation-audit` now confirms before pushing to a
