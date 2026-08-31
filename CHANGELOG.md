@@ -16,6 +16,20 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-08-31 — task-board-management
+
+- `references/report-form.md` now names the counting rule and the measurement
+  date beside every figure it quotes. Here it reaches `task-board-triage`,
+  `task-interview`, `focused-implementation` and `orchestrate-implementation`.
+- **Not a behaviour change.** No skill body in this project changed, and the
+  rules the shared reference teaches are untouched. This is the second of three
+  publishes carrying one lab-tier edit; the labelling is what moved, not the
+  guidance.
+- Why a reference that four board skills cite needed this: those skills report
+  figures into a conversation, and a figure quoted without its counting rule is
+  not portable. The reference now carries its own provenance rather than
+  assuming a reader will go looking for it.
+
 ### 2026-08-31 — quality-of-life
 
 - `references/report-form.md` now names the counting rule and the measurement
