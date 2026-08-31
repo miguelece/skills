@@ -45,11 +45,27 @@ second, independently written set at 8.97pp against that set's own floor of
 1.39pp. Replies did not get shorter and their caveat layer did not thin; the
 movement was confined to the emphasis channel.
 
+**The counting rule behind those figures, and the date they were taken.** Bold
+word share is bold words over total words under `measure_discourse.py:words` as
+it stood before 2026-08-24 — a whitespace-delimited token carrying a letter or a
+digit. The first pair was measured 2026-08-20 and the second 2026-08-23. **A
+later change to that rule, on 2026-08-24, stopped counting a list marker as a
+word**, which moves this first pair to 9.10% and 0.14% and the margin to 8.96pp.
+**The values above are not re-issued and are correct as measured** — naming the
+rule and the date is what makes them readable, and re-stating them would put two
+counting rules inside one passage. See the register of counting rules in the
+finding named below.
+
 **What the defect is.** This lab's own replies measured 10.52% of words bolded
 against 0.41% for professionally edited technical documentation — roughly
 twenty-six times the density. The comparison corpus is genre-mismatched and was
 chosen rather than sampled, so read the multiple as indicative. The direction is
 not in doubt.
+
+**Both figures in that pair were measured 2026-08-18 under
+`measure_discourse.py:words`**, and the two are directly comparable because the
+same script counted both. The 10.52% cannot be re-derived — its corpus is frozen
+as unreproducible — while the 0.41% can be and reproduces exactly.
 
 **What it does not show.** Every metric here is a proxy. Nothing measured
 whether the result is easier to understand, which is the actual target.
@@ -147,6 +163,13 @@ discourse-level half is marked `evidenced`. Its overall confidence is
 `directional` because a different half of it — a six-item, self-scored round
 trip — is unchanged, and the two must not be read as one.
 
-Every figure above is quoted with the corpus it was measured on. A figure from
-this research line is not portable without the counting rule and the corpus that
+Every figure above is quoted with the corpus it was measured on, and since
+2026-08-31 with the counting rule and the date as well. A figure from this
+research line is not portable without the counting rule and the corpus that
 produced it, and a noise floor never transfers between corpora at all.
+
+That finding's *Register of counting rules* is the labelled source for every
+figure quoted here: it names the rule behind each live figure the finding
+carries, which of the three word-counting rules in this research line produced
+it, and whether the arm can be re-measured today. **Check it before quoting any
+figure from this file beside one from another corpus.**

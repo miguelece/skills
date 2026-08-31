@@ -16,6 +16,17 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-08-31 — diataxis-doc-migration
+
+- `references/report-form.md` now names the counting rule and the measurement
+  date beside every figure it quotes. Here it reaches all four migration skills.
+- **Not a behaviour change.** No skill body in this project changed. This is the
+  third and last publish carrying one lab-tier edit; the labelling of the
+  evidence moved and the guidance did not.
+- With this publish the rule and date are live in all eleven skills that cite
+  `report-form.md`, and no live document in this lab quotes a figure of this
+  research line without naming the rule that produced it.
+
 ### 2026-08-31 — task-board-management
 
 - `references/report-form.md` now names the counting rule and the measurement
