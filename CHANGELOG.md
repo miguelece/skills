@@ -16,6 +16,36 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-09-02 — task-board-management (link repair after a move)
+
+- **Behaviour change.** `references/board-model.md` gains a *Repairing the links
+  a move breaks* subsection, so a skill that moves a task file now has an
+  instruction for repairing what the move breaks. The detection half shipped
+  2026-08-13; the repair half has never existed, and every close since has been
+  repaired by hand from a procedure that lived only in an untracked session
+  document.
+- **One rule covers both directions**: a link is a path from a directory to a
+  target, so when either endpoint moves, re-express the target relative to the
+  directory it is now read from. Applied to the file that moved it repairs every
+  link it carries; applied to each citing file it repairs the link pointing at
+  it. There is no table of cases, and the rule does not care what the target is.
+- **The validator's own output is what says the repair is finished, warnings
+  included.** `link-target-missing` is a warning, so a run exits 0 across the
+  whole breakage and an exit code alone reports success.
+- **A sweep must not share a filter with the check that verifies it.** A rewrite
+  scoped to one file extension once reported every link clean while four links
+  to `.py` files were broken, because the verification carried the same filter
+  and confirmed the bug rather than catching it.
+- **Links from outside the board need their own pass**, because the validator
+  walks the board and nothing else. A document elsewhere in the repository that
+  links to a task is broken silently by a move.
+- No script changed. `board-model.md` declares no `skills:` key, so this reaches
+  all seven skills on both platforms. Pinned by a section-scoped literal-phrase
+  assertion in `test_validate_board.py`, watched failing on all four clauses
+  before the prose was written, and grounded by replaying a real recorded move
+  out of git history — where the rule reproduced the human repair's 15 unique
+  targets with no divergence.
+
 ### 2026-08-31 — task-board-management (instrument recoverability)
 
 - **Behaviour change.** `validate_board.py` reports a new **error**,

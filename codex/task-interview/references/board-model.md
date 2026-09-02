@@ -314,6 +314,41 @@ Existence only, for the path itself. Links inside fenced blocks, inline code
 spans, and generated regions are skipped — quoted link syntax is documentation
 about a link, not a link, and a generated region is repaired by regeneration.
 
+### Repairing the links a move breaks
+
+The move and the repair are two passes and the second is not optional. The
+scripts report a broken link; **nothing in them repairs one.**
+
+**One rule covers both directions.** A link is a path from a directory to a
+target, so when either endpoint moves, re-express the target **relative to the
+directory** it is now read from. Applied to the file that moved, that repairs
+every link it carries; applied to each file citing it, that repairs the link
+pointing at it. There is no table of cases to memorise, and the rule does not
+care what the target is — a sibling task, a schema and a script are all repaired
+the same way.
+
+**The validator's own output is what says the repair is finished**, never a
+sweep written alongside it. Run it and read what it prints until it reports
+**no findings**. Warnings included: `link-target-missing` is a warning, so the
+run exits 0 across the whole breakage and an exit code alone reports success.
+
+**A sweep must not share a filter with the check that verifies it.** In one
+recorded instance a rewrite scoped to a file **extension** reported every link
+clean while four links to `.py` files were broken — the verification carried the
+same filter and so confirmed the bug rather than catching it. The validator
+resolves every relative link whatever it points at, which is what makes it the
+authority above.
+
+**Links from outside the board need their own pass, because no board check can
+see them.** The validator walks the board and nothing else, so a document
+elsewhere in the repository that links to a task is broken silently. Before
+moving a file, scan the whole repository for that task's id and repair what it
+finds by the same rule. Do not scope that scan by extension either.
+
+**Generated regions repair themselves.** The indexes derive every link from
+where files actually are, so regenerate them rather than editing them, and do
+not count their links as part of the repair.
+
 ### Citations name things, never line ranges
 
 A citation into source is written `filename:name`, and it asserts that **the named
