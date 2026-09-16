@@ -13,6 +13,13 @@
 refs/
 _private/
 
+# ---------------------------------------------------------------------------
+# Written into claude/ by Claude Code, not published from the lab
+# ---------------------------------------------------------------------------
+# A user skills directory linked to claude/ receives Claude Code's own account
+# skill sync under synced/. None of it is built or published from skill-lab.
+claude/synced/
+
 # Python
 __pycache__/
 *.py[cod]
