@@ -16,6 +16,29 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-09-16 — task-board-management (instrument rule reach)
+
+- **Behaviour change.** `instrument-outside-the-repository` in
+  `validate_board.py` now reaches further, so a board that passed before can
+  fail. A script path anchored on gitignored private material — `refs/`,
+  `_private` or `research/sources` — is now reported, as well as one in a
+  scratch directory or a session scratchpad. The extension list grew from `.py`,
+  `.sh` and `.ps1` to sixteen script extensions, since nothing in the rule's
+  reasoning separates a Python instrument from a JavaScript one.
+- **Each anchor must begin a path segment.** Without that, `crossrefs/build.py`
+  matched on its `refs` suffix. An ordinary word ending in an anchor name is not
+  reported.
+- **An instrument cited by basename alone is outside the rule's reach, and that
+  is a bound rather than a gap to be closed.** It carries no directory to anchor
+  on, and resolving the name on disk was measured to be anti-correlated with the
+  rule's intent. The finding's message now says so, beside the existing note
+  that a scan recorded outside the board is not covered either.
+- `references/board-model.md` gains a passage separating what the rule matches
+  from the general idea it serves, and `references/task.schema.yaml` updates the
+  rule's `check:` prose to the widened reach, which it had not described.
+- All three files declare no `skills:` key, so this reaches all seven skills on
+  both platforms. No `SKILL.md` changed.
+
 ### 2026-09-02 — task-board-management (link repair after a move)
 
 - **Behaviour change.** `references/board-model.md` gains a *Repairing the links

@@ -684,11 +684,28 @@ def prose_line_references(body: str) -> list[str]:
     return found
 
 
-# A script path in a scratch directory or a session scratchpad. Both sit outside
-# every repository this board lives in, so nothing versions them, nothing backs
-# them up and no test reads them.
+# A script path in a scratch directory, a session scratchpad, or gitignored
+# private material. All of them sit outside every repository this board lives in,
+# so nothing versions them, nothing backs them up and no test reads them.
+#
+# The lookbehind is load-bearing rather than defensive. This pattern opens with a
+# run of path characters, so an anchor is reached THROUGH it: spelled `refs`, and
+# equally when tightened to `refs/`, that run swallows `cross` and
+# `crossrefs/build.py` matches. Requiring each anchor to begin a path segment is
+# what separates private material from an ordinary word ending in an anchor name.
+#
+# The extension list is wider than the three it began with because nothing in
+# this rule's reasoning distinguishes a Python instrument from a JavaScript one;
+# what makes a recorded figure irreproducible is that the file is unheld.
+#
+# What this still CANNOT see is an instrument cited by basename alone, carrying
+# no directory to anchor on. By text that is indistinguishable from a citation of
+# a committed file, and the alternatives were measured and declined rather than
+# overlooked -- see test_an_instrument_cited_without_its_directory_is_not_reported,
+# which pins the gap deliberately.
 UNVERSIONED_SCRIPT = re.compile(
-    r"[\w./\\-]*(?:\.scratch|scratchpad)[\w./\\-]*\.(?:py|sh|ps1)\b"
+    r"[\w./\\-]*(?<![\w-])(?:\.scratch|scratchpad|refs/|_private|research/sources)"
+    r"[\w./\\-]*\.(?:py|sh|ps1|js|mjs|cjs|ts|rb|pl|lua|bat|cmd|psm1|awk|zsh|fish)\b"
 )
 
 
@@ -697,10 +714,11 @@ def unversioned_scripts(body: str) -> list[str]:
 
     A task that records a scan, a probe or a measurement is recording a number
     somebody may need to reproduce, and it can only be reproduced through the
-    instrument that produced it. An instrument in a scratch directory is not
-    recoverable: this board has one case where two implementations of one
-    recorded anchor disagreed by a figure and the original had already been
-    lost, so nothing could say which reading was intended.
+    instrument that produced it. An instrument in a scratch directory or in
+    gitignored private material is not recoverable: this board has one case
+    where two implementations of one recorded anchor disagreed by a figure and
+    the original had already been lost, so nothing could say which reading was
+    intended.
 
     Code spans are read rather than stripped, unlike `prose_line_references`.
     The path form this looks for is almost always written as a code span, so
@@ -1308,7 +1326,9 @@ def validate_one(
             "task records cannot be reproduced once the file is gone -- commit "
             "the instrument and cite the committed path. This rule reads the "
             "board only; a scan recorded in research/findings/ is outside its "
-            "reach and is not covered by it passing",
+            "reach and is not covered by it passing, and neither is an "
+            "instrument cited by basename alone, which carries no directory "
+            "this rule can anchor on",
         )
 
     return findings

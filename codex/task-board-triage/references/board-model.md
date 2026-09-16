@@ -547,12 +547,12 @@ cites (`link-target-missing`), and the five citation rules described above:
 
 **Whether an instrument this board depends on can be recovered**
 (`instrument-outside-the-repository`). A task naming a script path in a scratch
-directory or a session scratchpad is naming something no repository holds, so a
-figure it records stops being reproducible the moment that file is gone. This
-board has paid for it once: an anchored scan was resolved by running a probe,
-the anchor was written down in prose, the probe was not kept, and a later
-re-implementation of the same recorded anchor returned a different count with
-nothing left to say which reading was intended.
+directory, a session scratchpad, or gitignored private material is naming
+something no repository holds, so a figure it records stops being reproducible
+the moment that file is gone. This board has paid for it once: an anchored scan
+was resolved by running a probe, the anchor was written down in prose, the probe
+was not kept, and a later re-implementation of the same recorded anchor returned
+a different count with nothing left to say which reading was intended.
 
 It reports at `error` because the two categories below admit it nowhere else.
 It is not advisory — the board is not valid in a state where a recorded figure
@@ -562,6 +562,29 @@ session. **Its reach is the board and nothing else**, so a scan recorded in a
 finding is outside it; the rule's own message says so, because a check that
 swept the board and reported nothing would otherwise be read as covering a
 population it never saw.
+
+**What it matches is a pattern over the board's text, and that is narrower than
+the paragraph above.** The distinction is written down here because the document
+once described the general idea while the implementation carried a closed list,
+and a reader who trusted the document was the person the gap caught. The rule
+sees a path carrying a script extension, anchored on a directory it recognises
+as unheld — the scratch locations and the gitignored private-material roots.
+Both halves widened on 2026-09-16, the extension list because nothing in the
+reasoning above distinguishes a Python instrument from a JavaScript one, and the
+anchor list because private material is as unheld as a scratch directory.
+
+**It cannot express "an instrument no repository holds" in general, and this is
+a bound rather than a defect to be fixed later.** An instrument cited by
+basename alone carries no directory to anchor on, and by text that is
+indistinguishable from a citation of a committed file. The alternatives were
+measured on this board rather than argued about: resolving the cited name
+against the filesystem is *anti-correlated* with the intent, because the
+instruments that are genuinely unheld exist on disk while the names that do not
+resolve are mostly external tooling or designs deliberately never built; and the
+predicate that would be right — exists, and no repository tracks it — has to ask
+git, which the bundled-script import contract forbids. So a citation that elides
+its directory is outside this rule's reach by construction. Write the directory
+into the citation if you want the rule to see it.
 
 **Three of those rules report at `warning` rather than failing the run**, not
 one: `link-target-missing` as transient, `part-of-too-deep` and

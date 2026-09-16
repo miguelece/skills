@@ -245,12 +245,14 @@ rules:
       file is skipped as the link rule skips a missing path
   - id: instrument-outside-the-repository
     check: >-
-      no task names a script path in a scratch directory or a session
-      scratchpad; a figure produced by an instrument no repository holds cannot
-      be reproduced once the file is gone, which this board has already paid for
-      once when two implementations of one recorded anchor disagreed and the
-      original had been lost. Reads the board only, so a scan recorded outside
-      it is beyond this rule's reach and is not covered by it passing
+      no task names a script path in a scratch directory, a session scratchpad
+      or gitignored private material; a figure produced by an instrument no
+      repository holds cannot be reproduced once the file is gone, which this
+      board has already paid for once when two implementations of one recorded
+      anchor disagreed and the original had been lost. Reads the board only, so
+      a scan recorded outside it is beyond this rule's reach and is not covered
+      by it passing -- and neither is an instrument cited by basename alone,
+      which carries no directory for the rule to anchor on
 
 # Rules this file does not state itself, because another block above already
 # expresses them. Declared anyway so the classification is exhaustive: `rules:`
