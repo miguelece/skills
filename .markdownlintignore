@@ -1,0 +1,6 @@
+# Paths markdownlint should skip. markdownlint does not read .gitignore, so
+# anything ignored there that holds markdown has to be named here as well.
+
+# Claude Code's own account skill sync, written into claude/ by a user skills
+# directory linked to it. Not published from skill-lab, and not ours to lint.
+claude/synced/
