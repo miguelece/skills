@@ -88,7 +88,9 @@ here.
    assessment, and it is what lets the archive index be generated rather than
    hand-maintained.
 7. Move each file into the folder its frontmatter derives, using `git mv` so history
-   survives.
+   survives. Every move breaks the relative links into and out of the moved file,
+   and a pile adopted at once breaks many; repair them per *Repairing the links a
+   move breaks* in [references/board-model.md](references/board-model.md).
 8. Wire up cross-references: set `parent` (lineage) on anything split off another
    document, `blocked-by` on anything waiting for another task rather than a person,
    and both sides of every supersedes pair. Where the pile already has design docs

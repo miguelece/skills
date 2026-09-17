@@ -40,7 +40,9 @@ Fix findings in this order, because later ones depend on earlier ones:
    urgent: every task in one is permanently invisible until it is broken.
 4. **Folder mismatches** — decide which side is right. If the frontmatter is
    correct, `git mv` the file to the derived folder. If the folder is correct, fix
-   the frontmatter. Never "fix" both to meet in the middle.
+   the frontmatter. Never "fix" both to meet in the middle. A move breaks every
+   relative link into and out of the file; repair them per *Repairing the links a
+   move breaks* in [references/board-model.md](references/board-model.md).
 5. **Dangling references** — a `parent`, `supersedes`, or `superseded-by` pointing at
    nothing. Either the id is stale or the target was deleted; recover it from git
    history rather than dropping the link.
@@ -54,10 +56,11 @@ The validator cannot tell whether a task's *content* is still true. Read each
 
 Completed tasks are **frozen**: they are dated records of what was true when the
 work happened, not living documentation, and re-verifying them is wasted effort
-that grows without bound as the board ages. Two narrow exceptions — a `revisit/`
-task's declined conditions, which are the point of recording a condition; and a
-dangling cross-reference anywhere, which breaks navigation rather than making a
-stale claim.
+that grows without bound as the board ages. Of the narrow exceptions, two concern
+triage — a `revisit/` task's declined conditions, which are the point of recording a
+condition; and a dangling cross-reference anywhere, which breaks navigation rather
+than making a stale claim. The full rule is *Completed tasks are frozen* in
+[references/board-model.md](references/board-model.md).
 
 For each non-completed task:
 

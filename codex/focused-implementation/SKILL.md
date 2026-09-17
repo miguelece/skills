@@ -71,7 +71,10 @@ Set `status: in-progress` and update `updated` before starting.
 3. Set `status: done`, `updated`, and — if the work is finished and correct but a
    better-but-costlier tier was evaluated and declined — `revisit: true` plus an
    `## Upgrade paths` section giving each declined option and the condition that
-   would justify revisiting it.
+   would justify revisiting it. **Setting `status: done` moves the file** into
+   `completed/` or `revisit/`, which breaks every relative link into and out of
+   it; repair them per *Repairing the links a move breaks* in
+   [references/board-model.md](references/board-model.md).
 4. **Fold-back is automatic — just regenerate.** If the task is `part-of` a spec,
    its one-line `outcome` rolls up into the spec's `## Slices` block when you run
    `generate_index.py` (step 6). Do not hand-copy it. Do **not** flip the spec's own

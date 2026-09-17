@@ -16,6 +16,31 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-09-16 — task-board-management (freeze exception and move pointers)
+
+- **Behaviour change.** `references/board-model.md` gains a third exception to
+  *Completed tasks are frozen*: a claim that was already false when the closing
+  session wrote it is corrected by a dated amendment beneath it, with the original
+  left standing. **A claim that was true when written and has since been
+  overtaken is still history and is not amended** — the section's worked example
+  is unchanged and now says so explicitly. The exception had been practised on a
+  board without being written down; a sweep of every frozen task against eight
+  recorded behaviour changes found overtaken descriptions rare and already
+  covered by the worked example, and found one claim that was wrong on the day
+  it was written, which is the case the exception covers.
+- **Behaviour change.** The five skills whose steps move a task file between
+  folders now say so at that step and name *Repairing the links a move breaks* in
+  `references/board-model.md`: `task-board-init` (the bulk move on adoption),
+  `task-board-triage` (a folder mismatch), `task-interview` (setting a gate or an
+  unfinished `blocked-by`), `focused-implementation` (closing a task), and
+  `orchestrate-implementation` (closing a set). **None restates the procedure**;
+  the one copy stays in the reference.
+- `task-board-triage` no longer counts the freeze exceptions itself. It names the
+  two that concern triage and points at the reference for the rule, so the skill
+  cannot fall out of step with it again.
+- `board-model.md` declares no `skills:` key, so the freeze change reaches all
+  seven skills on both platforms; the `SKILL.md` changes reach the five above.
+
 ### 2026-09-16 — task-board-management (instrument rule reach)
 
 - **Behaviour change.** `instrument-outside-the-repository` in

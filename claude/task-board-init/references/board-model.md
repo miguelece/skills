@@ -661,9 +661,18 @@ the file shrinks — it becomes history, which is what it was for. Documents onl
 drift when they claim to describe the present, and a completed task does not.
 
 So: **never re-verify a completed task's body against current source.** Triage reads
-non-completed tasks. The two exceptions are narrow and deliberate:
+non-completed tasks. The exceptions are narrow and deliberate:
 
 - A `revisit/` task's declined conditions *are* re-checked, because the whole point
   of recording a condition is to notice when it occurs.
 - A dangling cross-reference is repaired anywhere, since it breaks navigation rather
   than making a stale claim.
+- A claim that was already false when the closing session wrote it is corrected by
+  a dated amendment beneath it, with the original left standing. This is an error in
+  the record, not drift: the claim never described what was true.
+
+**The line between the last exception and the worked example above is the whole
+rule.** A claim that was true when the task closed and has since been overtaken —
+the file shrank, a rule widened, a default changed — is history and is not amended.
+Only a claim that was wrong on the day it was written is corrected, and the original
+stays so the record shows what the closing session believed.

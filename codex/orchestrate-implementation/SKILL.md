@@ -81,8 +81,10 @@ its execution log intact.
    replace.
 5. **Let the set shrink.** A task whose premise was overturned mid-run leaves the
    set — record why in the plan rather than forcing it through.
-6. **Close out.** Update every task, write the plan's execution log, set the plan
-   `done`, and run:
+6. **Close out.** Update every task, write the plan's execution log, and set the
+   plan `done`. **Each close moves a file into another folder**, which breaks every
+   relative link into and out of it; repair them per *Repairing the links a move
+   breaks* in [references/board-model.md](references/board-model.md). Then run:
 
    ```text
    scripts/validate_board.py --board <board>
