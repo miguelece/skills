@@ -121,7 +121,7 @@ opposite things: `change shift` keeps the task and drops the context;
 task. An invocation can be both, and then it does both.
 
 When the request is to hand off *and continue* (`change shift`, "write a handoff
-and clear"):
+and clear", or `close-out`, which runs this after `post-creation-audit`):
 
 1. Write and verify the handoff as above.
 2. **Confirm it stands alone before clearing.** Once context is gone, anything
@@ -137,7 +137,8 @@ and clear"):
   sequence of imperatives reads like a work order and is not one. **The rule is
   about invoking `handoff`, not about the keyword**: `resume-handoff` holds the
   opposite rule for the same word, because a directive typed there addresses the
-  session reading the document rather than a future one.
+  session reading the document rather than a future one. `close-out` passes its
+  clause here unchanged, so it holds this rule, not that one.
 - Do not resolve a directive by guessing. Record it verbatim and say what could
   not be checked.
 - Do not let an agenda override an unresolved open question.

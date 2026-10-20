@@ -16,6 +16,30 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-10-20 — quality-of-life (close-out)
+
+- **Behaviour change.** A new skill, `close-out`, closes a session in one
+  invocation: it runs `post-creation-audit` with `+git`, then `handoff` with the
+  trailing `into` clause or `into continuing` when none is typed, then tells the
+  user to clear and resume with `resume-handoff`. **It is invocation-only on both
+  runtimes** — `/close-out` in Claude Code, `$close-out` in Codex — because every
+  run commits and pushes.
+- `close-out` restates neither skill. The audit's prompts, including its
+  confirmation before a public push, stay the audit's, and `close-out` never
+  answers one for the user. It writes the handoff even when the audit stops
+  partway, and carries the audit's *Needs a decision* items into the handoff's
+  *Open questions*, because the clear would otherwise destroy them.
+- `references/invocation-grammar.md` lists `close-out` as a fourth holder of
+  `into`, records its default, and adds that a skill writing a side-effecting
+  flag for another inherits that skill's confirmation unchanged. It reaches
+  `handoff`, `resume-handoff`, `post-creation-audit` and `close-out` on both
+  runtimes, and changes nothing about how the existing three behave.
+- `handoff` now names `close-out` as a route into *Clearing and resuming* and as
+  a holder of its `into` rule. No behaviour change.
+- **Not verified:** that a live run reaches the handoff after the audit stops to
+  ask, and that a Codex agent can chain the two skills. The skill's tests read
+  its text; nothing observes an agent following it.
+
 ### 2026-09-16 — task-board-management (freeze exception and move pointers)
 
 - **Behaviour change.** `references/board-model.md` gains a third exception to

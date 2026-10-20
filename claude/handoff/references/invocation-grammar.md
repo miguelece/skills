@@ -13,12 +13,13 @@ not carry it, and that is the point of the holder list below.
 | `handoff` | `into <agenda>` |
 | `resume-handoff` | `from <path>`, `into <agenda>`, `+question` |
 | `post-creation-audit` | `+commit`, `+git`, `+question` |
+| `close-out` | `into <agenda>` |
 
 A skill absent from this table does not take a parameter. Adding one to a skill
 that is not listed is a change to this document as well as to that skill.
 
 Nothing mechanical holds that rule, which is exactly why the list is written
-down rather than left implied. A grammar defined for three skills and silently
+down rather than left implied. A grammar defined for a few skills and silently
 assumed for the rest is the defect this file exists to close.
 
 ## Family 1 — word-keyed, and it takes an argument
@@ -30,12 +31,20 @@ differ, so either order parses unambiguously.
 A bare argument is refused rather than guessed. `/resume-handoff next steps`
 could be a path or an agenda, and the only way to tell them apart is testing
 whether it resolves on disk — a guess that misclassifies a mistyped path in
-silence.
+silence. The same holds on `close-out`: `/close-out ticket 4` names no agenda.
 
-`into` means the same thing in both holders: *the agenda is X*. Only the
+`into` means the same thing in every holder: *the agenda is X*. Only the
 addressee differs — `handoff` records it for a future session, `resume-handoff`
-acts on it in the present one. A keyword whose meaning lives in one skill's
-prose is how the two ended up contradicting each other once already.
+acts on it in the present one, and `close-out` passes the clause to `handoff`
+unchanged, so it too records rather than acts. A keyword whose meaning lives in
+one skill's prose is how the two ended up contradicting each other once already.
+
+`close-out` is the one holder whose `into` has a default (`resume-handoff`'s
+`from` defaults to `.scratch/handoff.md`). An absent `into` is read as `into
+continuing`, the agenda typed at nearly every close-out before the skill existed,
+and `handoff` resolves that to the *What is pending* list it writes anyway. A
+typed clause replaces the default and is never appended to it. No other holder's
+`into` gains a default from this one.
 
 ## Family 2 — modal flags, and they take no argument
 
@@ -99,12 +108,20 @@ invocation has already committed by the time it reaches the push. The
 confirmation does not reach that commit, and the gap is accepted rather than
 overlooked: committing is reversible and publishing is not.
 
+A skill that writes a side-effecting flag for another skill inherits the
+confirmation unchanged. `close-out` hands `+git` to `post-creation-audit` on
+every run, so the case this rule was written for is its normal path. The
+confirmation stays the audit's and stays keyed on the operation; the composite
+gets no exemption and never answers it. That is also why `close-out`, unlike the
+audit, disables model invocation: it has no side-effect-free default for that
+to remove.
+
 ### A flag means the same thing in every holder
 
 `+question` is held by `post-creation-audit` and `resume-handoff` and means the
 same in both: stop and ask about the items that need a decision, rather than
-only listing them. This mirrors `into`, whose meaning is fixed across its two
-holders while only the addressee differs.
+only listing them. This mirrors `into`, whose meaning is fixed across every
+holder while only the addressee differs.
 
 What it does not control is whether those items are surfaced. Both skills
 separate them under their own heading on every run, flagged or not. The flag

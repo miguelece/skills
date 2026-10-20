@@ -1,0 +1,6 @@
+interface:
+  display_name: Close Out
+  short_description: Audit, push, and hand off a work session
+  default_prompt: Use $close-out to audit, push, and hand off this work session.
+policy:
+  allow_implicit_invocation: false
