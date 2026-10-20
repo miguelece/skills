@@ -1,6 +1,6 @@
 # Skills
 
-Agent skills for Claude Code and Codex — 16 of them, covering three workflows:
+Agent skills for Claude Code and Codex — 17 of them, covering three workflows:
 turning work into tracked tasks and running them, keeping documentation honest
 against the code, and the daily loop of committing, handing off, and cleaning up.
 
@@ -42,9 +42,10 @@ directory — `references/`, `scripts/`, and `assets/` are part of the skill, an
 a `SKILL.md` on its own will fail partway through.
 
 Every skill triggers on description match, so you can simply describe the job
-("audit the task board", "write a handoff"). The one exception is **commit**,
-which is deliberately invocation-only — call it as `/commit` in Claude Code or
-`$commit` in Codex, so it never fires on its own against a live working tree.
+("audit the task board", "write a handoff"). The two exceptions are **commit**
+and **close-out**, which are deliberately invocation-only — call them as
+`/commit` or `/close-out` in Claude Code and `$commit` or `$close-out` in Codex,
+so neither fires on its own against a live working tree.
 
 ## The skills
 
@@ -83,10 +84,12 @@ diagnoses which of the others a repository needs.
 Independent of the other two families. Each is useful on its own except
 **handoff** and **resume-handoff**, which are the two halves of one cycle —
 one writes the document at a context boundary, the other picks it up on the
-far side.
+far side. **close-out** composes two of the others — it runs
+**post-creation-audit**, then **handoff** — so install it alongside both.
 
 | Skill | What it does |
 | --- | --- |
+| `close-out` | Land the session, then hand off, in one invocation |
 | `commit` | Split the working tree into clean, revertible commits |
 | `handoff` | Write a handoff doc a fresh session can resume from |
 | `post-creation-audit` | Test, document, clean up, and land a block of work |
