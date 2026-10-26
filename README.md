@@ -1,6 +1,6 @@
 # Skills
 
-Agent skills for Claude Code and Codex — 17 of them, covering three workflows:
+Agent skills for Claude Code and Codex — 18 of them, covering three workflows:
 turning work into tracked tasks and running them, keeping documentation honest
 against the code, and the daily loop of committing, handing off, and cleaning up.
 
@@ -84,14 +84,16 @@ diagnoses which of the others a repository needs.
 Independent of the other two families. Each is useful on its own except
 **handoff** and **resume-handoff**, which are the two halves of one cycle —
 one writes the document at a context boundary, the other picks it up on the
-far side. **close-out** composes two of the others — it runs
-**post-creation-audit**, then **handoff** — so install it alongside both.
+far side. **close-out** composes three of the others — typed bare it runs
+**pause-check** to propose the next agenda, then **post-creation-audit**, then
+**handoff** — so install it alongside all three.
 
 | Skill | What it does |
 | --- | --- |
 | `close-out` | Land the session, then hand off, in one invocation |
 | `commit` | Split the working tree into clean, revertible commits |
 | `handoff` | Write a handoff doc a fresh session can resume from |
+| `pause-check` | Judge whether to keep going or pause at a clean boundary |
 | `post-creation-audit` | Test, document, clean up, and land a block of work |
 | `resume-handoff` | Resume from a handoff: verify, check in, then act |
 | `spike` | Throwaway prototype in scratch space to answer one question |
