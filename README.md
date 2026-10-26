@@ -102,8 +102,8 @@ Several skills encode opinions. They are stated in each skill's `references/`
 so you can see and change them:
 
 - **Commit format** — `type(topic): summary` over a four-type vocabulary
-  (`fix`, `feat`, `test`, `chore`). Used by `commit`, `post-creation-audit`,
-  `handoff`, and `spike`.
+  (`fix`, `feat`, `test`, `chore`). Used by `commit` and
+  `post-creation-audit`.
 - **Authorship** — the commit convention defaults to recording no agent as
   author or co-author. It is a stated default with its reasoning, not a mandate;
   invert that section if your project requires AI-contribution disclosure.
