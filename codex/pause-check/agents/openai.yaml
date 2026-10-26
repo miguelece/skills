@@ -1,0 +1,6 @@
+interface:
+  display_name: Pause Check
+  short_description: Judge whether to keep going or pause the session
+  default_prompt: Use $pause-check to judge whether this session should keep going or pause.
+policy:
+  allow_implicit_invocation: true

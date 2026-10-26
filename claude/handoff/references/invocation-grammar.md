@@ -40,10 +40,13 @@ unchanged, so it too records rather than acts. A keyword whose meaning lives in
 one skill's prose is how the two ended up contradicting each other once already.
 
 `close-out` is the one holder whose `into` has a default (`resume-handoff`'s
-`from` defaults to `.scratch/handoff.md`). An absent `into` is read as `into
-continuing`, the agenda typed at nearly every close-out before the skill existed,
-and `handoff` resolves that to the *What is pending* list it writes anyway. A
-typed clause replaces the default and is never appended to it. No other holder's
+`from` defaults to `.scratch/handoff.md`). An absent `into` first runs
+`pause-check`, which may name the next item of work; `close-out` puts that to
+the user as a proposed `into` clause and records it only if they accept. When
+nothing is proposed or accepted, the agenda is `into continuing`, the one typed
+at nearly every close-out before the skill existed, and `handoff` resolves that
+to the *What is pending* list it writes anyway. A typed clause replaces both
+and is never appended to either. No other holder's
 `into` gains a default from this one.
 
 ## Family 2 — modal flags, and they take no argument

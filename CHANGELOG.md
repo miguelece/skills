@@ -16,6 +16,33 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-10-26 — quality-of-life (pause-check)
+
+- **Behaviour change.** A new skill, `pause-check`, judges whether a session
+  should keep going or stop at a clean boundary. It is read-only and the agent
+  may start it on its own. Its verdict is one of *keep going*, *keep going: no
+  signal*, *this is a good pause point* (suggesting `close-out` with the next
+  item as its `into` clause), or *stop at the nearest boundary*.
+- It reads context-window occupancy from a tool named
+  `mcp__context-occupancy__occupancy` when the session has one, and places the
+  figure in bands (below 50%, 50% to 75%, above 75%) measured against the
+  auto-compaction threshold when one is set. **That tool comes from a Claude
+  Code mod that is not published here**, so on an ordinary install it is absent
+  and `pause-check` reports *unavailable (not installed)*. It then judges from
+  `references/session-queue.md`'s four observable proxies alone, and never
+  estimates a figure.
+- **Behaviour change.** `close-out`, typed bare, now runs `pause-check` first
+  and puts the item it names to the user as a proposed `into` clause. It
+  records `into continuing` when nothing is proposed or the user declines. A
+  typed `into` clause skips the step. This is the first step `close-out` owns
+  rather than delegates.
+- `references/invocation-grammar.md` states the new bare-`close-out` behaviour.
+  It reaches `handoff`, `resume-handoff`, `post-creation-audit` and `close-out`,
+  and changes nothing else.
+- **Not verified:** that an agent calls the tool, judges well, or stops where
+  the verdict says. The skill's tests read its source; nothing here observes an
+  agent pacing a session.
+
 ### 2026-10-20 — quality-of-life (close-out)
 
 - **Behaviour change.** A new skill, `close-out`, closes a session in one
