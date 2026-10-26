@@ -16,6 +16,14 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-10-26 — quality-of-life (pause-check bands)
+
+- **Behaviour change.** `pause-check`'s urgency bands move to below 35%, 35% to
+  60%, and above 60%, from 50% and 75%. It now prefers a clean boundary, and
+  later insists on the nearest one, at a lower occupancy. The edges are still
+  starting values set by preference, not measured. Nothing else in the skill
+  changes.
+
 ### 2026-10-26 — quality-of-life (pause-check)
 
 - **Behaviour change.** A new skill, `pause-check`, judges whether a session

@@ -47,9 +47,9 @@ not the window's edge, is where context is lost. Otherwise use `percent`.
 
 | Band | Urgency |
 | --- | --- |
-| below 50% | No pressure. Keep going. |
-| 50% to 75% | Prefer to stop at the next clean boundary. |
-| above 75% | Stop at the nearest clean boundary. |
+| below 35% | No pressure. Keep going. |
+| 35% to 60% | Prefer to stop at the next clean boundary. |
+| above 60% | Stop at the nearest clean boundary. |
 
 These edges are starting values, tunable, and they live only here.
 `session-queue.md` deliberately states no figure, because the skills that read
@@ -85,7 +85,7 @@ One of four, in one line, followed by the figure line and the proxies:
   point is a clean one. Name what the boundary buys, from *What a boundary must
   buy*. Suggest the user run `close-out` with `into <next>`, where `<next>` is
   the next item of work. Without one, suggest a bare `close-out`.
-- **Stop at the nearest boundary.** The band is above 75% and the current point
+- **Stop at the nearest boundary.** The band is above 60% and the current point
   is not clean. Name the shortest path to the next clean boundary: finish the
   edit, run the verification, or record the decision. Never stop part-way to
   save context.
