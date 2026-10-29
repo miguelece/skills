@@ -1,6 +1,6 @@
 ---
 name: close-out
-description: 'Close out a work session in one step — run the post-creation audit with +git, then write the handoff the next session resumes from, then hand back for a clear. Use when ending a session that would otherwise take "/post-creation-audit +git and /handoff into continuing". It runs only when typed, because every run commits and pushes. A trailing into clause names the next session''s agenda: "/close-out into ticket 4" records that, and a bare "/close-out" first runs pause-check to propose one, recording "into continuing" when none is accepted.'
+description: 'Close out a work session in one step — run the post-creation audit with +git, then write the handoff the next session resumes from, then hand back for a clear. Use when ending a session that would otherwise take "/post-creation-audit +git and /handoff into continuing". It runs only when typed, because every run commits; it pushes after one approval listing each push. A trailing into clause names the next session''s agenda: "/close-out into ticket 4" records that, and a bare "/close-out" first runs pause-check to propose one, recording "into continuing" when none is accepted.'
 disable-model-invocation: true
 ---
 
@@ -41,8 +41,9 @@ also says where the next session starts.
 - **A `+` flag is refused, not passed through.** The audit always receives
   `+git` and nothing else. A session that wants a different audit runs the two
   skills separately, which still works.
-- **It runs only when the user types it.** Every run commits and pushes, and
-  there is no default that stops short of that.
+- **It runs only when the user types it.** Every run commits, and there is no
+  default that stops short of that. It pushes after one approval from the user,
+  and a declined approval pushes nothing.
 
 The full rules for parameters, and the list of which skills take one, are in
 [references/invocation-grammar.md](references/invocation-grammar.md).
@@ -58,9 +59,11 @@ The full rules for parameters, and the list of which skills take one, are in
    here: the user already chose to stop by typing this. The proposal comes
    first because the audit's own prompts would otherwise bury it.
 2. **Run `post-creation-audit` with `+git`**, exactly as if it had been invoked
-   that way, and follow it to its end. Its prompts stay its own: it will confirm
-   before pushing to a public remote, ask before deleting a local branch, and
-   ask when it is unsure whether something is an artifact. Each of those is a
+   that way, and follow it to its end. Its prompts stay its own: it will
+   confirm before pushing to any remote, in one approval listing every planned
+   push — private remotes included — and that approval covers only what it
+   lists. It will also ask before deleting a local branch, and ask when it is
+   unsure whether something is an artifact. Each of those is a
    question for the user. Wait for the answer, and never answer one on the
    user's behalf — a composite that does has removed the only safeguard a
    self-composed `+git` has.
@@ -100,12 +103,13 @@ say so and do not tell the user to clear.
 ## Guardrails
 
 - Do not answer any of the audit's prompts on the user's behalf — the push
-  confirmation, a branch deletion, an unsure cleanup. Wait for the user.
+  approval, a branch deletion, an unsure cleanup. Wait for the user.
 - Do not skip the handoff because the audit stopped partway.
 - Do not carry out the agenda. It is recorded for the next session, as `handoff`
   records it — a list of imperatives included.
 - Do not push anything yourself. Every push in a close-out is the audit's,
-  under `+git`, behind its own confirmation.
+  under `+git`, and only after the user has approved the list it belongs to —
+  a private remote included.
 - Do not pass the audit any flag but `+git`, and do not accept a `+` flag on
   this skill.
 - Do not restate either skill's steps in place of running them.

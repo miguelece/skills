@@ -97,9 +97,24 @@ well, and disabling model invocation removes the safe default along with it.
 Every declarative option is all-or-nothing, which is why this rule is prose.
 
 So before an operation that cannot be taken back, ask. **Confirm before pushing
-to a public remote.** Reversible operations do not ask — a commit can be
-reverted and a merge can be undone, and a prompt in front of every one of them
-is how a confirmation stops being read at all.
+to any remote**, a private one included: a push hands work to a place the user
+does not control from this session, whoever can read it. Reversible operations
+do not ask — a commit can be reverted and a merge can be undone, and a prompt in
+front of every one of them is how a confirmation stops being read at all.
+
+**Ask once per run, in one approval listing every planned push** — repository,
+remote, branch and the commits each carries. **The approval covers only what it
+lists.** A push that was not on the list asks again, however it arrived: a
+repository added later, a commit made after the approval, a re-push after a
+rejected non-fast-forward is reconciled. One prompt per push was rejected as the
+fatigue the paragraph above warns about, and an approval that covered whatever
+followed it would be a blank cheque.
+
+A remote's visibility labels its entry and never decides whether to ask. Until
+2026-10-29 the rule asked only for a public remote, so a probe answering
+*private* removed the question — and authenticating `gh` on one host removed it
+silently, because the probe had started working. Keying the prompt on the
+operation alone has no such failure direction.
 
 Key the confirmation on the operation, never on who composed the invocation.
 Keying it on the invoker means keying it on the model's own account of who typed
@@ -114,10 +129,11 @@ overlooked: committing is reversible and publishing is not.
 A skill that writes a side-effecting flag for another skill inherits the
 confirmation unchanged. `close-out` hands `+git` to `post-creation-audit` on
 every run, so the case this rule was written for is its normal path. The
-confirmation stays the audit's and stays keyed on the operation; the composite
-gets no exemption and never answers it. That is also why `close-out`, unlike the
-audit, disables model invocation: it has no side-effect-free default for that
-to remove.
+approval stays the audit's and stays keyed on the operation; the composite gets
+no exemption and never answers it. A declined approval pushes nothing, and the
+composite carries on with what remains of its own work. That is also why
+`close-out`, unlike the audit, disables model invocation: every run still
+commits, so it has no side-effect-free default for that to remove.
 
 ### A flag means the same thing in every holder
 

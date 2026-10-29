@@ -107,18 +107,27 @@ covering all of it unless the boundary is written down.
 - **Merge.** Merge the session's branch into the branch it was headed for, and
   only when that is genuinely where it was headed. Fast-forward where the
   history allows it.
-- **Push.** **Confirm before pushing to a public remote**, then push the branch.
-  A flag on the invocation line is not evidence that a person asked for the push
-  — a model composing its own invocation writes its own flags — and a push to a
-  public remote cannot be taken back. **Never force-push.** A push rejected as
-  non-fast-forward is reconciled by fetching and integrating what is already
-  there — never by overriding it.
+- **Push.** **Confirm before pushing to any remote**, private ones included. A
+  flag on the invocation line is not evidence that a person asked for the push
+  — a model composing its own invocation writes its own flags — and a push
+  hands the work to a remote this session cannot recall it from. **Never
+  force-push.** A push rejected as non-fast-forward is reconciled by fetching
+  and integrating what is already there — never by overriding it.
 
-  **Visibility is resolved by probing** `gh repo view --json visibility`, and by
-  asking when the probe cannot answer. **Only a positive private answer
-  suppresses the confirmation** — a failed, errored or unauthenticated probe
-  **is not evidence of privacy**, and reading it as one disables the safeguard
-  in exactly the case it exists for. The class rule this comes from is in
+  **Ask once, in one approval listing every planned push**, after the last
+  commit and before the first push. Each entry names the repository, the
+  remote, the branch and the commits it carries (`git log --oneline
+  <remote>/<branch>..HEAD`), and its visibility from `gh repo view --json
+  visibility`. **Visibility is a label, never a gate**: *public*, *private*, or
+  *unknown* when the probe cannot answer, and a public entry says it cannot be
+  taken back. No answer from the probe skips the question.
+
+  **The approval covers only what it lists.** Push exactly those entries. A push
+  that was not on the list needs a fresh approval — a repository added later, a
+  commit made after the approval, and a re-push after reconciling a rejected
+  non-fast-forward all ask again. **A declined approval pushes nothing**; report
+  what stayed local and carry on with the rest of the audit. The class rule
+  this comes from is in
   [references/invocation-grammar.md](references/invocation-grammar.md).
 - **Worktrees.** Remove a worktree that is finished with, then run
   `git worktree prune` to clear the administrative records of directories that
@@ -205,12 +214,13 @@ happens either way.
 - Do not delete a branch without proposing it and getting an answer, even under
   `+git`. It is the one operation here that can lose work.
 - Do not turn either confirmation into a confirm-everything mode. Commit and
-  merge do not ask, because both can be undone. Deletion always asks, and a push
-  asks when the remote is public — those are the two operations here that cannot
-  be taken back.
-- Do not read a failed visibility probe as a private remote. Only a positive
-  private answer suppresses the confirmation; an error, a missing tool and an
-  unauthenticated one all ask.
+  merge do not ask, because both can be undone. Deletion always asks, and every
+  push asks — those are the two operations here that cannot be taken back.
+- Do not let a visibility answer skip the push approval. *Private* labels an
+  entry; it never removes it from the list, and an unanswered probe is shown as
+  *unknown* rather than guessed.
+- Do not push anything the approval did not list. Ask again instead, even when
+  the new push looks like part of the one approved.
 - Do not gate the *Needs a decision* section on `+question`. The flag adds the
   ask and never the separation; gating it would make the flag subtract, and
   would drop the section in exactly the sessions where nobody thought to type

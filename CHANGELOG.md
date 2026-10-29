@@ -16,6 +16,19 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-10-29 — quality-of-life (every push asks)
+
+- **Behaviour change.** `post-creation-audit +git`, and so `close-out`, now asks
+  before pushing to any remote, private ones included. It asks once per run, in
+  one approval listing every planned push: repository, remote, branch, commits
+  and visibility. The approval covers only what it lists. A commit made after
+  it, a repository added later, or a re-push after a rejected non-fast-forward
+  asks again. A declined approval pushes nothing, and `close-out` still writes
+  its handoff. Visibility now only labels each entry. Before this change, a
+  remote the probe reported as private was pushed without asking.
+- `close-out`'s description and Codex `short_description` now say it pushes
+  after approval. It stays user-only, because every run still commits.
+
 ### 2026-10-26 — quality-of-life (pause-check bands)
 
 - **Behaviour change.** `pause-check`'s urgency bands move to below 35%, 35% to
