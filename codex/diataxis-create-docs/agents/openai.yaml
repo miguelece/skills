@@ -1,0 +1,6 @@
+interface:
+  display_name: Diataxis Documentation Create
+  short_description: Create new Diataxis pages or bootstrap sparse docs
+  default_prompt: Use $diataxis-create-docs to write new Diataxis documentation for this repository.
+policy:
+  allow_implicit_invocation: true

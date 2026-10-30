@@ -17,17 +17,6 @@ Inspect documentation-relevant public and operational surfaces, existing docs,
 navigation, and governance. Record which behavior classes were examined and any
 scope-limited failures. Existing failing tests block only the claims they affect.
 
-## Bootstrap minimum
-
-Create:
-
-- A docs landing index that routes by reader need.
-- A governance policy defining taxonomy, authorities, and maintenance.
-- A documentation-lifecycle ADR.
-- Complete reference/how-to/explanation/tutorial pages justified by evidence.
-- Category folders even when currently empty, if the approved structure requires
-  them; use `.gitkeep` rather than stub pages.
-
 ## Finding policy
 
 An unwired implementation is a suspected code finding, not published behavior.

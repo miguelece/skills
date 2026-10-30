@@ -16,6 +16,8 @@ same manifest. The orchestrator reads the result before continuing.
 3. A clean audit without an update baseline routes to a full update.
 4. A verified update baseline permits incremental mode.
 5. Invalid or missing incremental history falls back to a full update.
+6. Little or no durable documentation routes to bootstrap
+   `diataxis-create-docs`, not to an update with nothing to synchronize.
 
 ## Approval model
 

@@ -16,6 +16,30 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-10-30 — diataxis-doc-migration (create path)
+
+- **Behaviour change.** New skill `diataxis-create-docs` writes new Diataxis
+  documentation in one of two modes. It writes one requested page (a tutorial,
+  how-to, reference or explanation) into an existing tree. Or it bootstraps a
+  sparse repository, choosing first pages in a fixed order: a reference page
+  for each public entrypoint, then one getting-started tutorial, then how-to
+  pages, then explanation pages. Each candidate is kept or dropped with a
+  stated reason, and the whole plan is approved once before any write.
+- A page may exist because its author asked for it. Every factual claim in it
+  still anchors to reachable code, and rationale is attributed to a recorded
+  decision or to the author. A claim with neither is excluded with its reason,
+  or recorded as a suspected code finding.
+- New page templates for the four types ship with `diataxis-create-docs` only.
+- **Behaviour change.** `diataxis-update-docs` no longer bootstraps. It hands a
+  sparse domain to `diataxis-create-docs`, and its description now covers
+  existing documentation only.
+- **Behaviour change.** `diataxis-manage-docs` routes a sparse domain, and a
+  request for a new page, to `diataxis-create-docs`.
+- The shared manifest accepts `run.mode: create`.
+- Whether create requests now reach `diataxis-create-docs` more reliably is
+  **not measured**. The descriptions pass a static concept check only; no
+  trigger evaluation has run on them.
+
 ### 2026-10-30 — quality-of-life (handoff write-back path)
 
 - **Behaviour change.** `handoff`, and so `close-out`, now writes the new

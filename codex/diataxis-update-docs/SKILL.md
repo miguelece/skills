@@ -1,13 +1,14 @@
 ---
 name: diataxis-update-docs
-description: Use when asked to update, synchronize, compare, or sync Diataxis documentation with shipped public behavior or live behavior in code since a Git revision or baseline, fill missing or undocumented implementation gaps, or bootstrap sparse documentation from a live API.
+description: Use when asked to update, synchronize, compare, or sync existing Diataxis documentation with shipped public behavior or live behavior in code since a Git revision or baseline, or fill missing or undocumented implementation gaps.
 ---
 
 # Update Diataxis documentation from code
 
 Synchronize one documentation domain with reachable public and operational
-behavior. Support a full baseline, a Git-incremental update, and sparse-repository
-bootstrap. Discovery and planning are read-only; wait for approval before writes.
+behavior. Support a full baseline and a Git-incremental update. A sparse domain
+has nothing to synchronize: hand it to bootstrap `diataxis-create-docs`.
+Discovery and planning are read-only; wait for approval before writes.
 
 Read [references/update-workflow.md](references/update-workflow.md) before
 planning. Use the shared manifest and helpers. Document what ships, not what a
@@ -36,10 +37,10 @@ proposal hopes will ship.
 - **Full:** scan the complete documentation-relevant behavior surface. Use for
   the first baseline, periodic drift control, or whenever incremental history is
   missing, rewritten, invalid, or too incomplete to establish reachability.
-- **Bootstrap:** when docs are sparse, perform a full scan and propose the
-  minimum useful Diataxis foundation. Create the index, governance policy,
-  migration/documentation ADR, and justified category folders. Do not create
-  TODO pages or empty content stubs.
+
+A domain with little or no durable documentation is not an update. Stop, report
+the sparse state and the reachable behavior found so far, and hand the domain to
+bootstrap `diataxis-create-docs`, which owns creating pages from nothing.
 
 ## Read-only update plan
 
@@ -53,8 +54,8 @@ proposal hopes will ship.
 4. Compare behavior with canonical docs. Identify missing contracts, stale facts,
    affected how-to steps, explanatory gaps, broken references, and ADR-worthy
    decisions.
-5. For sparse docs, propose substantive destination pages by reader intent.
-   Empty taxonomy folders are allowed; placeholder pages are not.
+5. When a gap needs a new page rather than a change to an existing one,
+   propose it for `diataxis-create-docs` instead of writing it here.
 6. Record probable code defects as durable findings with evidence. Do not write
    documentation that presents uncertain reachability as shipped.
 7. Present exact creates/modifications, evidence, excluded proposals, checks,
@@ -69,7 +70,7 @@ proposal hopes will ship.
 - Keep each factual contract canonically owned in one page; repeat brief context
   only where a procedure needs it.
 - Draft architecture ADRs for user confirmation before writing inferred
-  rationale. The documentation-lifecycle ADR is mandatory in bootstrap mode.
+  rationale.
 - Validate the manifest and repository links; run safe native checks. Execute
   non-destructive documented commands when prerequisites exist and inspect
   destructive, credentialed, deployment, production, and migration commands
@@ -83,7 +84,7 @@ proposal hopes will ship.
 
 ## Baseline failure counters
 
-- Sparse bootstrap is not a README-only patch.
+- Sparse docs route to `diataxis-create-docs`; they are not a README-only patch.
 - An invalid incremental range triggers a full scan, not a guessed revision.
 - A diff is a discovery aid, not the complete public contract.
 - Do not document an endpoint while simultaneously saying its reachability is

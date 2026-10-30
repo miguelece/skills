@@ -1,13 +1,13 @@
 ---
 name: diataxis-manage-docs
-description: Use when asked to diagnose, assess, or decide documentation maturity, lifecycle, or recorded state and manage, orchestrate, or route Diataxis migration, audit or verification, and update or synchronization phases across a repository.
+description: Use when asked to diagnose, assess, or decide documentation maturity, lifecycle, or recorded state and manage, orchestrate, or route Diataxis migration, audit or verification, update or synchronization, and creation phases across a repository.
 ---
 
 # Manage the Diataxis documentation lifecycle
 
 Diagnose one documentation domain and route it through the minimum necessary
 phase skills. This skill is a thin orchestrator: do not duplicate migration,
-audit, or update implementation logic.
+audit, update, or creation implementation logic.
 
 Read [references/routing-workflow.md](references/routing-workflow.md). Begin
 read-only, present the proposed domain and phase sequence, and wait for approval.
@@ -51,8 +51,13 @@ Use these exact routes:
 | Messy | `diataxis-migrate-docs` → `diataxis-audit-docs` → full `diataxis-update-docs` |
 | Archive or incomplete audit | Resume `diataxis-audit-docs` → full `diataxis-update-docs` |
 | Structured but unbaselined | `diataxis-audit-docs` → full `diataxis-update-docs` |
-| Sparse | bootstrap `diataxis-update-docs` |
+| Sparse | bootstrap `diataxis-create-docs` |
 | Maintained | incremental `diataxis-update-docs`, or requested periodic full update |
+| Requested new page | `diataxis-create-docs` |
+
+A request for a new page routes to `diataxis-create-docs` in any state other than
+Messy or an incomplete migration or audit, which finish their own sequence first.
+An incremental update is keyed on a Git range, not on a requested page.
 
 Do not invent intermediate lifecycle phases. Do not advance past a blocking
 finding. Unsafe or unverifiable archived guidance may be retired with an explicit

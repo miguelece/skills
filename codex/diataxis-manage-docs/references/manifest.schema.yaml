@@ -39,6 +39,7 @@ properties:
           - audit
           - update
           - manage
+          - create
       status:
         type: string
         enum:
