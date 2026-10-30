@@ -1,6 +1,6 @@
 # Skills
 
-Agent skills for Claude Code and Codex — 18 of them, covering three workflows:
+Agent skills for Claude Code and Codex — 19 of them, covering three workflows:
 turning work into tracked tasks and running them, keeping documentation honest
 against the code, and the daily loop of committing, handing off, and cleaning up.
 
@@ -78,6 +78,7 @@ diagnoses which of the others a repository needs.
 | `diataxis-migrate-docs` | Migrate legacy docs into Diataxis, preserving coverage |
 | `diataxis-audit-docs` | Check migrated docs for drift, gaps, and coverage |
 | `diataxis-update-docs` | Sync docs with shipped behavior since a baseline |
+| `diataxis-create-docs` | Write a new page, or bootstrap docs for a sparse repo |
 
 ### Daily workflow
 
