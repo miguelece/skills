@@ -81,13 +81,17 @@ The full rules for parameters, and the list of which skills take one, are in
      audit's commits and pushes, and records whatever did not land. The audit's
      test numbers are not copied across: they were taken before its own
      corrections.
-   - **The document goes where `handoff` says** — scratch space, never a commit.
+   - **The document goes where `handoff`'s write-back rule sends it** — back
+     to the document this session resumed from, else the default, in scratch
+     space and never a commit.
      It is written after the audit has landed the session, so committing it
      would reopen what the audit just closed.
 4. **End the way `handoff` ends a change of shift.** Confirm the document stands
-   alone, then tell the user to run `/clear` and to start the next session with
-   `resume-handoff`. The agent cannot clear its own context; that is the user's
-   to do, and it is why a one-step handoff-and-clear was never built.
+   alone, then tell the user to run `/clear`, and print the next session's
+   exact invocation of `resume-handoff` as the copyable phrase `handoff`'s
+   clear step gives, every time and in this platform's form. The agent cannot
+   clear its own context; that is the user's to do, and it is why a one-step
+   handoff-and-clear was never built.
 
 **What a failing suite does to the audit is the audit's rule.** This skill adds
 no gate of its own and removes none, and the handoff records the suite's state,
@@ -96,9 +100,10 @@ verified fresh.
 ## Reporting
 
 The audit reports first, shaped by its own rules. After it, say where the handoff
-was written and list what did not land, if anything. The instruction to clear
-comes last, and only once the handoff is written and verified — if it is not,
-say so and do not tell the user to clear.
+was written and list what did not land, if anything. The instruction to clear,
+with the copyable phrase that resumes from that path, comes last, and only once
+the handoff is written and verified — if it is not, say so and do not tell the
+user to clear.
 
 ## Guardrails
 

@@ -1,6 +1,8 @@
 # Handoff — <subject>
 
 Written <YYYY-MM-DD>. Starting point for a fresh session with no prior context.
+Written to `<path>` — where this document lives, and where a session resumed
+from it writes its own handoff back.
 
 ---
 

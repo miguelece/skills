@@ -16,6 +16,24 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-10-30 — quality-of-life (handoff write-back path)
+
+- **Behaviour change.** `handoff`, and so `close-out`, now writes the new
+  handoff back to the document the session resumed from, instead of always
+  writing `.scratch/handoff.md`. It takes the first path it knows: the one
+  `resume-handoff` read, then the document's own *Written to* line, then the
+  default. If the conversation's path and the line disagree, the
+  conversation's wins. The user can redirect it in plain words. A thread kept
+  beside the default one no longer loses its state at close-out, and no longer
+  overwrites the default's.
+- The handoff template's header gains a *Written to `<path>`* line.
+- At the clear step, `handoff` and `close-out` now always print the exact
+  invocation to resume: `/resume-handoff from <path>`, or a bare
+  `/resume-handoff` for the default, with `$` on Codex.
+- `resume-handoff`'s check-in names the path the session will close to. A
+  *Written to* line naming a different path is reported under *Needs a
+  decision*.
+
 ### 2026-10-29 — quality-of-life (every push asks)
 
 - **Behaviour change.** `post-creation-audit +git`, and so `close-out`, now asks

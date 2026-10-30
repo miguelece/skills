@@ -18,8 +18,23 @@ Start from [assets/handoff.md](assets/handoff.md).
 
 ## Boundaries
 
-- Write to disk, in scratch space (`.scratch/handoff.md` or similar). Confirm the
-  path. A handoff in the transcript is not a handoff.
+- Write to disk, in scratch space. Confirm the path. A handoff in the transcript
+  is not a handoff.
+- **Write back to the document this session resumed from**, so a thread kept
+  beside the default one keeps its continuation and neither overwrites the
+  other. Take the first of these that is known:
+  1. the path the session resumed from, as `resume-handoff` read it — a
+     `from <path>`, or the file it found without one;
+  2. the document's own *Written to* line, which every handoff carries in its
+     header, when the conversation no longer holds the path but the document's
+     content is still in hand;
+  3. `.scratch/handoff.md`.
+
+  When the conversation's path and the *Written to* line disagree, because the
+  file was copied or renamed, the conversation's path wins. The user redirects
+  in plain words, and *Confirm the path* is where that is honoured. The line's
+  sure value is a session that opened the document without `from`; after a
+  compaction that drops the path, it helps only if the document is re-read.
 - Write for a reader with **zero** context. No pronouns pointing at the
   conversation, no "as discussed", no "the file we were editing".
 - **Absolute paths or repo-relative paths, always.** "the config file" is useless.
@@ -126,9 +141,13 @@ and clear", or `close-out`, which runs this after `post-creation-audit`):
 1. Write and verify the handoff as above.
 2. **Confirm it stands alone before clearing.** Once context is gone, anything
    missing is gone with it. This gate is the whole point.
-3. Tell the user the handoff is ready and that they should `/clear`, then open the
-   new session by reading the handoff path. You cannot clear your own context —
-   that is theirs to do.
+3. Tell the user the handoff is ready and that they should `/clear`, then give
+   them the next session's exact invocation as a copyable phrase, **every
+   time**: `/resume-handoff from <path>` for any path but the default, and a
+   bare `/resume-handoff` for `.scratch/handoff.md`. Codex invokes with `$`, so
+   there it is `$resume-handoff from <path>` or a bare `$resume-handoff`. Print
+   the form for the platform this session runs on. You cannot clear your own
+   context — that is theirs to do.
 
 ## Guardrails
 

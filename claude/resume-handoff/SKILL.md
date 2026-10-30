@@ -124,7 +124,9 @@ Report, in this order:
    never settles a question the writing session left open.
 3. **What moved** since the document was written — the commit delta, anything
    uncommitted, any path the agenda names that no longer exists, and any section
-   that was missing.
+   that was missing. **Name the path this session will close to**: the document
+   just read, which is where `handoff` writes back. One line, so the user can
+   redirect it in plain words before any work rather than after the close.
 4. **The override warning**, when a typed `into` contradicts the recorded
    agenda. Name both plainly and let the user choose. Do not silently prefer
    either. When the document records no agenda, there is nothing to contradict,
@@ -147,6 +149,13 @@ document against a repository, and anything that disagrees is one: a path the
 agenda names that no longer exists, a section the document is missing, a claim
 the tree contradicts. Left inside item 3 they sit beside routine facts and read
 as observations, and an observation asks nothing of anyone.
+
+**One is specific to where the session will close.** The document's header
+carries a *Written to* line naming its own path. When that line names a
+different path from the one just read — the file was copied or renamed — the
+mismatch is an entry here: the close writes to the path read, and the user may
+redirect it. A matching line, or a document written before the line existed,
+asks nothing and stays out.
 
 Report them under their own heading, **even without `+question`**, one entry
 each:
