@@ -1,0 +1,6 @@
+interface:
+  display_name: Research Base Init
+  short_description: Adopt or create a research base in a repository
+  default_prompt: Use $research-base-init to adopt this repository's research directory as a research base.
+policy:
+  allow_implicit_invocation: true

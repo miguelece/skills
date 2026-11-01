@@ -1,0 +1,6 @@
+interface:
+  display_name: Synthesize Research
+  short_description: Compile raw sources into one cited finding
+  default_prompt: Use $synthesize-research to turn the material in research/sources/ into a finding.
+policy:
+  allow_implicit_invocation: true

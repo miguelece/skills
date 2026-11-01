@@ -1,0 +1,71 @@
+# Frontmatter contract for one record in a research base.
+#
+# Documentation, not configuration -- the same arrangement as the task board's
+# task.schema.yaml. scripts/validate_base.py does not read this file: a bundled
+# script has no YAML parser, and this file sits at a different relative path in
+# a bundle (references/) than in source (../schema/). It hard-codes its own
+# constants, and a test in the authoring repository parses this file and pins
+# it against them and against every rule id the validator reports.
+#
+# The prose behind every field -- and why a record's directory is keyed to its
+# kind and never derived from its state -- is in references/research-base-model.md.
+#
+# `required` is one of: always | living | no.
+
+fields:
+  title:
+    type: string
+    required: always
+  kind:
+    type: string
+    required: always
+    note: must equal the kind base.json declares for the record's layer
+  regime:
+    type: string
+    required: always
+    values: [frozen, living]
+    note: must be one of the regimes base.json admits for the record's layer
+  updated:
+    type: date
+    required: always
+    note: YYYY-MM-DD; moves only when the claim changes, never for a mechanical repair
+  status:
+    type: string
+    required: living
+    values: [exploring, supported, promoted]
+  confidence:
+    type: string
+    required: living
+    values: [directional, evidenced, strong]
+  authority:
+    type: list
+    required: living
+    note: a living record must name at least one; an empty list is refused
+  sources:
+    type: list
+    required: "no"
+  informs:
+    type: list
+    required: "no"
+  covers:
+    type: list
+    required: "no"
+    note: >-
+      a manifest record only -- paths relative to the record, each existing
+      inside the base; an empty list is refused
+
+# Every rule the validator reports. All are errors.
+rules:
+  base-file-missing: the base has no base.json
+  base-file-invalid: base.json does not parse, or declares no valid layers
+  layer-directory-missing: a declared tracked layer's directory does not exist
+  record-not-utf8: a record's bytes do not decode as UTF-8
+  frontmatter-missing: a record has no leading frontmatter block
+  key-missing: a required key is absent
+  authority-missing: a living record names no authority
+  value-invalid: a value is outside its allowed set, or has the wrong shape
+  kind-matches-directory: a record's kind disagrees with its layer's
+  regime-not-admitted: a record's regime is one its layer does not admit
+  covers-empty: a manifest record covers nothing
+  covers-target-missing: a manifest record names a file that does not exist
+  covers-outside-base: a manifest record names a file outside the base

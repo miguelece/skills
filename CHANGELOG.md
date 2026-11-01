@@ -16,6 +16,19 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-01 — research-tooling (first publish)
+
+- **Behaviour change.** Three skills are published here for the first time, on
+  both platforms. `research-base-init` adopts a research base in a repository,
+  `synthesize-research` turns raw source material into a cited finding, and
+  `research-base-audit` re-verifies a base's living claims against the
+  authorities they name.
+- Each skill carries its own copy of the research-base contract and the base's
+  two scripts. The two measurement instruments the lab's own research runs are
+  not included in any bundle.
+- `research-base-audit` now tells a Codex agent to resolve `CLAUDE_SKILL_DIR`
+  itself, as its two siblings already did.
+
 ### 2026-11-01 — task-board-management (worktree streams)
 
 - **Behaviour change.** `orchestrate-implementation`'s *Dispatch* section now

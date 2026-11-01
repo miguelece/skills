@@ -1,0 +1,6 @@
+interface:
+  display_name: Research Base Audit
+  short_description: Re-verify a research base's living claims
+  default_prompt: Use $research-base-audit to re-verify this repository's research base.
+policy:
+  allow_implicit_invocation: true
