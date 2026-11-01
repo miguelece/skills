@@ -616,6 +616,16 @@ README groups by *what a task is waiting on* (status/folder), for auditing and
 picking work; TREE groups by *what a task is a piece of* (composition), for seeing
 how an effort decomposes. `TREE.md` exists only when the board has composition.
 
+**A `README.md` row states every relation its task still has.** After the title,
+status and priority, `generate_index.py:entry_line` appends, each only when
+present and in this order: composition (`⊂ part of`), the blockers
+`validate_board.py:unresolved_blockers` returns (`⇠ blocked by`), and lineage
+(`↳ from`). No suffix outranks another, because any precedence hides a fact the
+frontmatter states. **A blocker that has reached `done` is dropped** — the row is
+read when scanning for work, and its history stays in `blocked-by:`. **A
+`superseded-by` redirect (`→`) replaces the whole suffix**, since a superseded
+task is not live work.
+
 `revisit/` stays in the **live** index deliberately. Its entire value is being seen
 before someone re-researches a problem it already settled; filed into an archive
 nobody reads, it stops doing its job.

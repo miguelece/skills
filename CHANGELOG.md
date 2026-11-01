@@ -16,6 +16,19 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-01 — task-board-management (index rows)
+
+- **Behaviour change.** A row in a board's generated `README.md` now shows
+  every relation its task still has, in this order: composition (`⊂ part of`),
+  live blockers (`⇠ blocked by`), then lineage (`↳ from`). Each part appears
+  only when present. Before, one suffix was picked by precedence, so a blocker
+  hid the task's `part-of`.
+- **Behaviour change.** A blocker that has reached `done` no longer appears in
+  the row. Its history stays in the task's `blocked-by:` frontmatter. A
+  `superseded-by` redirect still replaces the whole suffix.
+- `board-model.md` states the row contract under *Generated views*. It ships to
+  all seven task-board skills, as does the generator.
+
 ### 2026-10-30 — diataxis-doc-migration (create path)
 
 - **Behaviour change.** New skill `diataxis-create-docs` writes new Diataxis

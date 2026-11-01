@@ -49,12 +49,12 @@ from validate_board import (
     ARCHIVE_NAME,
     README_NAME,
     TREE_NAME,
-    blocker_ids,
     collect_tasks,
     derive_folder,
     parse_frontmatter,
     part_of_id,
     task_kind,
+    unresolved_blockers,
 )
 
 BEGIN = "<!-- BEGIN GENERATED INDEX -->"
@@ -159,44 +159,53 @@ def load_tasks(board: Path) -> list[dict]:
         front["_path"] = path.relative_to(board).as_posix()
         loaded.append(front)
 
-    resolved_ids = frozenset(
-        str(front["id"])
-        for front in loaded
-        if front.get("id") and front.get("status") == "done"
-    )
+    resolved_ids = resolved_task_ids(loaded)
     for front in loaded:
         front["_folder"] = derive_folder(front, resolved_ids)
     return loaded
 
 
-def entry_line(task: dict) -> str:
+def resolved_task_ids(tasks: list[dict]) -> frozenset[str]:
+    """Ids of every task that has reached done -- what clears a blocker."""
+    return frozenset(
+        str(task["id"]) for task in tasks if task.get("id") and task.get("status") == "done"
+    )
+
+
+def entry_line(task: dict, resolved_ids: frozenset[str]) -> str:
     """One flat-view row. The composition breadcrumb makes this the audit view:
     every ticket shows what it is part of, so the tree is legible without nesting.
+
+    The contract is `board-model.md`'s *Generated views*: a supersede redirect
+    replaces the whole suffix; otherwise composition, live blockers and lineage
+    each appear when present, in that order. A blocker that reached done is
+    dropped -- the frontmatter keeps that history, the row does not.
     """
     title = str(task.get("title") or task.get("id"))
     priority = str(task.get("priority") or "?")
     status = str(task.get("status") or "?")
     tag = "`[spec]` " if task_kind(task) == "spec" else ""
 
-    # Precedence matches how a reader scans: a supersede redirect dominates;
-    # otherwise show composition (part-of), then a blocker, then lineage.
-    suffix = ""
-    if task.get("parent"):
-        suffix = f" ↳ from `{task['parent']}`"
-    part_of = part_of_id(task)
-    if part_of:
-        suffix = f" ⊂ part of `{part_of}`"
-    blockers = blocker_ids(task)
-    if blockers:
-        suffix = " ⇠ blocked by " + ", ".join(f"`{b}`" for b in blockers)
     if task.get("superseded-by"):
         suffix = f" → `{task['superseded-by']}`"
+    else:
+        parts: list[str] = []
+        part_of = part_of_id(task)
+        if part_of:
+            parts.append(f" ⊂ part of `{part_of}`")
+        blockers = unresolved_blockers(task, resolved_ids)
+        if blockers:
+            parts.append(" ⇠ blocked by " + ", ".join(f"`{b}`" for b in blockers))
+        if task.get("parent"):
+            parts.append(f" ↳ from `{task['parent']}`")
+        suffix = "".join(parts)
     return f"- {tag}[{title}]({task['_path']}) — `{status}`, {priority} priority{suffix}"
 
 
 def render_live(tasks: list[dict]) -> str:
     live = [t for t in tasks if t["_folder"] not in ARCHIVE_FOLDERS]
     archived = len(tasks) - len(live)
+    resolved_ids = resolved_task_ids(tasks)
 
     lines: list[str] = [
         BEGIN,
@@ -232,7 +241,7 @@ def render_live(tasks: list[dict]) -> str:
         for category in sorted(by_category):
             lines += [f"#### {heading} — {category}", ""]
             for task in sorted(by_category[category], key=lambda t: str(t.get("id"))):
-                lines.append(entry_line(task))
+                lines.append(entry_line(task, resolved_ids))
             lines.append("")
 
     if archived:
