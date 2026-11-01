@@ -16,6 +16,27 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-01 — task-board-management (orchestrate dispatch)
+
+- **Behaviour change.** `orchestrate-implementation` now says it is the
+  planning skill, and gains a *Dispatch* section. When two or more independent
+  streams are ready, it launches them all at once, each in its own subagent. A
+  lone ready stream runs inline, unless the plan records context as the reason
+  to delegate it. Where the platform offers no subagent primitive, the streams
+  run serially. The section names no platform tool.
+- A delegated stream implements only its own task's code and tests, and stops
+  before `focused-implementation`'s close-out. It does not edit the board, task
+  files or agent instruction files, and it does not commit, push or publish. It
+  returns a diff summary, its suite's result with any excluded files, and every
+  premise of its brief it found false. The main session re-runs the suite,
+  reads the diff, then closes and commits, one close at a time.
+- The plan document now names each stream's read set as well as its write set,
+  and orders a dependency at the step that needs it. A stream whose writes meet
+  another stream's reads, or a tool the closes run, gets its own worktree, or
+  the closes wait for it.
+- The description leads with planning rather than "run them to completion". The
+  name and the trigger phrases are unchanged.
+
 ### 2026-11-01 — task-board-management (index rows)
 
 - **Behaviour change.** A row in a board's generated `README.md` now shows
