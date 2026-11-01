@@ -126,6 +126,10 @@ never touches the board.
   reaches the implementer intact;
 - names the concurrent streams and their files, so a foreign change in the working
   tree reads as expected rather than as a hazard;
+- for a stream in its own worktree, names every uncommitted file it cites, the task
+  file included, by the main checkout's absolute path, and says the worktree's own
+  copies of those files are stale. A worktree is cut from committed state, so it
+  lacks the board changes made before launch;
 - states the contract below.
 
 **What a delegated stream may do.** It touches only its own task's code and tests.
@@ -150,6 +154,11 @@ its write set meets another stream's read set, or meets a tool the closes run: t
 board generator, a suite runner, a lint config. Otherwise make the closes wait for
 that stream. While streams are in flight, every verification run in the shared tree
 states which in-flight files it excluded.
+
+**Bringing a worktree's diff back is a write to the shared tree.** The stream does
+not commit, so the main session takes its diff as a patch, checks that it still
+applies, and applies it only once no in-flight stream's read set meets the patch's
+files. Until then the patch waits, and so does that stream's close.
 
 ## Guardrails
 

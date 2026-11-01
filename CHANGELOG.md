@@ -16,6 +16,18 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-01 — task-board-management (worktree streams)
+
+- **Behaviour change.** `orchestrate-implementation`'s *Dispatch* section now
+  covers a stream in its own worktree. A worktree is cut from committed state,
+  so the brief names every uncommitted file it cites, the task file included,
+  by the main checkout's absolute path, and says the worktree's own copies are
+  stale.
+- Bringing a worktree's diff back now counts as a write to the shared tree. The
+  main session takes the diff as a patch, checks that it still applies, and
+  applies it only once no in-flight stream's read set meets its files. The
+  stream's close waits with the patch.
+
 ### 2026-11-01 — task-board-management (orchestrate dispatch)
 
 - **Behaviour change.** `orchestrate-implementation` now says it is the
