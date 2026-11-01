@@ -20,6 +20,14 @@ _private/
 # skill sync under synced/. None of it is built or published from skill-lab.
 claude/synced/
 
+# ---------------------------------------------------------------------------
+# Isolated agents' worktrees, checked out by Claude Code
+# ---------------------------------------------------------------------------
+# An agent started inside this repository gets its worktree at this fixed
+# path. Unignored, a `git add -A` stages it as a gitlink, and publish.py's
+# commit would carry anything staged to the public remote.
+.claude/worktrees/
+
 # Python
 __pycache__/
 *.py[cod]

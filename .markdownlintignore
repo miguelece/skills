@@ -4,3 +4,7 @@
 # Claude Code's own account skill sync, written into claude/ by a user skills
 # directory linked to it. Not published from skill-lab, and not ours to lint.
 claude/synced/
+
+# Isolated agents' worktrees, checked out by Claude Code. Copies of this
+# repository, not ours to lint twice.
+.claude/worktrees/
