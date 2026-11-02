@@ -16,6 +16,20 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-02 — research-tooling (authority resolution)
+
+- **Behaviour change.** `validate_base.py`, bundled into all three
+  research-tooling skills, now checks that every `authority` entry on a living
+  record can be found. A path is resolved from the nearest directory above the
+  base holding `.git`, and must exist inside it. A `path:Name` locator must
+  match a heading in a Markdown document, a definition in a `.py` file, or a
+  whole word in any other file. A URL must have a host, and is never fetched.
+- Five new rules, all errors: `authority-root-missing`,
+  `authority-outside-root`, `authority-target-missing`,
+  `authority-locator-unresolved` and `authority-url-invalid`. A base whose
+  living records name repository paths, but with no `.git` above it, now gets
+  one finding instead of a clean result. Frozen records are not checked.
+
 ### 2026-11-01 — research-tooling (first publish)
 
 - **Behaviour change.** Three skills are published here for the first time, on

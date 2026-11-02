@@ -40,7 +40,10 @@ fields:
   authority:
     type: list
     required: living
-    note: a living record must name at least one; an empty list is refused
+    note: >-
+      a living record must name at least one; an empty list is refused. Each
+      entry is an http(s) URL or a path from the repository root, optionally
+      `path:Name`, and must resolve; a frozen record's entries are not resolved
   sources:
     type: list
     required: "no"
@@ -69,3 +72,12 @@ rules:
   covers-empty: a manifest record covers nothing
   covers-target-missing: a manifest record names a file that does not exist
   covers-outside-base: a manifest record names a file outside the base
+  authority-root-missing: >-
+    no directory above the base holds .git, so no repository path an authority
+    names can be resolved; reported once per base
+  authority-outside-root: an authority entry is absolute, or resolves outside the repository
+  authority-target-missing: an authority entry names a path that does not exist
+  authority-locator-unresolved: >-
+    an authority's `:Name` matches no heading in a Markdown document, no symbol
+    in a .py file, or no whole word in any other file; or the .py file does not parse
+  authority-url-invalid: an http(s) authority entry has no host

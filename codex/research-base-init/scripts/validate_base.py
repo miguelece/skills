@@ -23,7 +23,31 @@ is its *Declaring the layers* and *Frontmatter* sections:
 - every record carries `title`, `kind`, `regime` and `updated`, and a living one
   also `status`, `confidence` and a non-empty `authority`;
 - `kind` agrees with the layer's declared kind, and `regime` is one it admits;
-- a manifest record's `covers` names files that exist inside the base.
+- a manifest record's `covers` names files that exist inside the base;
+- a living record's `authority` entries can be found, by its *Citations* rules.
+
+**An authority is resolved against the repository root**: the nearest
+directory above the base holding a `.git` entry, a file in a worktree. It is
+found from the base the caller passes, never from where this script sits, and
+looking is a filesystem test, not a git call. With no root, a base whose living
+records name a repository path gets one finding, never a silent pass. An entry
+is a URL or a repository path, with an optional `path:Name` locator:
+
+- an `http://` or `https://` entry needs a host; it is never fetched, so whether
+  the page still exists stays with `research-base-audit`;
+- a path must stay inside the root and exist;
+- after a Markdown document, `Name` is the whole text of one heading, at any
+  level and outside fenced blocks;
+- after a `.py` file, `Name` is the first word, and what follows is the
+  instrument's inputs, not resolved. It must be a `def`, `async def` or `class`
+  at any depth, or a module-level assignment; a file that does not parse is a
+  finding;
+- after any other file, `Name` need only appear in it as a whole word. That is
+  weaker than the two rules above, because the standard library parses no other
+  language and refusing what it cannot parse would fail a valid entry.
+
+A frozen record is not resolved: it pins its citations to a moment, when what it
+names existed.
 
 `references/record.schema.yaml` restates these rules as documentation. This
 script does not read it -- a bundled script has no YAML parser -- and a test in
@@ -37,10 +61,12 @@ comments stripped. Nothing a record carries needs a YAML engine.
 from __future__ import annotations
 
 import argparse
+import ast
 import datetime
 import json
 import re
 import sys
+import urllib.parse
 from pathlib import Path
 
 
@@ -74,12 +100,25 @@ RULES = {
     "covers-empty": "a manifest record covers nothing",
     "covers-target-missing": "a manifest record names a file that does not exist",
     "covers-outside-base": "a manifest record names a file outside the base",
+    "authority-root-missing": "no directory above the base holds .git, so no "
+                              "repository path an authority names can be resolved",
+    "authority-outside-root": "an authority entry is absolute, or resolves outside "
+                              "the repository",
+    "authority-target-missing": "an authority entry names a path that does not exist",
+    "authority-locator-unresolved": "an authority's `:Name` matches nothing in its path",
+    "authority-url-invalid": "an http(s) authority entry has no host",
 }
 
 KEY = re.compile(r"^([A-Za-z][\w-]*):\s*(.*)$")
 ITEM = re.compile(r"^\s+-\s*(.*)$")
 COMMENT = re.compile(r"(^|\s)#.*$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+URL = re.compile(r"^https?://", re.IGNORECASE)
+ABSOLUTE = re.compile(r"^([A-Za-z]:)?[\\/]")
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+HEADING = re.compile(r"^ {0,3}#{1,6}(?:[ \t]+(.*?))?[ \t]*$")
+CLOSING_HASHES = re.compile(r"(?:^|[ \t]+)#+$")
+MARKDOWN = {".md", ".markdown"}
 
 Finding = tuple[str, str, str]
 
@@ -184,7 +223,115 @@ def read_record(base: Path, path: Path) -> tuple[str | None, list[Finding]]:
         return None, [(name, "record-not-utf8", f"does not decode: {error}")]
 
 
-def check_record(base: Path, path: Path, layer: dict) -> list[Finding]:
+def repository_root(base: Path) -> Path | None:
+    """The nearest directory at or above the base holding `.git`, or None."""
+    start = base.resolve()
+    for directory in (start, *start.parents):
+        if (directory / ".git").exists():
+            return directory
+    return None
+
+
+def headings(text: str) -> set[str]:
+    """Every heading's text outside fenced blocks, closing hashes dropped."""
+    found: set[str] = set()
+    fence: str | None = None
+    for line in text.splitlines():
+        opening = FENCE.match(line)
+        if fence is not None:
+            marker = opening.group(1) if opening else ""
+            if (marker[:1] == fence[0] and len(marker) >= len(fence)
+                    and line.strip() == marker):
+                fence = None
+            continue
+        if opening:
+            fence = opening.group(1)
+            continue
+        match = HEADING.match(line)
+        if match:
+            found.add(CLOSING_HASHES.sub("", match.group(1) or "").strip())
+    return found
+
+
+def _assigned(target: ast.expr) -> list[str]:
+    if isinstance(target, ast.Name):
+        return [target.id]
+    if isinstance(target, ast.Starred):
+        return _assigned(target.value)
+    if isinstance(target, (ast.Tuple, ast.List)):
+        return [name for element in target.elts for name in _assigned(element)]
+    return []
+
+
+def symbols(tree: ast.Module) -> set[str]:
+    """Every def, async def and class at any depth, and every module-level name."""
+    found = {
+        node.name for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+    }
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                found.update(_assigned(target))
+        elif isinstance(node, ast.AnnAssign):
+            found.update(_assigned(node.target))
+    return found
+
+
+def check_url(entry: str) -> tuple[str, str] | None:
+    """Why an http(s) authority entry is malformed, or None. Never fetched."""
+    try:
+        host = urllib.parse.urlsplit(entry).hostname
+    except ValueError:
+        host = None
+    if not host:
+        return "authority-url-invalid", f"`{entry}` has no host"
+    return None
+
+
+def check_authority(entry: str, root: Path) -> tuple[str, str] | None:
+    """Why a repository-path authority entry does not resolve, or None."""
+    if ABSOLUTE.match(entry):
+        return "authority-outside-root", (
+            f"`{entry}` is absolute; name it from the repository root")
+    relative, has_name, name = entry.partition(":")
+    target = (root / relative).resolve()
+    if not target.is_relative_to(root):
+        return "authority-outside-root", f"`{relative}` resolves outside the repository"
+    if not target.exists():
+        return "authority-target-missing", f"`{relative}` does not exist in the repository"
+    if not has_name:
+        return None
+
+    unresolved = "authority-locator-unresolved"
+    if not target.is_file():
+        return unresolved, f"`{entry}`: `{relative}` is a directory, which names nothing"
+    try:
+        text = target.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return unresolved, f"`{relative}` does not decode as UTF-8, so nothing in it is found"
+    suffix = target.suffix.lower()
+    if suffix == ".py":
+        words = name.split()
+        wanted, what = (words[0] if words else ""), "symbol"
+        try:
+            found = wanted in symbols(ast.parse(text))
+        except (SyntaxError, ValueError) as error:
+            return unresolved, (
+                f"`{relative}` does not parse as Python ({error}), "
+                f"so `{wanted}` cannot be found")
+    elif suffix in MARKDOWN:
+        wanted, what = name.strip(), "heading"
+        found = wanted in headings(text)
+    else:
+        wanted, what = name.strip(), "whole word"
+        found = bool(re.search(rf"(?<!\w){re.escape(wanted)}(?!\w)", text))
+    if wanted and found:
+        return None
+    return unresolved, f"`{entry}`: `{relative}` has no {what} `{wanted}`"
+
+
+def check_record(base: Path, path: Path, layer: dict, root: Path | None) -> list[Finding]:
     name = path.relative_to(base).as_posix()
     text, unreadable = read_record(base, path)
     if text is None:
@@ -224,6 +371,17 @@ def check_record(base: Path, path: Path, layer: dict) -> list[Finding]:
         if not front.get("authority"):
             report("authority-missing",
                    "a living record must name what it is re-verified against")
+        authority = front.get("authority")
+        for entry in authority if isinstance(authority, list) else []:
+            if URL.match(entry):
+                problem = check_url(entry)
+            elif root is None:
+                # Collapsed by `validate` into one finding for the whole base.
+                problem = ("authority-root-missing", f"`{entry}` cannot be resolved")
+            else:
+                problem = check_authority(entry, root)
+            if problem:
+                report(*problem)
 
     kind = front.get("kind")
     if kind is not None and kind != layer["kind"]:
@@ -253,6 +411,7 @@ def validate(base: Path) -> list[Finding]:
     layers, findings = read_layers(base)
     if layers is None:
         return findings
+    repository = repository_root(base)
     for directory in sorted(layers):
         layer = layers[directory]
         root = base / directory
@@ -266,7 +425,14 @@ def validate(base: Path) -> list[Finding]:
             continue
         for path in sorted(root.glob("*.md")):
             if path.name.lower() not in NON_RECORDS:
-                findings.extend(check_record(base, path, layer))
+                findings.extend(check_record(base, path, layer, repository))
+    rootless = {name for name, rule, _ in findings if rule == "authority-root-missing"}
+    if rootless:
+        findings = [finding for finding in findings if finding[1] != "authority-root-missing"]
+        findings.append((".", "authority-root-missing",
+                         f"no directory above {base} holds .git, so the repository "
+                         f"paths {len(rootless)} living record(s) name as their "
+                         "authority cannot be resolved"))
     return findings
 
 
