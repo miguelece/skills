@@ -1,0 +1,6 @@
+interface:
+  display_name: Tranche Gate
+  short_description: Analyse and clean up a batch of agent commits
+  default_prompt: Use $tranche-gate to analyse and remediate this tranche before my review.
+policy:
+  allow_implicit_invocation: true

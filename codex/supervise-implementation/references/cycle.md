@@ -64,6 +64,20 @@ topped up**. Checking done by reading files is invisible to the count.
 | A draft or gated piece of a tranche item | Routine entry, one line |
 | A model other than Opus 5.5 in the accounting | Log it for the gate's report |
 
+## The size limit
+
+**4,000 changed lines**, declared by the gate and unmeasured: a starting
+value, which no study has sized. Count it every cycle, at step 6 before
+leasing:
+
+```text
+scripts/scan_tranche.py --repo <path> --base <tranche base> --tip HEAD --size
+```
+
+It prints one number, leaving out the board's generated indexes. Write it to
+the lease table's header. At or past the limit, grant no new lease: let the
+work in flight finish and integrate, then close the tranche.
+
 ## Mechanical entries
 
 Their options are fixed:
@@ -81,7 +95,8 @@ Their options are fixed:
 3. Test for stalls; log each condition.
 4. Respond per the table; write entries, park streams, act on answers.
 5. Integrate: one integrator, if none is in flight.
-6. Lease: up to three workers, criteria first, in interference order.
+6. Lease: count the size; at the limit, no new lease. Otherwise up to three
+   workers, criteria first, in interference order.
 7. Write back, append drafts, at most one push, end the turn.
 
 On the owner's message: ask the open entries first. On a heartbeat: run a

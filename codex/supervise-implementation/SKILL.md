@@ -40,8 +40,10 @@ turn.
 5. **Integrate**: if no integrator is in flight, mark the next ready
    stream's lease `integrating` and dispatch one for it. There is at most one
    integrator at a time.
-6. **Lease**: fill free capacity, up to three workers, from the tranche's
-   leasable items in interference order (see *Leasing*).
+6. **Lease**: count the tranche's size with `scripts/scan_tranche.py --size`;
+   at the size limit in [references/cycle.md](references/cycle.md), grant no
+   new lease. Otherwise fill free capacity, up to three workers, from the
+   tranche's leasable items in interference order (see *Leasing*).
 7. **Write back** the tranche record and the lease table, append the
    analyst's drafts, send at most one push for this cycle's new blocking
    entries, then end the turn.
@@ -189,14 +191,17 @@ session. Never stop a tranche for context alone; compaction carries it.
 
 ## Closing a tranche
 
-The tranche closes when nothing in it can be leased, or at the size limit the
-gate declares it can review. Delete the heartbeat, write and commit the
-record, then call the gate with the tranche's base and tip commits, the
-record, each task's acceptance criteria and every integrator verdict. Its
-report lists the open entries first, then the candidate precedents, and shows
+The tranche closes when nothing in it can be leased, or once it reaches the
+size limit the gate declares it can review and the work in flight has
+integrated. Delete the heartbeat. Write
 `scripts/account_attempt.py --match-rate` over the project's recent finished
-sessions; a rate near zero means the price table is stale. Push once when
-the report is ready. The next tranche opens only on the owner's word.
+sessions into the record's `Match rate:` line; a rate near zero means the
+price table is stale. Commit the record, then launch a fresh agent at `high`
+that runs `tranche-gate` with the tranche's base and tip commits, the record,
+each task's acceptance criteria and every integrator verdict. Its report,
+appended to the record, lists the open entries first, then the candidate
+precedents, then that match rate. Push once when the report is ready. The
+next tranche opens only on the owner's word.
 
 Afterwards run `scripts/validate_board.py --board <board>` and
 `scripts/generate_index.py --board <board>`.
@@ -234,5 +239,5 @@ Afterwards run `scripts/validate_board.py --board <board>` and
 - Report form: [references/report-form.md](references/report-form.md)
 - Clean boundaries: [references/session-queue.md](references/session-queue.md)
 - Scripts: `scripts/account_attempt.py` (with `scripts/prices.json`),
-  `scripts/check_test_changes.py`, `scripts/validate_board.py`,
-  `scripts/generate_index.py`
+  `scripts/check_test_changes.py`, `scripts/scan_tranche.py`,
+  `scripts/validate_board.py`, `scripts/generate_index.py`

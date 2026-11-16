@@ -16,6 +16,29 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-16 — task-board-management (tranche-gate)
+
+- **Behaviour change.** A new skill, `tranche-gate`, published on both
+  platforms. It gates a closed tranche, or any batch of agent commits, before
+  the owner's review. A bundled scan covers the whole range, base to tip, and
+  the model reads one task's diff at a time, judging against a closed
+  checklist of twelve defects. It does not look for style or correctness bugs.
+  Every finding cites its `file:line` and is verified against the code.
+- It commits only behaviour-preserving cleanup of what the batch introduced,
+  one kind of change per commit. It re-runs the owning suite and the test
+  check after each commit, and reverts the commit if either fails. It
+  reports, without making them, changes to a published skill, removal of a
+  test whose subject remains, and any behaviour change. Each
+  surplus-verification removal is prepared as an unapplied patch. The report
+  is appended to the tranche record, and nothing is pushed.
+- **Behaviour change.** `supervise-implementation` now has a size limit: the
+  4,000 changed lines the gate declares, labelled unmeasured. It counts that
+  size every cycle with the bundled `scan_tranche.py --size`, and at the limit
+  it leases nothing new and closes the tranche once the work in flight has
+  integrated. At the close it writes the price table's match rate into the
+  record, then launches `tranche-gate` as a fresh agent.
+- `check_test_changes.py` now ships in both skills, unchanged.
+
 ### 2026-11-15 — task-board-management (supervise-implementation)
 
 - **Behaviour change.** A new skill, `supervise-implementation`, published on
