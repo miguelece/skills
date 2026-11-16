@@ -1,0 +1,283 @@
+# Frontmatter contract for one task document.
+#
+# This file is the authoritative declaration of that contract: what each field
+# is, every rule the validator can report, and how the folder is derived.
+#
+# It is documentation, not configuration. The validator does not read it -- it
+# hard-codes its own constants -- so editing this file changes no behaviour.
+# What keeps the two in agreement is a test in the authoring repository, which
+# parses this file and asserts it against those constants and against every rule
+# id the validator reports. Nothing here is merely intended; it is checked.
+#
+# Every rule appears in exactly one of the two blocks at the bottom: `rules:`
+# for the ones this file states itself, `implied_rules:` for the ones another
+# block already expresses. The union is what the test pins, so a rule cannot be
+# added to the validator without being classified into one or the other.
+#
+# Prose explanation of every field, and of why the folder is derived rather than
+# authored, is in references/board-model.md.
+
+fields:
+  id:
+    type: string
+    required: true
+    pattern: "^[a-z0-9]+(-[a-z0-9]+)*$"
+    note: must equal the filename stem
+
+  title:
+    type: string
+    required: true
+    min_length: 8
+
+  kind:
+    type: enum
+    required: false
+    default: ticket
+    values: [ticket, spec]
+    note: >-
+      ticket = a role/portion (usually implementation, sometimes research or a
+      spike); spec = architecture/composition/vision. Does not affect folder
+      derivation.
+
+  status:
+    type: enum
+    required: true
+    values: [draft, scoped, in-progress, done, superseded]
+
+  gate:
+    type: enum
+    required: true
+    values: [none, manual, owner]
+    note: >-
+      manual = a person must perform an action; owner = a person must make a
+      decision. Non-none only while status is draft, scoped, or in-progress.
+
+  priority:
+    type: enum
+    required: true
+    values: [high, medium, low]
+
+  category:
+    type: string
+    required: true
+    note: free text; the index groups by it within each folder
+
+  created:
+    type: date
+    required: true
+    format: "YYYY-MM-DD"
+
+  updated:
+    type: date
+    required: true
+    format: "YYYY-MM-DD"
+    note: must not precede created
+
+  parent:
+    type: string
+    required: false
+    default: null
+    note: "lineage: id of the task this was split from; must resolve"
+
+  part-of:
+    type: string
+    required: false
+    default: null
+    note: >-
+      composition: the single task this is a component of; must resolve, no
+      cycles. Distinct from parent (lineage). Works at any depth — a subticket is
+      a ticket that is part-of another ticket.
+
+  blocked-by:
+    type: list
+    required: false
+    default: []
+    note: >-
+      ids of tasks that must reach done first. Waiting on the board, not on a
+      person. Unlike every other field, this one's folder effect depends on
+      another task's status, so the bucket clears itself when the blocker
+      closes. Survives on a finished task as a record of what it came after.
+
+  supersedes:
+    type: list
+    required: false
+    default: []
+    note: ids this task replaces; each must resolve
+
+  superseded-by:
+    type: string
+    required: false
+    default: null
+    note: required when status is superseded; must resolve
+
+  revisit:
+    type: boolean
+    required: false
+    default: false
+    note: true only when status is done; requires an Upgrade paths section
+
+  outcome:
+    type: string
+    required: when status is done
+    default: null
+    min_length: 15
+    note: >-
+      One line: what changed and how it was confirmed. The archive index is
+      generated from this, so a finished task without one pushes its summary
+      back into hand-maintained prose, which is what drifts.
+
+# First match wins. See references/board-model.md for the reasoning.
+#
+# Human gates outrank blocked-by: a task waiting on both a sibling and a person
+# stays un-startable when the sibling closes, so it files by the person. The
+# done checks outrank it too, so blocked-by can persist as provenance.
+folder_mapping:
+  - when: {status: superseded}
+    folder: superseded
+  - when: {gate: manual}
+    folder: manual-blocked
+  - when: {gate: owner}
+    folder: owner-deferred
+  - when: {status: done, revisit: true}
+    folder: revisit
+  - when: {status: done}
+    folder: completed
+  - when: {blocked-by: unresolved}
+    folder: task-blocked
+  - when: {}
+    folder: ""
+
+required_sections:
+  always:
+    - Why this exists
+    - Plan
+    - Open questions
+    - Owner
+  when_revisit:
+    - Upgrade paths
+  when_done:
+    - Execution log
+
+rules:
+  - id: gate-implies-unfinished
+    check: gate != none requires status in [draft, scoped, in-progress]
+  - id: draft-has-open-questions
+    check: status == draft requires at least one unresolved open question
+  - id: scoped-has-no-unresolved
+    check: status in [scoped, in-progress, done] requires every open question resolved
+  - id: superseded-has-successor
+    check: status == superseded requires superseded-by to resolve
+  - id: revisit-implies-done
+    check: revisit == true requires status == done
+  - id: outcome-required
+    check: status == done requires a non-empty outcome
+  - id: outcome-too-thin
+    check: >-
+      an outcome shorter than 15 characters is a label, not a summary
+      ("done", "shipped")
+  - id: references-resolve
+    check: parent, part-of, supersedes, superseded-by, blocked-by ids all exist
+  - id: id-matches-filename
+    check: id equals the filename stem
+  - id: kind-invalid
+    check: kind, when present, is one of [ticket, spec]
+  - id: part-of-self
+    check: part-of does not name the task itself
+  - id: part-of-cycle
+    check: the part-of composition graph is acyclic
+  - id: part-of-too-deep
+    check: "warning: the part-of chain is deeper than 3 (policy nudge, not an error)"
+  - id: spec-done-open-tickets
+    check: "warning: a done spec still has open ticket descendants (triage note)"
+  - id: folder-matches-frontmatter
+    check: the file sits in the folder the mapping derives
+  - id: blocked-by-self
+    check: blocked-by does not name the task itself
+  - id: blocked-by-cycle
+    check: >-
+      the blocked-by graph is acyclic; no task in a cycle can ever become
+      actionable and nothing else on the board would surface that
+  - id: blocker-superseded
+    check: >-
+      a blocker that was superseded is repointed at its successor rather than
+      waiting on a replaced spec
+  - id: updated-before-created
+    check: updated is not earlier than created
+
+  # Structural: the document's shape, which no field declaration describes.
+  - id: frontmatter-missing
+    check: the document opens with a frontmatter block
+  - id: frontmatter-multiline
+    check: >-
+      no frontmatter value spans more than one line; the generated index emits
+      each on a single line, so fold with '>-' rather than a literal block
+  - id: id-duplicate
+    check: no two task files on the board declare the same id
+  - id: folder-unknown
+    check: the file sits in a directory the folder mapping can derive
+
+  # Content integrity: claims a task's body makes about files outside itself.
+  - id: link-target-missing
+    check: >-
+      "warning: every relative link in the body resolves (transient -- the
+      prescribed two-pass close produces this and repairs it in the same
+      session)"
+  - id: citation-line-range
+    check: a citation in link form names a thing rather than a line range
+  - id: citation-name-missing
+    check: the thing a citation names still exists in the file it points at
+  - id: citation-code-span-range
+    check: >-
+      no bare code span holds a file-and-line-range; that form is not a link, so
+      the two citation rules above cannot see it
+  - id: citation-prose-line-reference
+    check: >-
+      no line reference is written as ordinary prose; that form is neither a
+      link nor a code span, so the three rules above cannot see it, and a
+      reference carrying a second number is a mention of a rotted range rather
+      than a citation and is skipped
+  - id: citation-code-span-name-missing
+    check: >-
+      the thing a citation names still exists, when the citation is written as a
+      bare code span rather than as a link; resolution is permissive (the name
+      must appear in at least one file of that basename, searched from the
+      board's parent and skipping generated output), and a basename matching no
+      file is skipped as the link rule skips a missing path
+  - id: instrument-outside-the-repository
+    check: >-
+      no task names a script path in a scratch directory, a session scratchpad
+      or gitignored private material; a figure produced by an instrument no
+      repository holds cannot be reproduced once the file is gone, which this
+      board has already paid for once when two implementations of one recorded
+      anchor disagreed and the original had been lost. Reads the board only, so
+      a scan recorded outside it is beyond this rule's reach and is not covered
+      by it passing -- and neither is an instrument cited by basename alone,
+      which carries no directory for the rule to anchor on
+
+# Rules this file does not state itself, because another block above already
+# expresses them. Declared anyway so the classification is exhaustive: `rules:`
+# and `implied_rules:` together must equal every id the validator reports, which
+# is what makes adding a rule without documenting it a test failure rather than
+# a silent gap. `link-target-missing` sat undeclared for three days on exactly
+# that gap, and two citation rules repeated it.
+implied_rules:
+  - id: id-missing
+    expressed_by: fields
+  - id: id-format
+    expressed_by: fields
+  - id: title-missing
+    expressed_by: fields
+  - id: status-invalid
+    expressed_by: fields
+  - id: gate-invalid
+    expressed_by: fields
+  - id: priority-invalid
+    expressed_by: fields
+  - id: category-missing
+    expressed_by: fields
+  - id: revisit-invalid
+    expressed_by: fields
+  - id: frontmatter-unknown-key
+    expressed_by: fields
+  - id: section-missing
+    expressed_by: required_sections

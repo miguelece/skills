@@ -16,6 +16,29 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-15 — task-board-management (supervise-implementation)
+
+- **Behaviour change.** A new skill, `supervise-implementation`, published on
+  both platforms. On the owner's word it opens a tranche over the whole
+  eligible board and leases scoped tickets to up to three fresh workers, each
+  in its own worktree. A fresh integrator verifies, merges and closes each
+  stream, one at a time, and is the only committer while the tranche runs.
+  Stalls within tolerance are re-sized without asking; the rest become
+  escalation entries that are asked when the owner returns, with one push per
+  cycle. Each cycle is one turn, re-read from disk. The closed tranche goes to
+  an analysis gate, and nothing is pushed.
+- It bundles two scripts: `account_attempt.py`, which prices a worker's
+  transcript and measures its verification share, and `check_test_changes.py`,
+  which flags tests that were deleted, skipped or focused without being
+  declared.
+- At opening it checks two settings and recommends values, without writing
+  them: an auto-compact window near 300k for the supervisor's session, and
+  `worktree.baseRef: "head"`. Until the second is set, it runs one worker at a
+  time.
+- `orchestrate-implementation`'s eligibility and interference rules moved,
+  unchanged, into a shared `references/task-selection.md` that both skills
+  carry. No change in its behaviour.
+
 ### 2026-11-15 — task-board-management (verification scope rule)
 
 - **Behaviour change.** `focused-implementation` now keeps new verification

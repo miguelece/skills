@@ -18,19 +18,12 @@ Read [references/board-model.md](references/board-model.md).
 
 ## Selection
 
-Eligible tasks are `status: scoped` with `gate: none`. Nothing else. A gated or
-draft task cannot be scheduled — scheduling it just moves the blockage.
+Read [references/task-selection.md](references/task-selection.md). Its
+*Eligibility* decides which tasks may enter the set, and its *Interference* decides
+which streams may run beside each other.
 
-A task with open `blocked-by` entries is eligible **only if its blockers are in the
-same set and sequenced ahead of it**. That is a legitimate way to run a dependency
-chain in one pass; pulling in the downstream task without its blocker is not.
-
-**Schedule tickets, not specs.** A `kind: spec` is the vision a set of tickets
-realizes, not a unit of implementable work — you schedule its tickets (the tasks
-`part-of` it). A spec is a natural boundary for one coherent set: its tickets share
-context and often interfere, which is exactly the strongest reason to batch. Leave
-the spec's own status alone; closing it is a deliberate call after its slices land,
-not an automatic consequence.
+A spec is a natural boundary for one coherent set: its tickets share context and
+often interfere, which is exactly the strongest reason to batch.
 
 Choose the **smallest set that is genuinely coherent**, by this order of preference:
 
@@ -63,10 +56,8 @@ plan. It carries:
 - Explicitly excluded tasks and why — this is what stops the same debate next cycle.
 - Per-stream branch strategy, including which streams share a branch because they
   touch the same files.
-- Each stream's write set **and its read set**: the tools, generators and suites
-  it runs as well as the files it edits. Disjoint files are not disjoint inputs —
-  a close that runs a generator another stream is still editing records output
-  from code nothing has committed yet.
+- Each stream's write set **and its read set**, as *Interference* in
+  [references/task-selection.md](references/task-selection.md) defines them.
 - Dependencies ordered at the step that needs it, not at the whole task. When
   only a task's final verification uses another task's result, its
   implementation can run beside that task.
@@ -82,9 +73,8 @@ its execution log intact.
    first line of code. Tasks scoped weeks ago cite line numbers that have moved.
    Correct what has drifted, and report it — a premise that dissolved may remove a
    task from the set entirely.
-2. **Sequence by interference, not by size.** Streams whose write sets are disjoint,
-   and whose write sets miss every other stream's read set, can run in parallel.
-   Streams that touch the same files run in series on one branch, in a stated order.
+2. **Sequence by interference, not by size**, as *Interference* in
+   [references/task-selection.md](references/task-selection.md) states it.
 3. **Execute each task under `focused-implementation`**, dispatched per *Dispatch*
    below. Its entry gate, verification budget, and anti-fix rules apply per task;
    this skill does not relax them.
@@ -190,6 +180,8 @@ files. Until then the patch waits, and so does that stream's close.
 
 - The state model and folder mapping:
   [references/board-model.md](references/board-model.md)
+- Which tasks are eligible, and which streams may run in parallel:
+  [references/task-selection.md](references/task-selection.md)
 - Field-by-field contract: [references/task.schema.yaml](references/task.schema.yaml)
 - Plan document template: [assets/task.md](assets/task.md)
 - Emphasis, headings, and what must survive a shortened report:
