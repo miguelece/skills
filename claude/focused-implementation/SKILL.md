@@ -38,6 +38,12 @@ Set `status: in-progress` and update `updated` before starting.
 2. **Set a verification budget before writing code.** Decide now what evidence will
    prove this worked, and how many distinct assertions it takes. Write them down.
    Deciding afterwards means deciding once the answer is already known.
+   Build the evidence from the task's own tests and the instruments the repository
+   already has. A test written for this task, and a helper used only by this task's
+   tests in its own test files, are the task's own. Anything meant to outlive the
+   task — a shared fixture library, a test runner, a harness, a new measurement
+   script, a validator or lint rule — is new verification tooling, and is out of
+   this task's scope (step 8).
 3. **Work in vertical slices.** One end-to-end behavior at a time, each independently
    verifiable. A slice that cannot be verified on its own is too big.
 4. **Test first where a test can fail.** Write the failing test, watch it fail for
@@ -47,17 +53,26 @@ Set `status: in-progress` and update `updated` before starting.
    measurement rather than an assertion — a request count, a render count, a load
    count, a timing — prove the probe detects the bug: revert or stash the fix, run
    the probe, confirm it reports the defect, then restore the fix. An instrument that
-   has only ever seen the healthy state is not an instrument.
+   has only ever seen the healthy state is not an instrument. If proving the probe
+   needs an instrument the repository does not have, that instrument is new
+   verification tooling (step 8).
 6. **Measure against a realistic build.** Development modes lie: they double-invoke,
    skip caching, and disable optimizations. Anything you measure in counts must be
-   measured against a production-equivalent build.
+   measured against a production-equivalent build. Use a build the repository
+   already produces; building one is new verification tooling (step 8).
 7. **Verify against the budget from step 2.** Every assertion, run, with the result
-   recorded. Report shortfalls as shortfalls, shaped per
+   recorded. When they pass, stop: no further review rounds, reviewer subagents, or
+   re-runs of a green suite. Mention anything more you think would help in the
+   execution log instead of doing it. Report shortfalls as shortfalls, shaped per
    [references/report-form.md](references/report-form.md) — a shortfall is a
    negation, and that file's first guardrail is the one that keeps it from being
    trimmed away.
 8. **Handle what implementation turns up.** Work discovered mid-task that the task
-   should not absorb gets split with `to-follow-on`, not quietly added.
+   should not absorb gets split with `to-follow-on`, not quietly added. New
+   verification tooling is always such work. File it with its reason, at the
+   priority its value warrants — tooling that makes code easier to change is not low
+   priority for being tooling — and finish with the checks step 2 fixed. If those
+   checks cannot run without it, file it as this task's blocker and stop.
 
 ## Closing out
 
@@ -96,6 +111,8 @@ Set `status: in-progress` and update `updated` before starting.
 - Do not write implementation code before the failing test, where a test applies.
 - Do not claim a measurement-based fix works without anti-fix validation.
 - Do not silently widen scope. Split it or state it.
+- Do not build new verification tooling inside a task. File it with `to-follow-on`,
+  and verify with what step 2 fixed.
 - Do not mark `done` while any acceptance criterion is unmet — including one that
   can only be met by a human. Gate it instead.
 - Do not push to a remote unless the user explicitly asks. Committing locally is

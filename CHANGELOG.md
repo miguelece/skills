@@ -16,6 +16,22 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-15 — task-board-management (verification scope rule)
+
+- **Behaviour change.** `focused-implementation` now keeps new verification
+  tooling out of the task it is implementing. A test written for the task, and
+  a helper used only by its tests in its own test files, are the task's own.
+  Anything meant to outlive the task (a shared fixture library, a test runner,
+  a harness, a new measurement script, a validator or lint rule) is filed with
+  `to-follow-on`, at the priority its value warrants. If the task's checks
+  cannot run without it, it is filed as the task's blocker and the task stops.
+- Steps 5 and 6, anti-fix validation and the realistic build, now send an
+  instrument or build the repository does not already have to that rule.
+- **Behaviour change.** Step 7 now says when to stop: once the budget's checks
+  pass, no further review rounds, reviewer subagents or re-runs of a green
+  suite. Anything more that would help goes in the execution log.
+- No other skill in the project changed.
+
 ### 2026-11-02 — research-tooling (authority resolution)
 
 - **Behaviour change.** `validate_base.py`, bundled into all three
