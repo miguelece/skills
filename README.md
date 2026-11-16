@@ -62,6 +62,7 @@ the rest operate on the board it creates.
 | `task-interview` | Grill a draft task until its open questions become decisions |
 | `focused-implementation` | Take one scoped task to done, in tested slices |
 | `orchestrate-implementation` | Group several non-interfering tasks and run them together |
+| `supervise-implementation` | Work the board in gated tranches, leasing tasks to fresh workers |
 | `to-follow-on` | Carve work off an in-flight task into its own task |
 | `task-board-triage` | Reconcile board state with what the repo actually shows |
 
