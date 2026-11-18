@@ -16,6 +16,24 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-18 — diataxis-doc-migration (page dating)
+
+- **Behaviour change.** Every page the Diataxis skills write now carries a
+  `*Last updated: YYYY-MM-DD*` line directly under its H1. The four page
+  templates in `diataxis-create-docs` include it.
+- **Behaviour change.** The manifest gains an optional `pages` list: one
+  entry per page a run wrote, with its path, a `sha256:` fingerprint of its
+  content and the date on its line. It is additive, so `schema_version` stays
+  1 and existing manifests still validate.
+- **Behaviour change.** A new bundled script, `check_pages.py`, fingerprints
+  pages or checks every `pages` entry against the repository. When a
+  manifest records `pages`, `diataxis-audit-docs` runs it and reports each
+  missing page, missing or mismatched date line, and page edited outside the
+  skills. Pages no run wrote carry no entry and are not checked.
+- Known issue: the page templates carry a `markdownlint-configure-file`
+  directive that turns MD036 off for the whole of each page, so the date
+  line passes lint. A narrower fix is planned.
+
 ### 2026-11-18 — task-board-management (scan and checklist fixes)
 
 - **Behaviour change.** `scan_tranche.py`, bundled with `tranche-gate` and

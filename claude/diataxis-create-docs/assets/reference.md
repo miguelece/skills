@@ -1,5 +1,7 @@
 # <Name of the interface, command or configuration surface>
 
+*Last updated: YYYY-MM-DD*
+
 <One sentence on what this page describes. Reference describes; it does not
 instruct or explain.>
 
@@ -19,3 +21,6 @@ limits. Nothing here is pending, proposed or unwired.>
 <!-- Reference rules: complete and scan-friendly, structured like the thing it
 describes. Each fact has one canonical page; this page is it. Secret values
 never appear, only the variable names. -->
+
+<!-- The date line is emphasis by design, not a heading. -->
+<!-- markdownlint-configure-file { "MD036": false } -->

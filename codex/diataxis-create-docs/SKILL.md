@@ -109,6 +109,12 @@ Wait for one approval of the whole plan. Do not ask page by page.
 - Write only the approved pages, navigation, governance, ADRs, manifest, and
   reports.
 - Keep each factual contract canonically owned in one page.
+- Date every page you write: on the line after its H1, with one blank line
+  between, set `*Last updated: YYYY-MM-DD*` to the session's date read from the
+  environment, in ISO form. The templates in `assets/` already carry the line.
+  After the page's last edit, run `scripts/check_pages.py --fingerprint <page>`
+  and upsert the page's entry in the manifest's `pages`: `path`, `fingerprint`
+  and `last_updated`, one entry per path.
 - Draft architecture ADRs for user confirmation before writing inferred
   rationale. The documentation-lifecycle ADR is mandatory in bootstrap mode.
 - Validate the manifest with `scripts/validate_manifest.py` and repository

@@ -38,7 +38,12 @@ or a plausible explanation as proof of audit completion.
    configured checks, baseline failures, and the selected domain.
 2. Validate the manifest when present. Confirm archive state, run status,
    approved policies, evidence, findings, verification history, and section
-   ledger semantics.
+   ledger semantics. When it records `pages`, run
+   `scripts/check_pages.py --manifest <manifest> --root <repo>` and report each
+   page it names as a finding, with the page and the reason: a missing file, a
+   date line missing or differing from `last_updated`, or content that no longer
+   matches its fingerprint, which means it was edited outside the skills and its
+   date may be stale. Pages no run wrote carry no entry and are not checked.
 3. Build or verify the authority map by claim category. Never choose a value by
    majority agreement between stale pages.
 4. With an archive, run section coverage and require every meaningful section to
@@ -73,6 +78,7 @@ or a plausible explanation as proof of audit completion.
 scripts/validate_manifest.py --schema references/manifest.schema.yaml --manifest <manifest>
 scripts/check_coverage.py --manifest <manifest> --archive-root <archive-run> --repository-root <repo>
 scripts/check_links.py --root <repo> --docs <docs-domain> [--redirects <file>]
+scripts/check_pages.py --manifest <manifest> --root <repo>
 ```
 
 - Re-run applicable native docs checks, inspect the final diff, confirm unrelated

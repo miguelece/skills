@@ -91,6 +91,12 @@ scripts exactly as described there.
 
 ## Verify and hand off
 
+- Date every page you write: on the line after its H1, with one blank line
+  between, set `*Last updated: YYYY-MM-DD*` to the session's date read from the
+  environment, in ISO form. After the page's last edit, run
+  `scripts/check_pages.py --fingerprint <page>` and upsert the page's entry in
+  the manifest's `pages`: `path`, `fingerprint` and `last_updated`, one entry
+  per path.
 - Run `scripts/validate_manifest.py`, `scripts/check_coverage.py`, and
   `scripts/check_links.py`; run safe repository-native docs checks too.
 - Recheck Git status/diff, approved path scope, unrelated dirty-file hashes,

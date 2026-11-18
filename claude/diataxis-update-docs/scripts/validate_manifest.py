@@ -244,6 +244,16 @@ def semantic_validate(manifest: dict[str, Any]) -> list[str]:
                 f"{label}: {disposition} disposition requires nonempty notes or reason"
             )
 
+    seen_pages: set[str] = set()
+    for index, page in enumerate(manifest.get("pages", [])):
+        label = f"$.pages[{index}].path"
+        problem = portable_path_error(page["path"], label)
+        if problem:
+            errors.append(problem)
+        if page["path"] in seen_pages:
+            errors.append(f"{label}: duplicate page path {page['path']!r}")
+        seen_pages.add(page["path"])
+
     archive_path = archive["path"]
     if archive_path is not None:
         problem = portable_path_error(archive_path, "$.archive.path")
