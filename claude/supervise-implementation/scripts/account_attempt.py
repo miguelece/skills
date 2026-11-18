@@ -66,8 +66,7 @@ PRICES = Path(__file__).with_name("prices.json")
 # Largest relative difference between the priced and recorded cost of one
 # model that still counts as a match. A correct table matches to the cent, so
 # this only absorbs rounding; it is not a tolerance for a stale price. Set from
-# this lab's 46 sessions with a cost record: see the execution log of
-# supervisor-attempt-accounting-script.
+# this lab's 46 sessions with a cost record.
 TOLERANCE = 0.005
 
 TOKEN_CLASSES = ("input", "cache_write_5m", "cache_write_1h", "cache_read", "output")
@@ -210,8 +209,9 @@ def _without_flags(args: list[str]) -> list[str]:
 def _git_reviews(args: list[str]) -> bool:
     """`git diff`, and `git show` of a commit: reviewing a change.
 
-    Counted because budgeting's measurement, which set B5's ceiling, counted
-    them. `git show <rev>:<path>` reads a file and is not counted.
+    Counted because the measurement that set the 25% verification ceiling
+    counted them, so the meter counts on the basis the ceiling was calibrated
+    on. `git show <rev>:<path>` reads a file and is not counted.
     """
     i = 0
     while i < len(args) and args[i].startswith("-"):

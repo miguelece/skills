@@ -6,7 +6,7 @@ JSON report. Every list is a set of candidates, not of defects: the gate
 verifies each against the code before it acts on it.
 
     scripts/scan_tranche.py --repo . --base <tranche-base> --tip <tranche-tip> \\
-        [--record <board>/<tranche-record>.md] [--board tasks]
+        [--record <board>/<tranche-record>.md]
 
     scripts/scan_tranche.py --repo . --base <tranche-base> --tip <head> --size
 
@@ -31,14 +31,21 @@ verifies each against the code before it acts on it.
   file mentions (Python modules are reported under dead_code instead, and test
   files, `conftest.py`, `__init__.py` and dot-files are found by convention);
   and `print` calls on added lines outside `main` and the `__main__` block.
-- **markers** (D10): `TODO` and `FIXME` on lines the tranche added.
+- **markers** (D10): `TODO` and `FIXME` in comments on lines the tranche
+  added: a Python file's comment tokens, or the whole line when it does not
+  tokenize; in any other file, after a `#`, `//` or `<!--` on the line.
 - **size**: changed lines, as `git diff --shortstat` counts them, raw and
-  without the board's generated `README.md`, `TREE.md` and `ARCHIVE.md`.
-  `--size` prints only the second number; the supervisor closes a tranche on
-  it.
+  without generated regions. `--size` prints only the second number; the
+  supervisor closes a tranche on it.
 
-The board's generated indexes are left out of every list, but they are still
-searched for references. `--board` names the board folder, `tasks` by default.
+A generated region runs from a line holding only a `BEGIN GENERATED` or
+`BEGIN SLICES` HTML comment to the next line holding only the matching `END`
+comment, markers included, in any file. Its lines are left out of size,
+churn, text clones and markers: a removed line is judged by the regions of
+the file it was removed from, an added line by those of the file it was added
+to. A marker that never closes marks nothing. A new file holding a region is
+not reported as unreferenced. Generated lines are still searched for
+references, and `excluded` lists each region base..tip changed a line in.
 
 Standard library and `git` only, deterministic. Exits 0 with a report, 2 when
 the repository, a commit or the record cannot be read.
@@ -49,21 +56,25 @@ from __future__ import annotations
 import argparse
 import ast
 import copy
+import io
 import json
 import re
 import subprocess
 import sys
+import tokenize
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
 
-GENERATED = ("README.md", "TREE.md", "ARCHIVE.md")
 WINDOW = 5
 TOKEN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 MARKER = re.compile(r"\b(TODO|FIXME)\b")
+COMMENT_OPENERS = ("#", "//", "<!--")
 TEST_FILE = re.compile(r"(^|/)(test_[^/]*|[^/]*_test)\.py$")
 CONVENTION_FILES = {"conftest.py", "__init__.py"}
+REGION_OPEN = re.compile(r"^\s*<!--\s*BEGIN (GENERATED|SLICES)\b.*-->\s*$")
+REGION_CLOSE = re.compile(r"^\s*<!--\s*END (GENERATED|SLICES)\b.*-->\s*$")
 
 
 # --- git ------------------------------------------------------------------------
@@ -190,7 +201,97 @@ def diff_patches(repo: Path, old: str, new: str) -> list[FilePatch]:
     return parse_patch(out.decode("utf-8", "replace"))
 
 
-# --- the tip's tree ----------------------------------------------------------------------
+# --- generated regions -----------------------------------------------------------------
+
+
+def regions(text: str) -> list[tuple[int, int]]:
+    """(first, last) line of each closed generated region, markers included."""
+    found = []
+    start, kind = None, None
+    for n, line in enumerate(text.splitlines(), 1):
+        if start is None:
+            opened = REGION_OPEN.match(line)
+            if opened:
+                start, kind = n, opened.group(1)
+        else:
+            closed = REGION_CLOSE.match(line)
+            if closed and closed.group(1) == kind:
+                found.append((start, n))
+                start = None
+    return found
+
+
+def region_of(spans: list[tuple[int, int]], line: int) -> tuple[int, int] | None:
+    return next((span for span in spans if span[0] <= line <= span[1]), None)
+
+
+class Regions:
+    """The generated regions of files at commits, read from git and cached."""
+
+    def __init__(self, repo: Path) -> None:
+        self.repo = repo
+        self.cache: dict[str, list[tuple[int, int]]] = {}
+
+    def load(self, specs: set[str]) -> None:
+        wanted = sorted(spec for spec in specs if spec not in self.cache)
+        if not wanted:
+            return
+        out = git(self.repo, "cat-file", "--batch", stdin="\n".join(wanted).encode() + b"\n")
+        pos = 0
+        for spec in wanted:
+            header_end = out.index(b"\n", pos)
+            header = out[pos:header_end].split()
+            if header[-1] == b"missing":
+                self.cache[spec] = []
+                pos = header_end + 1
+                continue
+            size = int(header[2])
+            data = out[header_end + 1 : header_end + 1 + size]
+            pos = header_end + 1 + size + 1
+            self.cache[spec] = regions(data.decode("utf-8", "replace"))
+
+    def at(self, rev: str, path: str | None) -> list[tuple[int, int]]:
+        if path is None:
+            return []
+        spec = f"{rev}:{path}"
+        self.load({spec})
+        return self.cache[spec]
+
+
+def specs_of(patches: list[FilePatch], old: str, new: str) -> set[str]:
+    specs = set()
+    for fp in patches:
+        if fp.removed and fp.old:
+            specs.add(f"{old}:{fp.old}")
+        if fp.added and fp.new:
+            specs.add(f"{new}:{fp.new}")
+    return specs
+
+
+def authored(fp: FilePatch, gen: Regions, old: str, new: str, hit: set | None = None) -> FilePatch:
+    """The patch without its generated lines; `hit` collects the regions that held any."""
+    kept = FilePatch(fp.old, fp.new, fp.renamed)
+    for side, rev, path, lines, out in (("base", old, fp.old, fp.removed, kept.removed),
+                                        ("tip", new, fp.new, fp.added, kept.added)):
+        spans = gen.at(rev, path) if lines else []
+        for line_no, text in lines:
+            span = region_of(spans, line_no)
+            if span is None:
+                out.append((line_no, text))
+            elif hit is not None:
+                hit.add((path, side, span))
+    return kept
+
+
+def authored_diff(repo: Path, gen: Regions, old: str, new: str,
+                  hit: set | None = None) -> list[tuple[FilePatch, FilePatch]]:
+    """(raw, authored) patch per file of old..new."""
+    patches = diff_patches(repo, old, new)
+    gen.load(specs_of(patches, old, new))
+    return [(fp, authored(fp, gen, old, new, hit)) for fp in patches]
+
+
+# --- the tip's tree ---------------------------------------------------------------------
 
 
 def read_tree(repo: Path, tip: str) -> dict[str, str]:
@@ -298,23 +399,25 @@ def churn_files(per_unit: list[tuple[Unit, dict[str, list[int]]]]) -> list[dict]
     return [{"path": p, "units": rows} for p, rows in sorted(by_path.items()) if len(rows) > 1]
 
 
-def rewritten_lines(repo: Path, base: str, tip: str, unit_of: dict[str, str], excluded: set[str]) -> list[dict]:
+def rewritten_lines(repo: Path, base: str, tip: str, unit_of: dict[str, str], gen: Regions) -> list[dict]:
     out = git(repo, "log", "--reverse", "--topo-order", "--no-merges", "-M", "-U0", "-p",
               "--no-color", "--no-ext-diff", "--format=%x01%H", f"{base}..{tip}").decode("utf-8", "replace")
     order: dict[str, int] = {}
     live: dict[tuple[str, str], list[str]] = defaultdict(list)
     pairs: Counter = Counter()
+    commits = []
     for chunk in out.split("\x01")[1:]:
         commit, _, patch = chunk.partition("\n")
-        commit = commit.strip()
+        commits.append((commit.strip(), parse_patch(patch)))
+    gen.load(set().union(*(specs_of(patches, f"{c}^1", c) for c, patches in commits)))
+    for commit, patches in commits:
         order[commit] = len(order)
-        for fp in parse_patch(patch):
-            if fp.renamed and fp.old and fp.new:
-                for key in [k for k in live if k[0] == fp.old]:
-                    live[(fp.new, key[1])] += live.pop(key)
+        for raw in patches:
+            if raw.renamed and raw.old and raw.new:
+                for key in [k for k in live if k[0] == raw.old]:
+                    live[(raw.new, key[1])] += live.pop(key)
+            fp = authored(raw, gen, f"{commit}^1", commit)
             path = fp.path
-            if path in excluded:
-                continue
             removed = Counter(t.rstrip() for _, t in fp.removed if t.strip())
             added = Counter(t.rstrip() for _, t in fp.added if t.strip())
             moved = removed & added
@@ -431,13 +534,14 @@ def meaningful_lines(path: str, text: str) -> list[tuple[int, str]]:
     return [(i + 1, " ".join(lines[i].split())) for i in range(start, len(lines)) if lines[i].strip()]
 
 
-def text_clones(files: dict[str, str], added: dict[str, set[int]], excluded: set[str]) -> list[dict]:
+def text_clones(files: dict[str, str], added: dict[str, set[int]]) -> list[dict]:
     meaningful: dict[str, list[tuple[int, str]]] = {}
     windows: dict[str, list[tuple[str, int]]] = defaultdict(list)
     for path, text in files.items():
-        if path.endswith(".py") or path in excluded:
+        if path.endswith(".py"):
             continue
-        lines = meaningful_lines(path, text)
+        spans = regions(text)
+        lines = [(n, t) for n, t in meaningful_lines(path, text) if region_of(spans, n) is None]
         meaningful[path] = lines
         for i in range(len(lines) - WINDOW + 1):
             windows["\n".join(t for _, t in lines[i : i + WINDOW])].append((path, i))
@@ -520,11 +624,11 @@ def dead_code(files: dict[str, str], parsed: dict[str, ast.Module], added: dict[
 # --- D9, leftovers -----------------------------------------------------------------------------
 
 
-def unreferenced_files(files: dict[str, str], new_files: list[str], excluded: set[str]) -> list[str]:
+def unreferenced_files(files: dict[str, str], new_files: list[str]) -> list[str]:
     found = []
     for path in new_files:
         base_name = path.rsplit("/", 1)[-1]
-        if path in excluded or path.endswith(".py") or base_name.startswith(".") or path not in files:
+        if path.endswith(".py") or base_name.startswith(".") or path not in files or regions(files[path]):
             continue
         if not any(base_name in text for other, text in files.items() if other != path):
             found.append(path)
@@ -570,13 +674,43 @@ def print_calls(parsed: dict[str, ast.Module], added: dict[str, set[int]]) -> li
 # --- D10, markers ------------------------------------------------------------------------------
 
 
-def markers(patches: list[FilePatch], excluded: set[str]) -> list[dict]:
+def python_comments(text: str) -> dict[int, str] | None:
+    """Each comment's text by line, or None when the file does not tokenize."""
+    comments: dict[int, str] = {}
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(text).readline):
+            if tok.type == tokenize.COMMENT:
+                comments[tok.start[0]] = tok.string
+    except (tokenize.TokenError, SyntaxError):
+        return None
+    return comments
+
+
+def after_comment_opener(text: str) -> re.Match | None:
+    """The first marker after the line's first `#`, `//` or `<!--`."""
+    starts = [pos for pos in (text.find(opener) for opener in COMMENT_OPENERS) if pos >= 0]
+    return MARKER.search(text, min(starts)) if starts else None
+
+
+def markers(patches: list[FilePatch], files: dict[str, str]) -> list[dict]:
+    """Over authored patches, so lines in generated regions are already gone.
+
+    A marker counts only inside a comment, so prose, strings and code that
+    name one are not reported. A Python file's comments are its `COMMENT`
+    tokens at the tip; one that does not tokenize falls back to the whole line.
+    """
     found = []
     for fp in patches:
-        if fp.new is None or fp.new in excluded:
+        if fp.new is None:
             continue
+        comments = python_comments(files.get(fp.new, "")) if fp.new.endswith(".py") else None
         for line_no, text in fp.added:
-            match = MARKER.search(text)
+            if comments is not None:
+                match = MARKER.search(comments.get(line_no, ""))
+            elif fp.new.endswith(".py"):
+                match = MARKER.search(text)
+            else:
+                match = after_comment_opener(text)
             if match:
                 found.append({"path": fp.new, "line": line_no, "marker": match.group(1), "text": text.strip()})
     return sorted(found, key=lambda m: (m["path"], m["line"]))
@@ -585,21 +719,32 @@ def markers(patches: list[FilePatch], excluded: set[str]) -> list[dict]:
 # --- the report ---------------------------------------------------------------------------------
 
 
-def generated_paths(board: str) -> set[str]:
-    folder = board.strip().replace("\\", "/").strip("/")
-    return {f"{folder}/{name}" if folder and folder != "." else name for name in GENERATED}
-
-
-def size_of(repo: Path, base: str, tip: str, excluded: set[str]) -> dict:
-    rows = numstat(repo, base, tip)
+def size_of(repo: Path, base: str, tip: str, diff: list[tuple[FilePatch, FilePatch]]) -> dict:
     return {
-        "raw": sum(a + d for a, d, _ in rows),
-        "excluding_generated": sum(a + d for a, d, p in rows if p not in excluded),
+        "raw": sum(a + d for a, d, _ in numstat(repo, base, tip)),
+        "excluding_generated": sum(len(fp.added) + len(fp.removed) for _, fp in diff),
     }
 
 
-def report(repo: Path, base: str, tip: str, record: Path | None, board: str) -> dict:
-    excluded = generated_paths(board)
+def unit_files(diffs: list[list[tuple[FilePatch, FilePatch]]]) -> dict[str, list[int]]:
+    """[added, deleted] per path, without generated lines.
+
+    A file whose every changed line was generated drops out; one with no
+    changed lines at all, such as a binary, stays as git counts it.
+    """
+    files: dict[str, list[int]] = {}
+    for diff in diffs:
+        for raw, fp in diff:
+            if not (fp.added or fp.removed) and (raw.added or raw.removed):
+                continue
+            row = files.setdefault(fp.path, [0, 0])
+            row[0] += len(fp.added)
+            row[1] += len(fp.removed)
+    return files
+
+
+def report(repo: Path, base: str, tip: str, record: Path | None) -> dict:
+    gen = Regions(repo)
     merges = record_merges(record.read_text(encoding="utf-8")) if record is not None else None
     units, ignored = build_units(repo, base, tip, merges)
 
@@ -609,14 +754,7 @@ def report(repo: Path, base: str, tip: str, record: Path | None, board: str) -> 
     for unit in units:
         for commit in unit.commits:
             unit_of.setdefault(commit, unit.id)
-        files: dict[str, list[int]] = {}
-        for old, new in unit.ranges:
-            for a, d, path in numstat(repo, old, new):
-                if path in excluded:
-                    continue
-                row = files.setdefault(path, [0, 0])
-                row[0] += a
-                row[1] += d
+        files = unit_files([authored_diff(repo, gen, old, new) for old, new in unit.ranges])
         per_unit.append((unit, files))
         unit_rows.append({
             "id": unit.id, "kind": unit.kind,
@@ -627,7 +765,9 @@ def report(repo: Path, base: str, tip: str, record: Path | None, board: str) -> 
             "deleted": sum(r[1] for r in files.values()),
         })
 
-    patches = diff_patches(repo, base, tip)
+    hit: set[tuple[str, str, tuple[int, int]]] = set()
+    diff = authored_diff(repo, gen, base, tip, hit)
+    patches = [raw for raw, _ in diff]
     added: dict[str, set[int]] = {}
     new_files = []
     for fp in patches:
@@ -652,23 +792,23 @@ def report(repo: Path, base: str, tip: str, record: Path | None, board: str) -> 
         "tip": tip,
         "attribution": "record" if record is not None else "first-parent",
         "record": None if record is None else {"path": record.as_posix(), "ignored": ignored},
-        "excluded": sorted(excluded),
-        "size": size_of(repo, base, tip, excluded),
+        "excluded": [{"path": path, "side": side, "lines": list(span)} for path, side, span in sorted(hit)],
+        "size": size_of(repo, base, tip, diff),
         "units": unit_rows,
         "churn": {
             "files": churn_files(per_unit),
-            "rewritten": rewritten_lines(repo, base, tip, unit_of, excluded),
+            "rewritten": rewritten_lines(repo, base, tip, unit_of, gen),
         },
         "clones": {
             "python": python_clones(parsed, added),
-            "text": text_clones(files, added, excluded),
+            "text": text_clones(files, added),
         },
         "dead_code": {"candidates": dead_code(files, parsed, added, tip)},
         "leftovers": {
-            "unreferenced_files": unreferenced_files(files, new_files, excluded),
+            "unreferenced_files": unreferenced_files(files, new_files),
             "print_calls": print_calls(parsed, added),
         },
-        "markers": markers(patches, excluded),
+        "markers": markers([fp for _, fp in diff], files),
         "unparsed": sorted(unparsed),
     }
 
@@ -679,17 +819,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base", required=True, help="the tranche's base commit")
     parser.add_argument("--tip", required=True, help="the tranche's tip commit")
     parser.add_argument("--record", type=Path, default=None, help="the tranche record, to attribute commits to tasks")
-    parser.add_argument("--board", default="tasks", help="the board folder whose generated indexes are left out")
-    parser.add_argument("--size", action="store_true", help="print only the changed-line count, generated indexes left out")
+    parser.add_argument("--size", action="store_true", help="print only the changed-line count, generated regions left out")
     args = parser.parse_args(argv)
 
     try:
         base = resolve(args.repo, args.base)
         tip = resolve(args.repo, args.tip)
         if args.size:
-            sys.stdout.write(f"{size_of(args.repo, base, tip, generated_paths(args.board))['excluding_generated']}\n")
+            diff = authored_diff(args.repo, Regions(args.repo), base, tip)
+            sys.stdout.write(f"{size_of(args.repo, base, tip, diff)['excluding_generated']}\n")
             return 0
-        result = report(args.repo, base, tip, args.record, args.board)
+        result = report(args.repo, base, tip, args.record)
     except (GitError, OSError, UnicodeDecodeError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

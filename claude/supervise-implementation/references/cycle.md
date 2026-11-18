@@ -74,7 +74,7 @@ leasing:
 scripts/scan_tranche.py --repo <path> --base <tranche base> --tip HEAD --size
 ```
 
-It prints one number, leaving out the board's generated indexes. Write it to
+It prints one number, leaving out generated regions. Write it to
 the lease table's header. At or past the limit, grant no new lease: let the
 work in flight finish and integrate, then close the tranche.
 

@@ -16,6 +16,26 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-18 — task-board-management (scan and checklist fixes)
+
+- **Behaviour change.** `scan_tranche.py`, bundled with `tranche-gate` and
+  `supervise-implementation`, now leaves out generated regions, the text
+  between `<!-- BEGIN GENERATED ... -->` and `<!-- END ... -->` markers, in
+  any file, instead of skipping the board's `README.md`, `TREE.md` and
+  `ARCHIVE.md` whole. Hand-written text in those files now counts, and
+  generated text elsewhere no longer does. Its `--board` flag is removed; a
+  call that passes it now fails.
+- **Behaviour change.** The scan's marker check reports `TODO` and `FIXME`
+  only where a comment leaves one: inside a Python comment, or after a
+  comment opener (`#`, `//`, `<!--`) on the same line in other files. Prose
+  that names the terms is no longer reported. A marker on a later line of a
+  multi-line HTML comment is now missed.
+- `tranche-gate`'s checklist drops its two notes on these false positives,
+  and its `SKILL.md` and `supervise-implementation`'s cycle reference describe
+  the size count as leaving out generated regions.
+- Comments and docstrings in the bundled scripts no longer cite internal task
+  names. No behaviour changes with that.
+
 ### 2026-11-16 — task-board-management (tranche-gate)
 
 - **Behaviour change.** A new skill, `tranche-gate`, published on both

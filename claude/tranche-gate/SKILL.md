@@ -39,8 +39,8 @@ Read [references/board-model.md](references/board-model.md).
   each task that has none. They are never judged against a guessed standard.
 
 **The size limit the gate declares is 4,000 changed lines**, as
-`scripts/scan_tranche.py --size` counts them over base..tip, without the
-board's generated indexes. It is a starting value, unmeasured: no study gives
+`scripts/scan_tranche.py --size` counts them over base..tip, without
+generated regions. It is a starting value, unmeasured: no study gives
 a size at which an agent reviewer fails. A supervisor closes its tranche on
 it. Run alone over a larger batch, say so in the report and read it all the
 same; the chunks stay small.
@@ -61,7 +61,7 @@ validator reads every `.md` there. `git clean -x` deletes it.
    to tip, so the tranche-wide defects need no model:
 
    ```text
-   scripts/scan_tranche.py --repo <path> --base <base> --tip <tip> [--record <record>] [--board <board>]
+   scripts/scan_tranche.py --repo <path> --base <base> --tip <tip> [--record <record>]
    ```
 
    Save its JSON to `.tranche-gate/scan.json`. Run the test check over the
