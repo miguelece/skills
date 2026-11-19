@@ -1,6 +1,6 @@
 # <About a topic: the design, concept or trade-off this page discusses>
 
-*Last updated: YYYY-MM-DD*
+*Last updated: YYYY-MM-DD.*
 
 <A short opening that frames the question this page answers for the reader.>
 
@@ -22,6 +22,3 @@ same way.>
 <!-- Explanation rules: understanding, not instructions. Claims about current
 behavior are anchored; claims about intent are attributed; pending proposals are
 named as pending or left out. -->
-
-<!-- The date line is emphasis by design, not a heading. -->
-<!-- markdownlint-configure-file { "MD036": false } -->

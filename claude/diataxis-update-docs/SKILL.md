@@ -70,11 +70,13 @@ bootstrap `diataxis-create-docs`, which owns creating pages from nothing.
 - Keep each factual contract canonically owned in one page; repeat brief context
   only where a procedure needs it.
 - Date every page you write: on the line after its H1, with one blank line
-  between, set `*Last updated: YYYY-MM-DD*` to the session's date read from the
-  environment, in ISO form, adding the line where a page lacks it. After the
-  page's last edit, run `scripts/check_pages.py --fingerprint <page>` and upsert
-  the page's entry in the manifest's `pages`: `path`, `fingerprint` and
-  `last_updated`, one entry per path.
+  between, set `*Last updated: YYYY-MM-DD.*` to the session's date read from the
+  environment, in ISO form, adding the line where a page lacks it and
+  rewriting an old-form `*Last updated: YYYY-MM-DD*` line in place rather than
+  adding a second. After the page's last edit, run
+  `scripts/check_pages.py --fingerprint <page>` and upsert the page's entry in
+  the manifest's `pages`: `path`, `fingerprint` and `last_updated`, one entry
+  per path.
 - Draft architecture ADRs for user confirmation before writing inferred
   rationale.
 - Validate the manifest and repository links; run safe native checks. Execute

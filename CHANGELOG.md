@@ -16,6 +16,18 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-19 — diataxis-doc-migration (date line without a lint directive)
+
+- **Behaviour change.** The date line the Diataxis skills write under a
+  page's H1 now ends in a period: `*Last updated: YYYY-MM-DD.*`. The period
+  keeps the line clear of markdownlint's MD036, so the four page templates
+  no longer carry a `markdownlint-configure-file` directive turning MD036
+  off for the whole page. This closes the known issue in the 2026-11-18
+  page-dating entry.
+- `check_pages.py` still reads the old form, `*Last updated: YYYY-MM-DD*`,
+  so pages dated before this change keep passing the audit; it is never
+  written.
+
 ### 2026-11-18 — diataxis-doc-migration (page dating)
 
 - **Behaviour change.** Every page the Diataxis skills write now carries a

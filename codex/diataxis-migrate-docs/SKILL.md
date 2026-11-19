@@ -92,7 +92,7 @@ scripts exactly as described there.
 ## Verify and hand off
 
 - Date every page you write: on the line after its H1, with one blank line
-  between, set `*Last updated: YYYY-MM-DD*` to the session's date read from the
+  between, set `*Last updated: YYYY-MM-DD.*` to the session's date read from the
   environment, in ISO form. After the page's last edit, run
   `scripts/check_pages.py --fingerprint <page>` and upsert the page's entry in
   the manifest's `pages`: `path`, `fingerprint` and `last_updated`, one entry

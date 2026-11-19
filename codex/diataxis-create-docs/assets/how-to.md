@@ -1,6 +1,6 @@
 # How to <accomplish one task>
 
-*Last updated: YYYY-MM-DD*
+*Last updated: YYYY-MM-DD.*
 
 <One sentence naming the task and when a reader needs it. The reader already
 knows the basics; this page does not teach them.>
@@ -27,6 +27,3 @@ an observable state.>
 <!-- How-to rules: one goal, ordered steps, no conceptual background beyond what
 a step needs. Destructive, credentialed or production steps are inspected
 statically and say so. -->
-
-<!-- The date line is emphasis by design, not a heading. -->
-<!-- markdownlint-configure-file { "MD036": false } -->

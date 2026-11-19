@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Fingerprint written pages, or check them against the manifest's `pages`.
 
-A page a lifecycle run writes carries `*Last updated: YYYY-MM-DD*` on the line
+A page a lifecycle run writes carries `*Last updated: YYYY-MM-DD.*` on the line
 after its H1, and an entry in the manifest's `pages` recording its path, its
 content fingerprint and that date. The date is for readers; the fingerprint is
 what catches drift, including a same-day edit and an edit that left the date
 alone, which a date alone cannot. Fingerprints use `check_coverage.fingerprint`,
 so there is one hashing rule, not two.
+
+The closing period keeps the line clear of markdownlint's MD036 (emphasis used
+as a heading), so no page needs a lint directive. Pages dated before it read
+`*Last updated: YYYY-MM-DD*`; that old form is still read, never written.
 
     check_pages.py --fingerprint <page>...          print each page's fingerprint
     check_pages.py --manifest <path> --root <repo>  check every `pages` entry
@@ -26,7 +30,7 @@ from check_coverage import fingerprint, load_manifest, safe_relative
 
 
 H1_PATTERN = re.compile(r"^ {0,3}# ")
-DATE_LINE_PATTERN = re.compile(r"^\*Last updated: (?P<date>\d{4}-\d{2}-\d{2})\*$")
+DATE_LINE_PATTERN = re.compile(r"^\*Last updated: (?P<date>\d{4}-\d{2}-\d{2})\.?\*$")
 
 
 def read_page(path: Path) -> str:
