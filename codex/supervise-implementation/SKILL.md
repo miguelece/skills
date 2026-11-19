@@ -104,7 +104,8 @@ Set the task `in-progress` and, before launching the worker, add a
 `## Acceptance criteria` section to its task file: a short numbered list you
 write from the task's *Plan*, with the check fixed for each. The worker never
 sets its own bar. Then write the lease row ([references/run-state.md](references/run-state.md)):
-task, attempt, grant with its justification, the start commit, the agent id.
+task, attempt, grant with its justification, the checking calls the criteria
+fix (zero when none), the start commit, the agent id.
 
 **Admission.** Price the task's spend so far plus the next grant's estimate.
 If it would pass the per-task cap, escalate instead of granting.
@@ -195,13 +196,23 @@ The tranche closes when nothing in it can be leased, or once it reaches the
 size limit the gate declares it can review and the work in flight has
 integrated. Delete the heartbeat. Write
 `scripts/account_attempt.py --match-rate` over the project's recent finished
-sessions into the record's `Match rate:` line; a rate near zero means the
-price table is stale. Commit the record, then launch a fresh agent at `high`
-that runs `tranche-gate` with the tranche's base and tip commits, the record,
-each task's acceptance criteria and every integrator verdict. Its report,
-appended to the record, lists the open entries first, then the candidate
-precedents, then that match rate. Push once when the report is ready. The
-next tranche opens only on the owner's word.
+sessions into the record's `Match rate:` line: each called model's median
+ratio of priced over billed cost. A median outside 0.90 to 1.02 flags the
+price table as stale; a billed model no transcript called is listed apart
+and flags nothing. Fill the allocation log's session table from
+`scripts/account_attempt.py --reconcile`, one row per session, beside the
+transcript-priced costs and never scaling them. Commit the record, then
+launch a fresh agent at `high` that runs `tranche-gate` with the tranche's
+base and tip commits, the record, each task's acceptance criteria and every
+integrator verdict. Its report, appended to the record, lists the open
+entries first, then the candidate precedents, then that match rate. Push once
+when the report is ready. The next tranche opens only on the owner's word.
+
+The gate leaves the record `in-progress`, because the owner's review closes
+it. The record goes `done` after the owner's decisions on the gate's findings
+are applied: the session that applies them sets `status: done` and its
+`outcome`, moves the record to `completed/` with the link repair, and commits
+it with those decisions.
 
 Afterwards run `scripts/validate_board.py --board <board>` and
 `scripts/generate_index.py --board <board>`.

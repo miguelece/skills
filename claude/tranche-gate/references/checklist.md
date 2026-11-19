@@ -17,12 +17,12 @@ the owner.
 | D3 | Copy-paste duplication across tasks, in code or Markdown | Scan `clones`: `python` groups and `text` windows of five meaningful lines | Structural |
 | D4 | Dead or deprecated code: unused functions, arguments, modules, unreachable branches | Scan `dead_code`, each candidate tagged `private` or `check published use` | Structural if private; report if published |
 | D5 | Surplus verification: tests, fixtures, checkers or scripts beyond the tasks' acceptance criteria | Judged against the criteria: test-to-source lines per task, and new test tooling no criterion names | Report, with its removal prepared as an unapplied patch |
-| D6 | Weakened, skipped or deleted tests whose subject remains | `scripts/check_test_changes.py` over the range, or the integrator verdicts | Report, always |
+| D6 | Weakened, skipped or deleted tests whose subject remains | `scripts/check_test_changes.py` over the range, always, with the merged attempts' declarations | Report, always |
 | D7 | Over-building: one-use helpers, unrequested features, options or abstractions, a change far larger than its criteria | Judged against the criteria; a helper with one call site is a candidate | Inlining is structural; removing a feature is report |
 | D8 | Defensive or error-masking code for cases that cannot happen: broad or bare `except`, fallbacks, needless validation | Judged: whether the guarded case is reachable | Report, since a failure path changes |
-| D9 | Leftovers: scratch scripts, temporary files, debug output, commented-out code | Scan `leftovers`: `unreferenced_files` and `print_calls` | Structural |
+| D9 | Leftovers: scratch scripts, temporary files, debug output, commented-out code | Scan `leftovers`: `unreferenced_files` and `print_calls` | Structural, even in a published skill's files, when the tranche introduced it |
 | D10 | Documentation and comments that contradict the code, restate it, or carry unresolved TODOs | Scan `markers`; judged: each changed document against the changed code | Comments structural; published skill text report |
-| D11 | Drift from the repository's conventions, including a bad local pattern copied | The repository's own linters and contract tests; judged against its agent instructions and standards | Structural; a recurring one is also a guidance candidate |
+| D11 | Drift from the repository's conventions, including a bad local pattern copied | The repository's own linters and contract tests; judged against its agent instructions and standards | Structural, even in a published skill's files, when the tranche introduced it; a recurring one is also a guidance candidate |
 | D12 | Dependency and hard-coded-value hygiene: new or unpinned dependencies, absolute paths | The diff of every manifest and lockfile; a search of added lines for absolute home paths | Report |
 
 **D5 and D7 need criteria.** For a task with no `## Acceptance criteria`

@@ -11,9 +11,11 @@ verifies each against the code before it acts on it.
     scripts/scan_tranche.py --repo . --base <tranche-base> --tip <head> --size
 
 - **units**: who changed what. With `--record`, each task is the ranges
-  `<sha>^1..<sha>` of the `merged <sha>` lines under the record's
-  `## Integrator verdicts`. Without one, or for a first-parent commit no task
-  owns, each first-parent commit of base..tip is a unit of its own.
+  `<sha>^1..<sha>` of the `merged <sha>` verdicts under the record's
+  `## Integrator verdicts`: a verdict is a bullet with its indented
+  continuation lines, and its sha may be backticked. `record.attributed`
+  counts the tasks so found. Without a record, or for a first-parent commit
+  no task owns, each first-parent commit of base..tip is a unit of its own.
 - **churn** (D1): files two or more units changed, and lines one commit added
   and a later one removed inside the tranche, followed across renames.
 - **clones** (D3): Python functions and methods whose syntax trees are equal
@@ -48,7 +50,9 @@ not reported as unreferenced. Generated lines are still searched for
 references, and `excluded` lists each region base..tip changed a line in.
 
 Standard library and `git` only, deterministic. Exits 0 with a report, 2 when
-the repository, a commit or the record cannot be read.
+the repository, a commit or the record cannot be read. A verdict bullet that
+names `merged` but yields no task and sha is a record that cannot be read: it
+exits 2, naming the bullet. A record with no merged verdict exits 0.
 """
 
 from __future__ import annotations
@@ -326,22 +330,47 @@ def read_tree(repo: Path, tip: str) -> dict[str, str]:
 # --- units ---------------------------------------------------------------------------------
 
 VERDICT = re.compile(
-    r"^-\s+.*?,\s*(?P<task>[A-Za-z0-9][\w.-]*)\s+attempt\s+\d+:.*?(?<![A-Za-z])merged\s+(?P<sha>[0-9a-f]{7,40})\b"
+    r"^-\s+.*?,\s*(?P<task>[A-Za-z0-9][\w.-]*)\s+attempt\s+\d+\s*(?:\([^)]*\)\s*)?:"
+    r".*?(?<![A-Za-z])merged\s+`?(?P<sha>[0-9a-f]{7,40})\b"
 )
+NAMES_MERGED = re.compile(r"(?<![A-Za-z])merged\b")
+UNMERGED = re.compile(r"(?<![A-Za-z])unmerged:")
 
 
-def record_merges(text: str) -> list[tuple[str, str]]:
-    """(task, sha) for each `merged <sha>` verdict, in the record's order."""
-    merges = []
+def verdict_bullets(text: str) -> list[str]:
+    """Each bullet under `## Integrator verdicts`, its continuation lines joined."""
+    bullets: list[str] = []
     in_section = False
     for line in text.splitlines():
         if line.startswith("## "):
             in_section = line.strip() == "## Integrator verdicts"
             continue
-        if in_section:
-            match = VERDICT.match(line)
-            if match:
-                merges.append((match.group("task"), match.group("sha")))
+        if not in_section:
+            continue
+        if line.startswith("- "):
+            bullets.append(line.strip())
+        elif bullets and line[:1].isspace() and line.strip():
+            bullets[-1] += " " + line.strip()
+    return bullets
+
+
+def record_merges(text: str) -> list[tuple[str, str]]:
+    """(task, sha) for each `merged <sha>` verdict, in the record's order.
+
+    A bullet runs over its indented continuation lines, and the sha may be
+    backticked. An `unmerged:` verdict is no merge, whatever its reason
+    names. A bullet that names `merged` but yields no task and sha is a
+    record that cannot be read: ValueError, naming the bullet.
+    """
+    merges = []
+    for bullet in verdict_bullets(text):
+        if UNMERGED.search(bullet):
+            continue
+        match = VERDICT.match(bullet)
+        if match:
+            merges.append((match.group("task"), match.group("sha")))
+        elif NAMES_MERGED.search(bullet):
+            raise ValueError(f"an integrator verdict names merged but yields no task and sha: {bullet}")
     return merges
 
 
@@ -353,7 +382,9 @@ class Unit:
     commits: set[str] = field(default_factory=set)
 
 
-def build_units(repo: Path, base: str, tip: str, merges: list[tuple[str, str]] | None) -> tuple[list[Unit], list[str]]:
+def build_units(
+    repo: Path, base: str, tip: str, merges: list[tuple[str, str]] | None
+) -> tuple[list[Unit], list[str], int]:
     first_parent = git(repo, "rev-list", "--first-parent", "--reverse", f"{base}..{tip}").decode().split()
 
     def commits_of(old: str, new: str) -> set[str]:
@@ -385,7 +416,7 @@ def build_units(repo: Path, base: str, tip: str, merges: list[tuple[str, str]] |
             continue
         units.append(Unit(commit, "commit", [(f"{commit}^1", commit)], commits_of(f"{commit}^1", commit)))
     units += [t for t in tasks.values() if t.id not in emitted]
-    return units, ignored
+    return units, ignored, len(tasks)
 
 
 # --- D1, churn -----------------------------------------------------------------------------
@@ -746,7 +777,7 @@ def unit_files(diffs: list[list[tuple[FilePatch, FilePatch]]]) -> dict[str, list
 def report(repo: Path, base: str, tip: str, record: Path | None) -> dict:
     gen = Regions(repo)
     merges = record_merges(record.read_text(encoding="utf-8")) if record is not None else None
-    units, ignored = build_units(repo, base, tip, merges)
+    units, ignored, attributed = build_units(repo, base, tip, merges)
 
     unit_of: dict[str, str] = {}
     per_unit: list[tuple[Unit, dict[str, list[int]]]] = []
@@ -791,7 +822,7 @@ def report(repo: Path, base: str, tip: str, record: Path | None) -> dict:
         "base": base,
         "tip": tip,
         "attribution": "record" if record is not None else "first-parent",
-        "record": None if record is None else {"path": record.as_posix(), "ignored": ignored},
+        "record": None if record is None else {"path": record.as_posix(), "ignored": ignored, "attributed": attributed},
         "excluded": [{"path": path, "side": side, "lines": list(span)} for path, side, span in sorted(hit)],
         "size": size_of(repo, base, tip, diff),
         "units": unit_rows,

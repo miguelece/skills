@@ -23,6 +23,11 @@ finding is verified against the code:
 - **Convention fixes** (D11) that the repository's own linters or contract
   tests pin.
 
+Leftover cleanup (D9) and convention fixes (D11) of what the tranche
+introduced are committed even in a published skill's files, because removing
+them restores the behaviour already published. Nothing reaches users before
+the owner publishes.
+
 **Where the touched code has thin tests**, pin its behaviour first with a
 characterization test in the same commit, or report the change instead of
 making it.
@@ -43,8 +48,9 @@ making it.
 
 ## Reported, not done
 
-- Any change to a published skill: its `SKILL.md` or references, a bundled
-  script's flags or output, or anything in a publish target.
+- Any change to a published skill's behaviour that predates the tranche: its
+  `SKILL.md` or references, a bundled script's flags or output, or anything in
+  a publish target.
 - A test deleted or weakened while its subject remains (D6).
 - Any behaviour change: removing a feature or an option (D7), a changed
   failure path (D8), a dependency (D12).

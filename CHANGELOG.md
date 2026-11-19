@@ -16,6 +16,33 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-19 — task-board-management (tranche fixes)
+
+- **Behaviour change.** `supervise-implementation`'s verification
+  sub-ceiling is now computed net of the checks a task's acceptance
+  criteria fix, so an attempt is no longer flagged for checks its brief
+  required.
+- **Behaviour change.** `account_attempt.py --match-rate` no longer asks
+  for an exact match per session. It takes each model's median ratio of
+  priced to recorded cost and flags the price table only when that median
+  leaves 0.90 to 1.02. A billed model no transcript called is reported
+  apart and never fails the table, and the per-session tolerance is gone.
+  The reconciliation shows each session's harness total and ratio beside
+  its priced cost.
+- **Behaviour change.** `supervise-implementation` now says who closes the
+  tranche record and when: the supervisor commits it at the close, and the
+  owner's review of the gate's report sets it done.
+- **Behaviour change.** `tranche-gate` runs the test-change check over the
+  whole range in every case, with the merged attempts' declarations, rather
+  than trusting integrator verdicts that may predate later changes.
+- **Behaviour change.** `tranche-gate` commits leftover and convention
+  fixes (D9, D11) in published files too, where it previously only reported
+  them there.
+- **Behaviour change.** `tranche-gate` cites findings as `path:name`, never
+  by line number, so its report passes the board validator.
+- `scan_tranche.py` now attributes integrator verdicts whose merge line
+  wraps or is backticked.
+
 ### 2026-11-19 — diataxis-doc-migration (date line without a lint directive)
 
 - **Behaviour change.** The date line the Diataxis skills write under a

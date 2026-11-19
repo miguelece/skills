@@ -32,9 +32,19 @@ Read [references/board-model.md](references/board-model.md).
     and the report goes into it like any record.
   - **With no board**, the report goes to `.tranche-gate/report.md`, and its
     first line says it is uncommitted.
-- **Without integrator verdicts**, run
-  `scripts/check_test_changes.py --repo <path> --base <base> --tip <tip>`
-  yourself for D6.
+- **For D6, run the test check over base..tip whether or not integrator
+  verdicts exist**: a verdict was written at its merge, and a later commit in
+  the range can weaken the tests it cleared.
+
+  ```text
+  scripts/check_test_changes.py --repo <path> --base <base> --tip <tip> [--declared <list>]
+  ```
+
+  - **With a supervisor's run state**, concatenate the declared files of
+    every merged attempt in the tranche into one list under `.tranche-gate/`,
+    each entry's `reason` prefixed with its task id, and pass it as
+    `--declared`. A row carries no task, so the reason is where it goes.
+  - **Without one**, run it with no declarations.
 - **Without criteria**, D5 and D7 are marked "not checked: no criteria" for
   each task that has none. They are never judged against a guessed standard.
 
@@ -64,9 +74,12 @@ validator reads every `.md` there. `git clean -x` deletes it.
    scripts/scan_tranche.py --repo <path> --base <base> --tip <tip> [--record <record>]
    ```
 
-   Save its JSON to `.tranche-gate/scan.json`. Run the test check over the
-   same range when there are no verdicts (see *Inputs*), and the
-   repository's own linters and contract tests for D11.
+   With `--record`, a verdict bullet that names `merged` but yields no task
+   and sha exits 2, naming the bullet: mend the verdict and re-run, rather
+   than mapping its commits by hand. Save its JSON to
+   `.tranche-gate/scan.json`. Run the test check over the
+   same range in every case (see *Inputs*), and the repository's own linters
+   and contract tests for D11.
 2. **Read one task's diff per chunk**, taking each task's commits from the
    scan's units. Above about 400 changed lines, split the chunk by file.
    In each chunk, judge only two things: the detectors' candidates that fall
@@ -75,10 +88,11 @@ validator reads every `.md` there. `git clean -x` deletes it.
    list is closed: style and correctness bugs are out, and a defect outside
    it goes in the report as a proposal to add to the list, never as a
    remediation.
-3. **Write each finding with its `file:line` and its checklist item**, and
-   the task it came from.
+3. **Write each finding with its `path:name` and its checklist item**, and
+   the task it came from: the function, method or heading that encloses it,
+   or the bare file where no single name does. Never a line number.
 4. **Verify every finding against the code before anything acts on it**: re-read
-   the cited lines, or run the detector again on them. A finding is
+   the cited code, or run the detector again on them. A finding is
    verified against the code, never by scoring your own confidence in it. One
    that does not hold is dropped and counted.
 5. **Classify and remediate** under
@@ -101,11 +115,13 @@ validator reads every `.md` there. `git clean -x` deletes it.
 
 - Do not push, publish, or write into a publish target. Every commit stays
   local, after the tip, for the owner's review.
-- Do not report a finding without its `file:line` and checklist item, and do
+- Do not report a finding without its `path:name` and checklist item, and do
   not act on one that was not verified against the code.
 - Do not commit anything but behaviour-preserving cleanup of code the batch
-  introduced. A published skill's text, a bundled script's flags or output, a
-  test whose subject remains, and any behaviour change are reported.
+  introduced. Published behaviour older than the batch (a skill's text, a
+  bundled script's flags or output), a test whose subject remains, and any
+  behaviour change are reported; a leftover or convention break the batch
+  added to a published skill's files is cleaned up.
 - Do not fix a failing remediation commit forward. Revert it and report it.
 - Do not apply a surplus-verification removal. Prepare it and report it.
 - Do not hunt for style or correctness bugs, and do not grow the checklist

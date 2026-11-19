@@ -26,13 +26,13 @@ and log why:
 Nothing enforces a grant. After each attempt, account for it:
 
 ```text
-scripts/account_attempt.py <transcript.jsonl> --grant "<size>: <n> calls" --justification "<why>"
+scripts/account_attempt.py <transcript.jsonl> --grant "<size>: <n> calls" --justification "<why>" --fixed-checks <n>
 ```
 
 The transcript is the subagent's own, under the session's project directory.
 Write its figures into the allocation log: model and effort, API calls, the
-four token counts, the list-price cost, the verification share, the grant
-and its justification.
+four token counts, the list-price cost, the adjusted verification share, the
+grant and its justification.
 
 ## The per-task cap
 
@@ -42,13 +42,29 @@ grant's estimate would pass $20, escalate instead. Estimate a standard grant
 at about $2.4 and a large one at about $9, integration included. An overshoot
 by the attempt already running is accepted.
 
+The spend is what each attempt's transcript prices, not scaled to the bill.
+The harness bills calls no transcript holds, so the priced figure reads about
+4% under the bill and the cap acts nearer $20.80. Those calls belong to the
+session, not to any one attempt, and the session's ratio is known only once
+it ends, after the cap was checked.
+
 ## The verification sub-ceiling
 
-**25% of an attempt's tool calls.** The script's verification share counts
-test runners, linters, validators, `--check` builds, check scripts, and
-reviewing a change (`git diff`, `git show` of a commit), because the
-measurement behind 25% counted them. An overrun escalates and is **never
-topped up**. Checking done by reading files is invisible to the count.
+**25% of an attempt's tool calls, net of the checks its criteria fix.** The
+ceiling reads the adjusted share, (verification calls - fixed checks) /
+(tool calls - fixed checks), which the script prints beside the raw one.
+The fixed count is the number of checking calls the task's criteria require,
+written into the lease at grant time and passed unchanged as
+`--fixed-checks`; zero when the criteria fix none, which leaves the raw
+share. Without it, an attempt under 16 calls whose criteria fix four checks
+cannot stay under 25%. A generous count hides sprawl, so count only what a
+criterion's check names.
+
+The script's verification share counts test runners, linters, validators,
+`--check` builds, check scripts, and reviewing a change (`git diff`, `git
+show` of a commit), because the measurement behind 25% counted them. An
+overrun escalates and is **never topped up**. Checking done by reading files
+is invisible to the count.
 
 ## Responses
 
@@ -58,7 +74,7 @@ topped up**. Checking done by reading files is invisible to the count.
 | No criterion confirmed, cause named, fix inside the task | Re-size: a fresh grant from a clean worktree, no ask |
 | No criterion confirmed, the same failure again, no new diagnosis | Escalate (judgement: analyst) |
 | The fix changes the criteria or scope, or another stream's files | Escalate (judgement: analyst) |
-| Verification passed 25% of tool calls | Escalate (mechanical) |
+| Verification's adjusted share passed 25% of tool calls | Escalate (mechanical) |
 | The next grant would take the task past $20 | Escalate before granting (mechanical) |
 | Never started, or cut off by a harness limit before any work | Not a stall: re-launch |
 | A draft or gated piece of a tranche item | Routine entry, one line |
@@ -84,8 +100,8 @@ Their options are fixed:
 
 - **over the cap**: raise this task's cap to a stated figure, re-scope it, or
   release it;
-- **over the verification sub-ceiling**: re-grant with verification held to
-  the ceiling, re-scope, or release.
+- **over the verification sub-ceiling**: re-grant with the adjusted share held
+  to the ceiling and the same fixed count, re-scope, or release.
 
 ## Each cycle, in order
 
