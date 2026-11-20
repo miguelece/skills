@@ -16,6 +16,25 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-20 — task-board-management (third tranche)
+
+- **Behaviour change.** `validate_board.py` has a new error rule,
+  `citation-bare-line-reference`: a bare `name.ext:<digits>` citation in a
+  task's prose or a table cell is reported. A number followed by a full stop
+  and a space is skipped, as a list item. A board that cites by line number
+  now fails validation until those citations name the symbol instead.
+- **Behaviour change.** `check_test_changes.py` takes `--declared-dir` and
+  `--record`, and reads only the declarations of attempts the tranche record
+  shows as merged, so an unmerged attempt's files no longer count.
+  `tranche-gate` passes them.
+- `account_attempt.py --sessions <leases.md> --project <dir>` prints the
+  allocation log's session table, one row per session, with `--json`.
+  `supervise-implementation` fills the table from it at the close, and true-ups
+  the previous tranche's rows at opening. A session still running reads
+  `absent`.
+- `supervise-implementation`'s window check reads the compaction threshold
+  against a band net of the compaction reserve.
+
 ### 2026-11-20 — task-board-management (stuck detector)
 
 - **Behaviour change.** `supervise-implementation` no longer escalates an

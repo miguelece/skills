@@ -37,13 +37,21 @@ Read [references/board-model.md](references/board-model.md).
   the range can weaken the tests it cleared.
 
   ```text
-  scripts/check_test_changes.py --repo <path> --base <base> --tip <tip> [--declared <list>]
+  scripts/check_test_changes.py --repo <path> --base <base> --tip <tip> \
+      [--declared-dir <run-state>/declared --record <tranche-record>]
   ```
 
-  - **With a supervisor's run state**, concatenate the declared files of
-    every merged attempt in the tranche into one list under `.tranche-gate/`,
-    each entry's `reason` prefixed with its task id, and pass it as
-    `--declared`. A row carries no task, so the reason is where it goes.
+  - **With a supervisor's run state**, pass its declared directory as
+    `--declared-dir` and the tranche record as `--record`. The script reads
+    the record's integrator verdicts and loads `<task>-<attempt>.json` for
+    each merged one, each entry's `reason` prefixed with its task id: a row
+    carries no task, so the reason is where it goes. **Only merged attempts
+    count**, because the directory holds a file for every attempt, and an
+    unmerged attempt's declaration would let a change that never landed
+    explain a flag in the range. A merged attempt with no file contributes
+    nothing, and `declared_files` in the verdict lists what was loaded and
+    what was missing. `--declared` is the integrator's, for one attempt, and
+    does not go with `--declared-dir`.
   - **Without one**, run it with no declarations.
 - **Without criteria**, D5 and D7 are marked "not checked: no criteria" for
   each task that has none. They are never judged against a guessed standard.

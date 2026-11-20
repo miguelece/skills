@@ -413,6 +413,20 @@ the citation differed, so a reader had no way to tell the two apart, and an
 instance survived a full audit in which every check passed.
 `citation-code-span-name-missing` closes it, as a fifth rule and an `error`.
 
+**A sixth rule reads the form with no link, no span and no word.** A path, a
+colon and a line number written bare, in a table cell or a sentence, carries
+no "line" for the prose rule to key on, so a tranche gate report cited seven
+lines that way and validated clean. `citation-bare-line-reference` matches a
+last path segment `name.ext`, a colon and digits with an optional range, which
+keeps times, ports and versions out by construction. Two shapes after the
+digits are permitted forms and skipped: a full stop and a space (a numbered
+list item's name) and `@` (a commit pin). It reads around links, URLs, fences
+and generated regions, and it is the one traversal that follows a code span
+wrapped onto the next line, which was the source of every false hit measured
+before it landed. The cost of the list-item skip is a sentence that ends on a
+bare line number; write the name instead. It is an `error` like its
+neighbours.
+
 **Its resolution is permissive, and the reason is the population rather than
 taste.** A link carries a path; a code span carries a basename. Strict
 resolution — check only a basename unique in the tree — is blind to
@@ -541,9 +555,10 @@ chain deeper than three is flagged (`part-of-too-deep`); and a done spec still
 carrying open descendants is noted (`spec-done-open-tickets`).
 
 **What a body claims about files outside itself.** The relative links each task
-cites (`link-target-missing`), and the five citation rules described above:
+cites (`link-target-missing`), and the six citation rules described above:
 `citation-line-range`, `citation-name-missing`, `citation-code-span-range`,
-`citation-prose-line-reference` and `citation-code-span-name-missing`.
+`citation-prose-line-reference`, `citation-code-span-name-missing` and
+`citation-bare-line-reference`.
 
 **Whether an instrument this board depends on can be recovered**
 (`instrument-outside-the-repository`). A task naming a script path in a scratch

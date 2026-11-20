@@ -236,6 +236,12 @@ rules:
       link nor a code span, so the three rules above cannot see it, and a
       reference carrying a second number is a mention of a rotted range rather
       than a citation and is skipped
+  - id: citation-bare-line-reference
+    check: >-
+      no line reference is written as a bare path, a colon and a number outside
+      any link or code span (a span wrapped across a line included); a full stop
+      and a space after the digits is a list item's name and an @ a commit pin,
+      and both are skipped
   - id: citation-code-span-name-missing
     check: >-
       the thing a citation names still exists, when the citation is written as a

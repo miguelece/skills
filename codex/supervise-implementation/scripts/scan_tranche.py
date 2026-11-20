@@ -330,7 +330,7 @@ def read_tree(repo: Path, tip: str) -> dict[str, str]:
 # --- units ---------------------------------------------------------------------------------
 
 VERDICT = re.compile(
-    r"^-\s+.*?,\s*(?P<task>[A-Za-z0-9][\w.-]*)\s+attempt\s+\d+\s*(?:\([^)]*\)\s*)?:"
+    r"^-\s+.*?,\s*(?P<task>[A-Za-z0-9][\w.-]*)\s+attempt\s+(?P<attempt>\d+)\s*(?:\([^)]*\)\s*)?:"
     r".*?(?<![A-Za-z])merged\s+`?(?P<sha>[0-9a-f]{7,40})\b"
 )
 NAMES_MERGED = re.compile(r"(?<![A-Za-z])merged\b")
@@ -354,8 +354,8 @@ def verdict_bullets(text: str) -> list[str]:
     return bullets
 
 
-def record_merges(text: str) -> list[tuple[str, str]]:
-    """(task, sha) for each `merged <sha>` verdict, in the record's order.
+def merged_attempts(text: str) -> list[tuple[str, int, str]]:
+    """(task, attempt, sha) for each `merged <sha>` verdict, in the record's order.
 
     A bullet runs over its indented continuation lines, and the sha may be
     backticked. An `unmerged:` verdict is no merge, whatever its reason
@@ -368,10 +368,15 @@ def record_merges(text: str) -> list[tuple[str, str]]:
             continue
         match = VERDICT.match(bullet)
         if match:
-            merges.append((match.group("task"), match.group("sha")))
+            merges.append((match.group("task"), int(match.group("attempt")), match.group("sha")))
         elif NAMES_MERGED.search(bullet):
             raise ValueError(f"an integrator verdict names merged but yields no task and sha: {bullet}")
     return merges
+
+
+def record_merges(text: str) -> list[tuple[str, str]]:
+    """(task, sha) for each `merged <sha>` verdict, as `merged_attempts` reads them."""
+    return [(task, sha) for task, _, sha in merged_attempts(text)]
 
 
 @dataclass

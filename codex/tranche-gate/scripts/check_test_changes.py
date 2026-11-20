@@ -26,6 +26,20 @@ test in a file. **Anything found and not declared makes the verdict
 is `judge` when anything was declared, changed or unparsed, and `clean` when
 nothing was.
 
+The tranche gate checks a whole tranche against every merged attempt's
+declarations at once:
+
+    scripts/check_test_changes.py --repo . --base <tranche-base> --tip <tranche-tip> \\
+        --declared-dir <run-state>/declared --record <board>/<tranche-record>.md
+
+It reads the record's `merged <sha>` integrator verdicts with
+`scan_tranche.py`'s parser and loads `<task>-<attempt>.json` for each, its
+entries' `reason` prefixed with the task id. A file with no merged verdict is
+left out, so a declaration for a change that never landed explains nothing; a
+merged verdict with no file contributes nothing. `declared_files` lists the
+files loaded and missing. `--declared-dir` and `--record` go together, and
+neither goes with `--declared`.
+
 Python is parsed exactly with `ast`; JS/TS and Go are found by anchored
 patterns, each only in its own language's test files. `--language` and
 `--marker` add a language and its markers for one run.
@@ -44,6 +58,8 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from scan_tranche import merged_attempts
 
 
 @dataclass
@@ -439,12 +455,52 @@ def verdict(repo: Path, base: str, tip: str, declared: list[dict], languages: li
     }
 
 
+def read_declared(path: Path) -> list:
+    declared = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(declared, list):
+        raise ValueError(f"the declared list must be a JSON array: {path.name}")
+    return declared
+
+
+def tranche_declared(directory: Path, record: Path) -> tuple[list[dict], dict]:
+    """Every merged attempt's declarations, each reason prefixed with its task id.
+
+    Returns the union and `declared_files`: the file names loaded and missing.
+    """
+    declared: list[dict] = []
+    loaded: list[str] = []
+    missing: list[str] = []
+    for task, attempt, _ in merged_attempts(record.read_text(encoding="utf-8")):
+        name = f"{task}-{attempt}.json"
+        if name in loaded or name in missing:
+            continue
+        path = directory / name
+        if not path.is_file():
+            missing.append(name)
+            continue
+        loaded.append(name)
+        for entry in read_declared(path):
+            if not isinstance(entry, dict):
+                raise ValueError(f"a declared entry must be a JSON object: {name}")
+            declared.append({**entry, "reason": f"{task}: {entry.get('reason', '')}"})
+    return declared, {"loaded": loaded, "missing": missing}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n", 1)[0])
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--base", required=True, help="the lease's starting commit")
     parser.add_argument("--tip", required=True, help="the stream's tip commit")
-    parser.add_argument("--declared", type=Path, default=None, help="the worker's declared changes (JSON)")
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--declared", type=Path, default=None, help="the worker's declared changes (JSON)")
+    source.add_argument(
+        "--declared-dir", type=Path, default=None,
+        help="a tranche's declared files, <task>-<attempt>.json; needs --record",
+    )
+    parser.add_argument(
+        "--record", type=Path, default=None,
+        help="the tranche record whose merged verdicts pick the declared files",
+    )
     parser.add_argument(
         "--language", action="append", default=[], metavar="NAME:FILE_REGEX:TEST_REGEX",
         help="add a language for this run; TEST_REGEX needs a (?P<name>...) group (repeatable)",
@@ -454,6 +510,8 @@ def main(argv: list[str] | None = None) -> int:
         help="add a marker (KIND skipped or focused) to an added language (repeatable)",
     )
     args = parser.parse_args(argv)
+    if (args.declared_dir is None) != (args.record is None):
+        parser.error("--declared-dir and --record go together")
 
     try:
         extra_markers: dict[str, list[tuple[str, re.Pattern]]] = {}
@@ -470,13 +528,16 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError(f"--language {name}: the test pattern needs a (?P<name>...) group")
             languages.insert(0, Language(name, re.compile(files), generic_parser(test_re, extra_markers.get(name, []))))
         declared = []
+        files = None
         if args.declared is not None:
-            declared = json.loads(args.declared.read_text(encoding="utf-8"))
-            if not isinstance(declared, list):
-                raise ValueError("the declared list must be a JSON array")
+            declared = read_declared(args.declared)
+        elif args.declared_dir is not None:
+            declared, files = tranche_declared(args.declared_dir, args.record)
         for commit in (args.base, args.tip):
             git(args.repo, "rev-parse", "--verify", "--quiet", f"{commit}^{{commit}}")
         result = verdict(args.repo, args.base, args.tip, declared, languages)
+        if files is not None:
+            result["declared_files"] = files
     except (GitError, ValueError, OSError, re.error) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

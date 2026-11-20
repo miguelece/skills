@@ -66,13 +66,24 @@ these, in this order:
 | Date | Cycle | Task | Attempt | Event | Model, effort | Calls | Tokens in / write / read / out | Cost | Verif. | Grant, justification |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
-<Session costs, written at the close from `account_attempt.py <transcript>
---reconcile`, one row per session the attempts ran in. Each `Cost` above
-stays transcript-priced, not scaled.>
+<Session costs, printed at the close by `account_attempt.py --sessions
+<run-dir>/leases.md --project <project-dir>`, one row per session the
+attempts ran in. Each `Cost` above stays transcript-priced, not scaled.>
 
 | Session | Attempts | Priced | Harness total | Ratio |
 | --- | --- | --- | --- | --- |
 | <session id> | <task> <n>, ... | <`priced_usd`> | <`recorded_usd` \| absent> | <`ratio` \| absent> |
+
+## Previous tranche's session costs
+
+<Written at opening, when the previous tranche's run directory was archived:
+the rows `account_attempt.py --sessions
+.supervise-implementation/archive/<tranche>/leases.md --project
+<project-dir>` prints. The previous record is not edited; a row still absent
+stays absent, with no estimate.>
+
+| Session | Attempts | Priced | Harness total | Ratio |
+| --- | --- | --- | --- | --- |
 
 ## Escalations
 
@@ -87,13 +98,19 @@ stays transcript-priced, not scaled.>
 `Event` is `grant`, `re-grant`, `top-up`, `stall: <diagnosis>`, `escalated
 E<n>` or `released`. The execution log stays last, as in every task.
 
-The session table is filled once, at the close. `--reconcile` prices every
-transcript of the session an attempt's transcript belongs to and reads
+The session table is filled once, at the close, from one `--sessions` run
+over the lease table, so the lease table's columns are a contract the script
+reads them by. It finds each attempt's transcript by its agent id, groups the
+attempts by session, prices every transcript of each session and reads
 Claude Code's own record of that session's cost: `Priced` is its
 `priced_usd`, `Harness total` its `recorded_usd` and `Ratio` the one over the
 other. The ratio reads a few percent under 1 because the harness bills calls
 no transcript holds. A session still running has no record yet, the
-supervisor's own included, so its row reads `absent` rather than an estimate.
+supervisor's own included, so its row reads `absent` rather than an estimate;
+the supervisor's own row is filled at the next tranche's opening, under
+*Previous tranche's session costs* in the new record.
+A lease row whose transcript is not found is named on stderr and the run
+exits 1; `--json` prints the same rows as JSON.
 
 ## Escalation entry
 

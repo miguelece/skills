@@ -158,6 +158,27 @@ PROSE_LINE_REF = re.compile(r"\blines?\s+\*{0,2}(\d+)", re.IGNORECASE)
 # the safe harbour for it is a code span.
 PROSE_LINE_SPAN = re.compile(r"^\*{0,2}\s*(?:to|and|[-–—]|->|→)\s*\d", re.IGNORECASE)
 
+# A line reference written as a bare path, a colon and digits: no link, no code
+# span and no "line" word, so the four rules above cannot reach it, and a gate
+# report cited seven lines this way while every check passed. The last segment
+# must be `name.ext`, which is what keeps times, ports and versions out by
+# construction. Two shapes after the digits are permitted forms, not rot: a full
+# stop and a space is a numbered list item's name, and `@` is a commit pin. The
+# `(?!\d)` stops a backtrack from shortening the digits until a lookahead passes.
+BARE_LINE_REF = re.compile(
+    r"(?<![\w.\-/])((?:[\w.\-]+/)*[\w.\-]*\w\.[A-Za-z0-9]+:\d+(?:-\d+)?)(?!\d|@|-\d|\.\s)"
+)
+
+# What a bare line reference is read *around*: a whole link (its text is the
+# link rules' input, its target a path) and a URL, whose host and port have the
+# same shape as a file and a line.
+BARE_LINE_LINK = re.compile(r"!?\[[^\]]*\]\([^)]*\)")
+BARE_LINE_URL = re.compile(r"\b[a-z][a-z0-9+.\-]*://\S+", re.IGNORECASE)
+
+# A run of backticks: an inline code span opens and closes with runs of equal
+# length.
+BACKTICK_RUN = re.compile(r"`+")
+
 # Generated regions inside a hand-written file, per the repo-wide convention:
 # the generator owns what sits between the markers and nothing outside. Matched
 # by shape rather than by importing one generator's constants, so a region any
@@ -681,6 +702,78 @@ def prose_line_references(body: str) -> list[str]:
             if PROSE_LINE_SPAN.match(prose[match.end() :]):
                 continue
             found.append(match.group(0).strip())
+    return found
+
+
+def _outside_code_spans(line: str, open_run: int) -> tuple[str, int]:
+    """The line's text outside inline code spans, and the span left open at its end.
+
+    `open_run` is the length of a backtick run opened on an earlier line and not
+    yet closed (0 for none). Span text becomes a space, so tokens either side of
+    a span never join.
+    """
+    prose: list[str] = []
+    pos = 0
+    while pos <= len(line):
+        if open_run:
+            closer = next(
+                (m for m in BACKTICK_RUN.finditer(line, pos) if len(m.group(0)) == open_run),
+                None,
+            )
+            if closer is None:
+                return " ".join(prose), open_run
+            prose.append(" ")
+            pos = closer.end()
+            open_run = 0
+            continue
+        opener = BACKTICK_RUN.search(line, pos)
+        if opener is None:
+            prose.append(line[pos:])
+            break
+        prose.append(line[pos : opener.start()])
+        pos = opener.end()
+        open_run = len(opener.group(0))
+    return " ".join(prose), open_run
+
+
+def bare_line_references(body: str) -> list[str]:
+    """Line references written as a bare path, colon and number, in order.
+
+    Its own traversal, and the only one that tracks a code span wrapped onto the
+    next line: read per line, as every other traversal here is, the span's
+    second half looks like prose, and every false hit measured on the live board
+    was that shape. The tracking is this rule's alone so the existing rules'
+    behaviour does not move with it. A span does not cross a blank line, which
+    is also where an unclosed run stops hiding prose.
+
+    Fences and generated regions are skipped as everywhere else; links and URLs
+    are read around (see `BARE_LINE_LINK`).
+    """
+    found: list[str] = []
+    in_fence = False
+    in_region = False
+    open_run = 0
+    for line in body.splitlines():
+        if FENCE.match(line):
+            in_fence = not in_fence
+            open_run = 0
+            continue
+        if in_fence:
+            continue
+        if REGION_BEGIN.match(line):
+            in_region = True
+            continue
+        if REGION_END.match(line):
+            in_region = False
+            continue
+        if in_region:
+            continue
+        if not line.strip():
+            open_run = 0
+            continue
+        prose, open_run = _outside_code_spans(line, open_run)
+        prose = BARE_LINE_URL.sub(" ", BARE_LINE_LINK.sub(" ", prose))
+        found.extend(match.group(1) for match in BARE_LINE_REF.finditer(prose))
     return found
 
 
@@ -1293,6 +1386,21 @@ def validate_one(
             "instead -- a number goes wrong when anything above it is edited, "
             "and this form is invisible to the other citation rules because it "
             "is neither a link nor a code span",
+        )
+
+    # --- a path, a colon and a line number, outside any span or link --------
+    # The fifth form, and the one the rule above misses because it carries no
+    # "line" word: the first tranche gate report cited seven lines this way, in
+    # table cells, and validated clean. `error`, landing directly on the same
+    # reasoning as its neighbour: its population was repaired before it landed,
+    # and a rotted line number is neither advisory nor transient.
+    for reference in bare_line_references(body):
+        report(
+            "citation-bare-line-reference",
+            f"{reference!r} is a bare path-and-line reference; name the thing "
+            "instead (file.ext:name), or pin it with @<commit> if the name no "
+            "longer exists -- a number goes wrong when anything above it is "
+            "edited, and this form is invisible to the other citation rules",
         )
 
     # --- an instrument this board depends on must be recoverable ------------

@@ -17,6 +17,8 @@ one JSON record with the figures the supervisor's allocation log needs:
     scripts/account_attempt.py <transcript.jsonl> --grant "standard: 40 calls" \\
         --justification "first attempt" --also qa-suite --reconcile
     scripts/account_attempt.py --match-rate ~/.claude/projects/<project> --last 20
+    scripts/account_attempt.py --sessions <run-dir>/leases.md \\
+        --project ~/.claude/projects/<project> [--json]
 
 Counting rules:
 
@@ -68,8 +70,18 @@ session with an unpriced call reports `incomplete` and one with no
 `cost-state` `absent`; both are left out of the medians. The entry is
 undocumented and may disappear.
 
+`--sessions LEASES_MD --project PROJECT_DIR` prints the allocation log's
+session table at a tranche's close: it reads every row of the lease table,
+whose columns are the template's in `references/run-state.md`, finds each
+attempt's transcript by its agent id (`*/subagents/agent-<id>.jsonl`), groups
+the attempts by the session they ran in and reconciles each session once. One
+Markdown row per session, in lease order; a session with no `cost-state`
+prints `absent` for its harness total and ratio; `--json` prints the same rows
+as JSON. A lease row whose transcript is not found is named on stderr and the
+run exits 1, never dropped.
+
 Standard library only, deterministic, and no network. Exits 0 with a record,
-2 when the transcript cannot be read.
+2 when the transcript, project folder or lease table cannot be read.
 """
 
 from __future__ import annotations
@@ -401,7 +413,13 @@ def reconcile(transcript: Path, table: dict) -> dict:
     files = session_files(transcript)
     calls, _, _, cost_states = collect(files)
     if not cost_states:
-        return {"status": "absent"}
+        models, unpriced, _ = tally(calls, table)
+        return {
+            "status": "absent",
+            "session_transcripts": len(files),
+            "priced_usd": round(sum(row["cost_usd"] for row in models.values()), 6),
+            "unpriced_calls": bool(unpriced),
+        }
     recorded = {
         model: float(row.get("costUSD") or 0.0)
         for model, row in (cost_states[-1].get("modelUsage") or {}).items()
@@ -485,6 +503,108 @@ def match_rate(project: Path, last: int, table: dict) -> dict:
         ),
         "prices": {"read_on": table["read_on"], "source": table["source"]},
     }
+
+
+# --- the session table -----------------------------------------------------------
+
+# The lease table's columns, as `references/run-state.md` gives its template. A
+# table under any other header is refused rather than read by position.
+LEASE_COLUMNS = (
+    "Task", "Attempt", "State", "Agent id", "Branch", "Start commit", "Grant", "Spend so far",
+)
+SESSION_COLUMNS = ("Session", "Attempts", "Priced", "Harness total", "Ratio")
+
+
+def _cells(line: str) -> list[str]:
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def read_leases(path: Path) -> list[dict]:
+    """Every row of a lease table, by the template's column names.
+
+    Raises ValueError when no table carries the template's header.
+    """
+    lines = path.read_text(encoding="utf-8").splitlines()
+    for index, line in enumerate(lines):
+        if line.lstrip().startswith("|") and tuple(_cells(line)) == LEASE_COLUMNS:
+            break
+    else:
+        raise ValueError(f"no lease table with the columns {' | '.join(LEASE_COLUMNS)}")
+    rows = []
+    for line in lines[index + 2:]:
+        if not line.lstrip().startswith("|"):
+            break
+        cells = _cells(line)
+        if len(cells) != len(LEASE_COLUMNS):
+            raise ValueError(f"a lease row with {len(cells)} cells: {line.strip()}")
+        rows.append(dict(zip(LEASE_COLUMNS, (cell.strip("`") for cell in cells))))
+    return rows
+
+
+def find_transcript(project: Path, agent_id: str) -> Path | None:
+    """A subagent's transcript in a project folder, found by its agent id."""
+    if not agent_id:
+        return None
+    found = sorted(project.glob(f"*/subagents/agent-{agent_id}.jsonl"))
+    return found[0] if found else None
+
+
+def session_table(leases: list[dict], project: Path, table: dict) -> tuple[list[dict], list[str]]:
+    """One reconciled row per session the leased attempts ran in, in lease order,
+    and a line for each lease row whose transcript was not found."""
+    sessions: dict[str, dict] = {}
+    missing = []
+    for lease in leases:
+        transcript = find_transcript(project, lease["Agent id"])
+        if transcript is None:
+            missing.append(
+                f"{lease['Task']} attempt {lease['Attempt']}: no transcript for agent "
+                f"{lease['Agent id'] or '(none)'} under {project}"
+            )
+            continue
+        attempt = int(lease["Attempt"]) if lease["Attempt"].isdigit() else lease["Attempt"]
+        sid = transcript.parent.parent.name
+        entry = sessions.setdefault(sid, {"transcript": transcript, "attempts": []})
+        entry["attempts"].append({"task": lease["Task"], "attempt": attempt})
+    rows = []
+    for sid, entry in sessions.items():
+        result = reconcile(entry["transcript"], table)
+        absent = result["status"] == "absent"
+        rows.append({
+            "session": sid,
+            "attempts": entry["attempts"],
+            "status": result["status"],
+            "priced_usd": result["priced_usd"],
+            "recorded_usd": None if absent else result["recorded_usd"],
+            "ratio": None if absent else result["ratio"],
+            "unpriced_calls": result["status"] == "incomplete" or bool(result.get("unpriced_calls")),
+        })
+    return rows, missing
+
+
+def session_markdown(rows: list[dict]) -> str:
+    def dollars(value: float) -> str:
+        return f"${value:.2f}"
+
+    lines = [
+        "| " + " | ".join(SESSION_COLUMNS) + " |",
+        "|" + " --- |" * len(SESSION_COLUMNS),
+    ]
+    for row in rows:
+        absent = row["status"] == "absent"
+        priced = dollars(row["priced_usd"])
+        if row["unpriced_calls"]:
+            priced += " (incomplete)"
+        ratio = "absent" if absent else ("n/a" if row["ratio"] is None else f"{row['ratio']:.3f}")
+        cells = [
+            row["session"],
+            ", ".join(f"{a['task']} {a['attempt']}" for a in row["attempts"]),
+            priced,
+            "absent" if absent else dollars(row["recorded_usd"]),
+            ratio,
+        ]
+        lines.append("| " + " | ".join(cells) + " |")
+    return "\n".join(lines) + "\n"
 
 
 # --- the record ------------------------------------------------------------------
@@ -641,6 +761,26 @@ def account(transcript: Path, also: set[str], table: dict) -> dict:
     }
 
 
+def print_sessions(leases_path: Path, project: Path, as_json: bool, table: dict) -> int:
+    """Print the session table; exit 1 naming each lease row with no transcript."""
+    if not project.is_dir():
+        print(f"error: no project folder at {project}", file=sys.stderr)
+        return 2
+    try:
+        leases = read_leases(leases_path)
+    except (OSError, ValueError) as error:
+        print(f"error: cannot read the lease table at {leases_path}: {error}", file=sys.stderr)
+        return 2
+    rows, missing = session_table(leases, project, table)
+    if as_json:
+        sys.stdout.write(json.dumps(rows, indent=2, sort_keys=True) + "\n")
+    else:
+        sys.stdout.write(session_markdown(rows))
+    for line in missing:
+        print(f"error: {line}", file=sys.stderr)
+    return 1 if missing else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n", 1)[0])
     parser.add_argument("transcript", type=Path, nargs="?", help="a subagent transcript (.jsonl)")
@@ -663,11 +803,31 @@ def main(argv: list[str] | None = None) -> int:
         "--last", type=int, default=20,
         help="with --match-rate: how many of the most recent sessions to read (default 20)",
     )
+    parser.add_argument(
+        "--sessions", type=Path, default=None, metavar="LEASES_MD",
+        help="instead of one transcript: the allocation log's session table, one row per "
+        "session the lease table's attempts ran in (needs --project)",
+    )
+    parser.add_argument(
+        "--project", type=Path, default=None, metavar="PROJECT_DIR",
+        help="with --sessions: the project folder holding the attempts' transcripts",
+    )
+    parser.add_argument(
+        "--json", action="store_true",
+        help="with --sessions: print the rows as JSON instead of Markdown",
+    )
     args = parser.parse_args(argv)
 
-    if (args.transcript is None) == (args.match_rate is None):
-        parser.error("give either a transcript or --match-rate PROJECT_DIR")
+    modes = [args.transcript, args.match_rate, args.sessions]
+    if sum(mode is not None for mode in modes) != 1:
+        parser.error("give one of a transcript, --match-rate PROJECT_DIR or --sessions LEASES_MD")
+    if (args.sessions is None) != (args.project is None):
+        parser.error("--sessions and --project go together")
+    if args.json and args.sessions is None:
+        parser.error("--json goes with --sessions")
     table = json.loads(PRICES.read_text(encoding="utf-8"))
+    if args.sessions is not None:
+        return print_sessions(args.sessions, args.project, args.json, table)
     if args.match_rate is not None:
         if not args.match_rate.is_dir():
             print(f"error: no project folder at {args.match_rate}", file=sys.stderr)

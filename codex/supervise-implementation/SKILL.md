@@ -68,8 +68,11 @@ platform lacks background subagents, do not run a tranche: say so and offer
 Only on the owner's word. Then:
 
 1. **Check the session.** It runs on Opus 5.5. When the context-occupancy
-   tool is installed, read its `autoCompactThreshold`; if the window is not
-   near 300k, recommend that the owner set it for this session only (a saved
+   tool is installed, read its `autoCompactThreshold`. It is the threshold,
+   not the setting: the harness holds back about 33k for compaction (observed,
+   not documented), so a 300k setting reads about 267k and the 1M default
+   about 967k. Only when the threshold reads outside 250k to 300k, recommend
+   that the owner set the window to 300k for this session only (a saved
    environment holding `CLAUDE_CODE_AUTO_COMPACT_WINDOW=300k`, or
    `--autocompact 300k` in a terminal). Never write a setting yourself.
 2. **Check the worktree base.** Read `worktree.baseRef`. Unless it is
@@ -87,11 +90,20 @@ Only on the owner's word. Then:
    [references/run-state.md](references/run-state.md) defines. Create
    `.supervise-implementation/` at the repository root with a `.gitignore`
    holding `*`, and the lease table in it.
-5. **Arm the heartbeat**: a recurring job about every 30 minutes, off the :00
+5. **True up the previous tranche.** When its run directory was archived
+   under `.supervise-implementation/archive/<tranche>/`, run
+   `scripts/account_attempt.py --sessions
+   .supervise-implementation/archive/<tranche>/leases.md --project
+   <project-dir>` and write its rows under a *Previous tranche's session
+   costs* heading in the **new** record: sessions still running at the close
+   have ended since, so their harness totals now read. The previous record is
+   frozen once completed and is not edited. A row still `absent` stays
+   `absent`, with no estimate.
+6. **Arm the heartbeat**: a recurring job about every 30 minutes, off the :00
    and :30 marks, that runs a cycle if none has run since the last one. It
    lives only in this session and expires after seven days; re-arm it on a
    longer tranche.
-6. **Commit** the tranche record. Nothing is in flight yet.
+7. **Commit** the tranche record. Nothing is in flight yet.
 
 **Joining.** A new `part-of` piece of a tranche item that is `scoped` and
 `gate: none` joins the tranche, logged in the record. A lineage follow-on
@@ -203,7 +215,8 @@ sessions into the record's `Match rate:` line: each called model's median
 ratio of priced over billed cost. A median outside 0.90 to 1.02 flags the
 price table as stale; a billed model no transcript called is listed apart
 and flags nothing. Fill the allocation log's session table from
-`scripts/account_attempt.py --reconcile`, one row per session, beside the
+`scripts/account_attempt.py --sessions <run-dir>/leases.md --project
+<project-dir>`, which prints one row per session, beside the
 transcript-priced costs and never scaling them. Commit the record, then
 launch a fresh agent at `high` that runs `tranche-gate` with the tranche's
 base and tip commits, the record, each task's acceptance criteria and every
