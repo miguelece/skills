@@ -16,6 +16,19 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-20 — task-board-management (stuck detector)
+
+- **Behaviour change.** `supervise-implementation` no longer escalates an
+  attempt for its share of verification calls. The 25% sub-ceiling, the
+  lease's fixed-check count and the adjusted share are gone; the raw share
+  stays in the allocation log as a figure only.
+- **Behaviour change.** `account_attempt.py` reports `stuck` and
+  `stuck_episodes`: the same check failing the same way 3 times, the same
+  result 4 times with no edit between, or 6 steps alternating an edit and an
+  unchanged check. The supervisor re-grants a task's first stuck attempt
+  without asking and escalates the second. `--fixed-checks` is no longer
+  accepted.
+
 ### 2026-11-19 — task-board-management (tranche fixes)
 
 - **Behaviour change.** `supervise-implementation`'s verification

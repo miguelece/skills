@@ -31,18 +31,16 @@ id, the last cycle's number and time, and the size it counted, then one row
 per attempt:
 
 ```markdown
-| Task | Attempt | State | Agent id | Branch | Start commit | Grant | Fixed checks | Spend so far |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| <task-id> | 1 | running | <agent-id> | <branch> | <sha> | standard: 40 calls | 0 | $0.00 |
+| Task | Attempt | State | Agent id | Branch | Start commit | Grant | Spend so far |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| <task-id> | 1 | running | <agent-id> | <branch> | <sha> | standard: 40 calls | $0.00 |
 ```
 
 `State` is one of `running`, `returned`, `integrating`, `merged`,
 `unmerged`, `parked on E<n>` or `released`. Store the agent id, not only a
 name: after a restart a subagent is reached by its id. The task's criteria
 live in its task file, under `## Acceptance criteria`; the row only names the
-task. `Fixed checks` is the number of checking calls those criteria require,
-written at grant time from the criteria, zero when they fix none, and passed
-unchanged to `account_attempt.py --fixed-checks`.
+task.
 
 ## The tranche record's added sections
 
@@ -107,7 +105,7 @@ and points to the rest, because a worker's transcript ages off disk.
 
 - **Opened:** <date>, cycle <n>; task <id>, attempt <n>.
 - **Condition:** <stall unexplained | fix leaves the task | over the
-  verification sub-ceiling | over the per-task cap | draft or gated piece>.
+  second stuck attempt | over the per-task cap | draft or gated piece>.
 - **Urgency:** <blocking | routine>.
 - **Cause:** <as diagnosed>.
 - **Options:**

@@ -104,8 +104,7 @@ Set the task `in-progress` and, before launching the worker, add a
 `## Acceptance criteria` section to its task file: a short numbered list you
 write from the task's *Plan*, with the check fixed for each. The worker never
 sets its own bar. Then write the lease row ([references/run-state.md](references/run-state.md)):
-task, attempt, grant with its justification, the checking calls the criteria
-fix (zero when none), the start commit, the agent id.
+task, attempt, grant with its justification, the start commit, the agent id.
 
 **Admission.** Price the task's spend so far plus the next grant's estimate.
 If it would pass the per-task cap, escalate instead of granting.
@@ -133,6 +132,10 @@ worktree; a failed attempt's worktree is kept while an entry about it is open.
   (it changes the criteria or scope, or touches another stream's files), or
   when the next grant would pass the per-task cap. The entry carries the
   sizing history and every diagnosis.
+- **Stuck is read from the transcript**: a check repeated without its result
+  changing (the patterns are in [references/cycle.md](references/cycle.md)).
+  Re-grant the first stuck attempt on a task without asking, with its
+  episodes in the brief; a second one on the same task escalates.
 - **Not a stall**: an attempt that never started, or that a harness limit cut
   off before it did any work.
 - The limits that decide top-ups and escalations are in
@@ -156,8 +159,8 @@ unmerged is an attempt with no progress; streams behind it are unaffected.
 
 An entry is an exception report with an id, written to the tranche record in
 the format [references/run-state.md](references/run-state.md) gives. Four
-conditions open one: a stall that meets an escalation condition, a
-verification sub-ceiling overrun, a need over the per-task cap (the three
+conditions open one: a stall that meets an escalation condition, a second
+stuck attempt on one task, a need over the per-task cap (the three
 *blocking* ones), and a draft or gated piece (*routine*, for the gate's
 report).
 
@@ -225,8 +228,8 @@ Afterwards run `scripts/validate_board.py --board <board>` and
 - Do not commit while an integrator or a worker is in flight.
 - Do not let a worker set or change its own acceptance criteria, edit the
   board, or push.
-- Do not top up a verification overrun, and do not grant past the per-task
-  cap. Escalate both.
+- Do not grant past the per-task cap, and do not re-grant a task's second
+  stuck attempt. Escalate both.
 - Do not ask the owner while they may be away, and do not act on an entry
   until it is answered.
 - Do not change a setting. Recommend it, with the reason.

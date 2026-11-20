@@ -9,12 +9,13 @@ one JSON record with the figures the supervisor's allocation log needs:
 - the list-price cost, per model and in total, from the dated table in
   `prices.json` beside this script;
 - the effort the calls ran at;
-- the tool calls, the verification calls among them, and their share, raw
-  and adjusted for the checks the task's criteria fix.
+- the tool calls, the verification calls among them, and their share, a
+  logged figure that never escalates;
+- the episodes in which the attempt was stuck, and whether there were any.
 
     scripts/account_attempt.py <transcript.jsonl>
     scripts/account_attempt.py <transcript.jsonl> --grant "standard: 40 calls" \\
-        --justification "first attempt" --fixed-checks 4 --also qa-suite --reconcile
+        --justification "first attempt" --also qa-suite --reconcile
     scripts/account_attempt.py --match-rate ~/.claude/projects/<project> --last 20
 
 Counting rules:
@@ -26,15 +27,16 @@ Counting rules:
   one of its command segments. A mention, such as `grep pytest`, does not
   count, a heredoc's body is data, and a compound command counts once.
   Reviewing a change (`git diff`, `git show` of a commit) counts, because the
-  measurement that set the supervisor's 25% ceiling counted it. `--also NAME`
-  adds a checker for one run: an executable or a script's file name.
-- **The adjusted share takes the fixed checks out of both terms**:
-  (verification calls - fixed checks) / (tool calls - fixed checks), where
-  `--fixed-checks N` is the number of checking calls the task's criteria
-  require, written into the lease at grant time. It is the share the 25%
-  ceiling reads. Zero, the default, leaves it equal to the raw share. An
-  attempt that ran fewer checks than its criteria fix has no excess, so the
-  numerator stops at zero.
+  measurement behind the share's earlier ceiling counted it, and the share is
+  kept as a data series on that basis. `--also NAME` adds a checker for one
+  run: an executable or a script's file name.
+- **A stuck episode is a check repeated without getting anywhere**: the same
+  check failing the same way 3 times; the same result 4 times with no edit
+  between; or 6 steps alternating an edit and a check whose result does not
+  change. "The same" is the command text and the result with timings
+  stripped, and a changed result clears it. An edit is an `Edit`,
+  `MultiEdit`, `Write` or `NotebookEdit` call. `stuck_episodes` lists each
+  one, with the calls it spans counted from 1.
 - **A call the table cannot price is reported, never priced as zero.** An
   unknown model, an unknown inference geography, or fast mode on a model with
   no fast price makes the total `null`; `priced_cost_usd` still sums the rest.
@@ -228,9 +230,9 @@ def _without_flags(args: list[str]) -> list[str]:
 def _git_reviews(args: list[str]) -> bool:
     """`git diff`, and `git show` of a commit: reviewing a change.
 
-    Counted because the measurement that set the 25% verification ceiling
-    counted them, so the meter counts on the basis the ceiling was calibrated
-    on. `git show <rev>:<path>` reads a file and is not counted.
+    Counted because the measurement behind the share's earlier ceiling counted
+    them, so the logged series keeps one basis. `git show <rev>:<path>` reads a
+    file and is not counted.
     """
     i = 0
     while i < len(args) and args[i].startswith("-"):
@@ -488,14 +490,130 @@ def match_rate(project: Path, last: int, table: dict) -> dict:
 # --- the record ------------------------------------------------------------------
 
 
-def adjusted_share(verification: int, tools: int, fixed: int) -> float | None:
-    """The verification share with the criteria's fixed checks taken out."""
-    if tools - fixed <= 0:
-        return None
-    return round(max(verification - fixed, 0) / (tools - fixed), 6)
+# --- the stuck detector ------------------------------------------------------------
+
+EDIT_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
+# The thresholds are the OpenHands SDK's stuck-detector defaults, borrowed: the
+# lab's supervised attempts held no stuck case to calibrate them on.
+REPEATED_FAILURE = 3
+REPEATED_RESULT = 4
+ALTERNATION_STEPS = 6
+TIMING = re.compile(
+    r"\d+(?:\.\d+)?\s*(?:ms|s|sec|secs|seconds|m|min)\b|\b\d+:\d{2}(?::\d{2})?(?:\.\d+)?\b"
+)
 
 
-def account(transcript: Path, also: set[str], table: dict, fixed: int = 0) -> dict:
+def collect_results(paths: list[Path]) -> dict[str, tuple[str, bool]]:
+    """Each tool result's text and error flag, by the id of the call it answers."""
+    results: dict[str, tuple[str, bool]] = {}
+    for path in paths:
+        for entry in read_entries(path):
+            message = entry.get("message")
+            if not isinstance(message, dict) or not isinstance(message.get("content"), list):
+                continue
+            for block in message["content"]:
+                if isinstance(block, dict) and block.get("type") == "tool_result":
+                    content = block.get("content")
+                    if isinstance(content, list):
+                        content = "\n".join(
+                            str(part.get("text") or "") for part in content if isinstance(part, dict)
+                        )
+                    results.setdefault(
+                        str(block.get("tool_use_id")), (str(content or ""), bool(block.get("is_error")))
+                    )
+    return results
+
+
+def _same_result(text: str) -> str:
+    """A result with its timings stripped, so a re-run that only took longer reads the same."""
+    return TIMING.sub("<t>", text).strip()
+
+
+def stuck_episodes(tools: dict, results: dict, also: set[str]) -> list[dict]:
+    """The episodes in which an attempt repeated a check without getting anywhere.
+
+    A check is a verification call; "the same" is its command text and its
+    result with timings stripped. Three patterns, each cleared by a changed
+    result:
+
+    - repeated-failure: the same check failing the same way 3 times, edits
+      between or not;
+    - repeated-result: the same check giving the same result 4 times with no
+      edit between;
+    - edit-check-alternation: 6 steps alternating an edit and the same check
+      whose result does not change. Consecutive edits count as one step, and
+      calls that neither edit nor check are passed over.
+    """
+    episodes: list[dict] = []
+    failing: dict[str, dict] = {}
+    unedited: dict[str, dict] = {}
+    alternation: dict | None = None
+    last_kind = None
+
+    def note(pattern: str, run: dict, threshold: int) -> None:
+        if run["count"] == threshold:
+            run["episode"] = {"pattern": pattern, "command": run["command"], "result": run["shown"],
+                              "count": run["count"], "first_call": run["first"], "last_call": run["last"]}
+            episodes.append(run["episode"])
+        elif run["count"] > threshold:
+            run["episode"].update(count=run["count"], last_call=run["last"])
+
+    for index, (tool_id, block) in enumerate(tools.items(), start=1):
+        name = block.get("name")
+        if name in EDIT_TOOLS:
+            unedited.clear()
+            if last_kind != "edit" and alternation is not None:
+                alternation["steps"] += 1
+            last_kind = "edit"
+            continue
+        command = str((block.get("input") or {}).get("command") or "")
+        if name not in SHELL_TOOLS or not is_verification(command, also):
+            continue
+        text, failed = results.get(str(tool_id), ("", False))
+        key = (command, _same_result(text))
+        shown = text.strip().splitlines()[-1][:200] if text.strip() else ""
+
+        def advance(runs: dict, eligible: bool) -> dict | None:
+            run = runs.get(command)
+            if not eligible:
+                runs.pop(command, None)
+                return None
+            if run is not None and run["key"] == key:
+                run["count"] += 1
+                run["last"] = index
+            else:
+                run = runs[command] = {"key": key, "command": command, "shown": shown,
+                                       "count": 1, "first": index, "last": index}
+            return run
+
+        run = advance(failing, failed)
+        if run is not None:
+            note("repeated-failure", run, REPEATED_FAILURE)
+        note("repeated-result", advance(unedited, True), REPEATED_RESULT)
+
+        if last_kind == "edit" and alternation is not None and alternation["key"] == key:
+            alternation["steps"] += 1
+            alternation["count"] += 1
+            alternation["last"] = index
+        else:
+            steps = 2 if last_kind == "edit" else 1
+            alternation = {"key": key, "command": command, "shown": shown, "steps": steps,
+                           "count": 1, "first": index, "last": index}
+        if alternation["steps"] >= ALTERNATION_STEPS:
+            if "episode" not in alternation:
+                alternation["episode"] = {
+                    "pattern": "edit-check-alternation", "command": command, "result": shown,
+                    "count": alternation["count"], "first_call": alternation["first"],
+                    "last_call": index,
+                }
+                episodes.append(alternation["episode"])
+            else:
+                alternation["episode"].update(count=alternation["count"], last_call=index)
+        last_kind = "check"
+    return episodes
+
+
+def account(transcript: Path, also: set[str], table: dict) -> dict:
     calls, tools, efforts, _ = collect([transcript])
     models, unpriced, incomplete = tally(calls, table)
     priced = round(sum(row["cost_usd"] for row in models.values()), 9)
@@ -505,6 +623,7 @@ def account(transcript: Path, also: set[str], table: dict, fixed: int = 0) -> di
         if block.get("name") in SHELL_TOOLS
         and is_verification(str((block.get("input") or {}).get("command") or ""), also)
     )
+    episodes = stuck_episodes(tools, collect_results([transcript]), also)
     return {
         "transcript": transcript.name,
         "api_calls": len(calls),
@@ -516,8 +635,8 @@ def account(transcript: Path, also: set[str], table: dict, fixed: int = 0) -> di
         "tool_calls": len(tools),
         "verification_calls": verification,
         "verification_share": round(verification / len(tools), 6) if tools else None,
-        "fixed_checks": fixed,
-        "adjusted_verification_share": adjusted_share(verification, len(tools), fixed),
+        "stuck": bool(episodes),
+        "stuck_episodes": episodes,
         "prices": {"read_on": table["read_on"], "source": table["source"]},
     }
 
@@ -530,10 +649,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--also", action="append", default=[], metavar="NAME",
         help="count this executable or script name as a checker for this run (repeatable)",
-    )
-    parser.add_argument(
-        "--fixed-checks", type=int, default=0, metavar="N",
-        help="checking calls the task's criteria require, from the lease (default 0)",
     )
     parser.add_argument(
         "--reconcile", action="store_true",
@@ -552,8 +667,6 @@ def main(argv: list[str] | None = None) -> int:
 
     if (args.transcript is None) == (args.match_rate is None):
         parser.error("give either a transcript or --match-rate PROJECT_DIR")
-    if args.fixed_checks < 0:
-        parser.error("--fixed-checks cannot be negative")
     table = json.loads(PRICES.read_text(encoding="utf-8"))
     if args.match_rate is not None:
         if not args.match_rate.is_dir():
@@ -565,7 +678,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.transcript.is_file():
         print(f"error: no transcript at {args.transcript}", file=sys.stderr)
         return 2
-    record = account(args.transcript, set(args.also), table, args.fixed_checks)
+    record = account(args.transcript, set(args.also), table)
     record["grant"] = args.grant
     record["justification"] = args.justification
     if args.reconcile:

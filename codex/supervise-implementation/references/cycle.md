@@ -26,13 +26,17 @@ and log why:
 Nothing enforces a grant. After each attempt, account for it:
 
 ```text
-scripts/account_attempt.py <transcript.jsonl> --grant "<size>: <n> calls" --justification "<why>" --fixed-checks <n>
+scripts/account_attempt.py <transcript.jsonl> --grant "<size>: <n> calls" --justification "<why>"
 ```
 
 The transcript is the subagent's own, under the session's project directory.
 Write its figures into the allocation log: model and effort, API calls, the
-four token counts, the list-price cost, the adjusted verification share, the
-grant and its justification.
+four token counts, the list-price cost, the raw verification share, the
+grant and its justification. The share is a logged figure and never
+escalates: it counts test runners, linters, validators, `--check` builds,
+check scripts and reviewing a change (`git diff`, `git show` of a commit),
+and is kept as the data series a later calibration needs. Checking done by
+reading files is invisible to it.
 
 ## The per-task cap
 
@@ -48,23 +52,25 @@ The harness bills calls no transcript holds, so the priced figure reads about
 session, not to any one attempt, and the session's ratio is known only once
 it ends, after the cap was checked.
 
-## The verification sub-ceiling
+## Stuck attempts
 
-**25% of an attempt's tool calls, net of the checks its criteria fix.** The
-ceiling reads the adjusted share, (verification calls - fixed checks) /
-(tool calls - fixed checks), which the script prints beside the raw one.
-The fixed count is the number of checking calls the task's criteria require,
-written into the lease at grant time and passed unchanged as
-`--fixed-checks`; zero when the criteria fix none, which leaves the raw
-share. Without it, an attempt under 16 calls whose criteria fix four checks
-cannot stay under 25%. A generous count hides sprawl, so count only what a
-criterion's check names.
+An attempt is **stuck** when it repeated a check without getting anywhere.
+The script reads it from the transcript and lists each episode under
+`stuck_episodes`:
 
-The script's verification share counts test runners, linters, validators,
-`--check` builds, check scripts, and reviewing a change (`git diff`, `git
-show` of a commit), because the measurement behind 25% counted them. An
-overrun escalates and is **never topped up**. Checking done by reading files
-is invisible to the count.
+- the same check failing the same way 3 times, edits between or not;
+- the same check giving the same result 4 times with no edit between;
+- 6 steps alternating an edit and a check whose result does not change.
+
+"The same" is the command text and the result with its timings stripped,
+and a changed result clears the pattern. A healthy attempt checks often;
+only repetition without change marks one stuck. The thresholds are the
+OpenHands SDK's defaults, borrowed: no supervised attempt here has been
+stuck yet to calibrate them on.
+
+Progress stays the integrator's confirmed criteria, and the per-task cap
+stays the backstop. A stuck attempt can still have moved a criterion; the
+integrator's verdict decides that, not the episodes.
 
 ## Responses
 
@@ -74,7 +80,8 @@ is invisible to the count.
 | No criterion confirmed, cause named, fix inside the task | Re-size: a fresh grant from a clean worktree, no ask |
 | No criterion confirmed, the same failure again, no new diagnosis | Escalate (judgement: analyst) |
 | The fix changes the criteria or scope, or another stream's files | Escalate (judgement: analyst) |
-| Verification's adjusted share passed 25% of tool calls | Escalate (mechanical) |
+| The first stuck attempt on a task | Re-grant from a clean worktree with the stuck episodes in the brief, no ask |
+| The second stuck attempt on the same task | Escalate (mechanical) |
 | The next grant would take the task past $20 | Escalate before granting (mechanical) |
 | Never started, or cut off by a harness limit before any work | Not a stall: re-launch |
 | A draft or gated piece of a tranche item | Routine entry, one line |
@@ -100,8 +107,8 @@ Their options are fixed:
 
 - **over the cap**: raise this task's cap to a stated figure, re-scope it, or
   release it;
-- **over the verification sub-ceiling**: re-grant with the adjusted share held
-  to the ceiling and the same fixed count, re-scope, or release.
+- **stuck twice**: re-grant once more with both attempts' episodes in the
+  brief, re-scope, or release.
 
 ## Each cycle, in order
 
