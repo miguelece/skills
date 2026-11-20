@@ -16,6 +16,23 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-20 — task-board-management (fourth tranche)
+
+- **Behaviour change.** `supervise-implementation`'s *Opening a tranche*
+  gains a step 4 that archives the previous tranche's run files: the run
+  directory's `leases.md`, `declared/` and `drafts/` move under
+  `.supervise-implementation/archive/<tranche>/`, and `.tranche-gate/`'s loose
+  files under `.tranche-gate/<tranche>/`, named by the previous record's `id`.
+  Archives are kept and never pruned. The later opening steps are renumbered
+  5 to 8, and the true-up now reads the archive this step wrote.
+- **Behaviour change.** `account_attempt.py` refuses a lease row whose
+  `Attempt` cell is not a number, exiting 2 and naming the row, where it used
+  to pass the text through.
+- `tranche-gate`'s report template names `account_attempt.py --sessions` over
+  the lease table as the session table's source, in place of `--reconcile`.
+  *Closing a tranche* says a session row reading `absent` is filled by the
+  next opening's true-up.
+
 ### 2026-11-20 — task-board-management (third tranche)
 
 - **Behaviour change.** `validate_board.py` has a new error rule,

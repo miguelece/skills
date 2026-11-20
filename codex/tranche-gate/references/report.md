@@ -39,12 +39,13 @@ nothing. "Not applicable: no supervisor ran" for any other batch.
 | --- | --- | --- | --- | --- |
 | <session id> | <task> <n>, ... | <`priced_usd`> | <`recorded_usd` \| absent> | <`ratio` \| absent> |
 
-Copied from the record's session table, which the supervisor filled at its
-close from `account_attempt.py --reconcile`: each session's transcript-priced
-cost, the harness total Claude Code recorded for it, and the ratio of the
-first over the second. Attempt costs stay transcript-priced, not scaled. A
-session still running at the close reads `absent`. "Not applicable: no
-supervisor ran" for any other batch.
+Copied from the record's session table, which the supervisor printed at its
+close with one `account_attempt.py --sessions <run-dir>/leases.md --project
+<dir>` run over the lease table: each session's transcript-priced cost, the
+harness total Claude Code recorded for it, and the ratio of the first over the
+second. Attempt costs stay transcript-priced, not scaled. A session still
+running at the close reads `absent`. "Not applicable: no supervisor ran" for
+any other batch.
 
 ### Remediation commits
 

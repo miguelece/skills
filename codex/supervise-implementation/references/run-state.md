@@ -20,9 +20,17 @@ Never put run files under the board folder: the board validator reads every
 ├── leases.md           # the lease table
 ├── declared/           # each attempt's declared test changes, as JSON
 │   └── <task>-<attempt>.json
-└── drafts/             # the analyst's draft entries
-    └── E<n>.md
+├── drafts/             # the analyst's draft entries
+│   └── E<n>.md
+└── archive/            # earlier tranches' run files, moved at each opening
+    └── <tranche>/      # its leases.md, declared/ and drafts/
 ```
+
+Each opening moves the previous tranche's run files under `archive/<tranche>/`,
+named by that tranche record's `id`, and `.tranche-gate/`'s under
+`.tranche-gate/<tranche>/`. Archives are kept, never pruned: they are the only
+copy of each tranche's lease table and patches. They are local only, like the
+rest of the run directory, so `git clean -x` deletes them.
 
 ## The lease table
 

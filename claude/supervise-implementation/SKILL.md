@@ -85,12 +85,19 @@ Only on the owner's word. Then:
    exclusion with its reason, shaped per
    [references/report-form.md](references/report-form.md), and get the
    owner's agreement.
-4. **File the tranche record** as a plan task from
+4. **Archive the previous tranche's run files.** When the previous tranche
+   left run files, move `.supervise-implementation/`'s `leases.md`,
+   `declared/` and `drafts/` under
+   `.supervise-implementation/archive/<tranche>/`, and `.tranche-gate/`'s
+   loose files (all but its `.gitignore` and earlier archives) under
+   `.tranche-gate/<tranche>/`, where `<tranche>` is the previous tranche
+   record's `id`. Step 6 reads the first archive. Never delete an archive.
+5. **File the tranche record** as a plan task from
    [assets/task.md](assets/task.md), with the added sections
    [references/run-state.md](references/run-state.md) defines. Create
    `.supervise-implementation/` at the repository root with a `.gitignore`
    holding `*`, and the lease table in it.
-5. **True up the previous tranche.** When its run directory was archived
+6. **True up the previous tranche.** When step 4 archived its run directory
    under `.supervise-implementation/archive/<tranche>/`, run
    `scripts/account_attempt.py --sessions
    .supervise-implementation/archive/<tranche>/leases.md --project
@@ -99,11 +106,11 @@ Only on the owner's word. Then:
    have ended since, so their harness totals now read. The previous record is
    frozen once completed and is not edited. A row still `absent` stays
    `absent`, with no estimate.
-6. **Arm the heartbeat**: a recurring job about every 30 minutes, off the :00
+7. **Arm the heartbeat**: a recurring job about every 30 minutes, off the :00
    and :30 marks, that runs a cycle if none has run since the last one. It
    lives only in this session and expires after seven days; re-arm it on a
    longer tranche.
-7. **Commit** the tranche record. Nothing is in flight yet.
+8. **Commit** the tranche record. Nothing is in flight yet.
 
 **Joining.** A new `part-of` piece of a tranche item that is `scoped` and
 `gate: none` joins the tranche, logged in the record. A lineage follow-on
@@ -217,7 +224,8 @@ price table as stale; a billed model no transcript called is listed apart
 and flags nothing. Fill the allocation log's session table from
 `scripts/account_attempt.py --sessions <run-dir>/leases.md --project
 <project-dir>`, which prints one row per session, beside the
-transcript-priced costs and never scaling them. Commit the record, then
+transcript-priced costs and never scaling them. A session row that reads
+`absent` is filled by the next opening's true-up, not estimated. Commit the record, then
 launch a fresh agent at `high` that runs `tranche-gate` with the tranche's
 base and tip commits, the record, each task's acceptance criteria and every
 integrator verdict. Its report, appended to the record, lists the open

@@ -522,7 +522,8 @@ def _cells(line: str) -> list[str]:
 def read_leases(path: Path) -> list[dict]:
     """Every row of a lease table, by the template's column names.
 
-    Raises ValueError when no table carries the template's header.
+    Raises ValueError when no table carries the template's header, or when a
+    row has the wrong number of cells or an Attempt cell that is not all digits.
     """
     lines = path.read_text(encoding="utf-8").splitlines()
     for index, line in enumerate(lines):
@@ -537,7 +538,10 @@ def read_leases(path: Path) -> list[dict]:
         cells = _cells(line)
         if len(cells) != len(LEASE_COLUMNS):
             raise ValueError(f"a lease row with {len(cells)} cells: {line.strip()}")
-        rows.append(dict(zip(LEASE_COLUMNS, (cell.strip("`") for cell in cells))))
+        row = dict(zip(LEASE_COLUMNS, (cell.strip("`") for cell in cells)))
+        if not (row["Attempt"].isascii() and row["Attempt"].isdigit()):
+            raise ValueError(f"a lease row whose Attempt is not a number: {line.strip()}")
+        rows.append(row)
     return rows
 
 
@@ -562,7 +566,7 @@ def session_table(leases: list[dict], project: Path, table: dict) -> tuple[list[
                 f"{lease['Agent id'] or '(none)'} under {project}"
             )
             continue
-        attempt = int(lease["Attempt"]) if lease["Attempt"].isdigit() else lease["Attempt"]
+        attempt = int(lease["Attempt"])
         sid = transcript.parent.parent.name
         entry = sessions.setdefault(sid, {"transcript": transcript, "attempts": []})
         entry["attempts"].append({"task": lease["Task"], "attempt": attempt})
