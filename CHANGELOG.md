@@ -16,6 +16,15 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-21 — quality-of-life (working-conventions)
+
+- **Behaviour change.** A new skill, `working-conventions`, packages three
+  standing checks that hold in every project: estimate a heavy run's
+  hardware use against a safety budget before launching it, check a runtime
+  or package against current security advisories before running or
+  installing it, and research a question before putting it to the user. It
+  is model-invocable, so it loads at the moment each check applies.
+
 ### 2026-11-21 — research-tooling (cross-repository references)
 
 - **Behaviour change.** `research-base-model.md` defines one reference form
