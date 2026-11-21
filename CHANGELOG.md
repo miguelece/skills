@@ -16,6 +16,19 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-21 — task-board-management (fifth tranche)
+
+- **Behaviour change.** `tranche-gate`'s checklist gains a thirteenth item,
+  task references: a task id in code, tests, manifests or skill text, or an
+  opaque label used outside the document that defines it. `scan_tranche.py`
+  gains a `task_refs` scan that reports `id` and `label` hits on added lines.
+  Comments and docstrings are remediated by rewriting each reference to state
+  the reason it carried; a hit in published skill text is reported. The
+  skill's description now counts thirteen defects.
+- **Behaviour change.** `supervise-implementation`'s worker and integrator
+  briefs state the task-label rule, so workers keep board ids and labels out
+  of what they commit and integrators check for them in the diff.
+
 ### 2026-11-20 — task-board-management (fourth tranche)
 
 - **Behaviour change.** `supervise-implementation`'s *Opening a tranche*

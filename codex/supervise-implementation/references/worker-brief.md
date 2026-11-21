@@ -37,6 +37,13 @@ files, and do not push, publish or merge. Work that the task should not
 absorb, new verification tooling included, goes in your return as a
 follow-on, not into your diff.
 
+Keep the board's names out of what you commit. An opaque label is never used
+outside the document that defines it, in any committed file, and a task id
+never appears in code, tests, manifests or skill text; project docs and
+research findings may cite one. Fixture data a test parses is exempt. Where
+a reference explains something, rewrite it to state the reason it carried;
+provenance goes in the commit message.
+
 ## Declare every test change
 
 List every test you deleted, skipped or focused, each with a reason, as JSON:

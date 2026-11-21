@@ -1,6 +1,6 @@
 # The tranche checklist
 
-Twelve items, closed for a tranche. The gate looks for these and nothing else.
+Thirteen items, closed for a tranche. The gate looks for these and nothing else.
 A defect that fits none of them goes in the report as a proposal to add to the
 list, with its evidence; it is not remediated.
 
@@ -24,6 +24,7 @@ the owner.
 | D10 | Documentation and comments that contradict the code, restate it, or carry unresolved TODOs | Scan `markers`; judged: each changed document against the changed code | Comments structural; published skill text report |
 | D11 | Drift from the repository's conventions, including a bad local pattern copied | The repository's own linters and contract tests; judged against its agent instructions and standards | Structural, even in a published skill's files, when the tranche introduced it; a recurring one is also a guidance candidate |
 | D12 | Dependency and hard-coded-value hygiene: new or unpinned dependencies, absolute paths | The diff of every manifest and lockfile; a search of added lines for absolute home paths | Report |
+| D13 | Task references: a task id in code, tests, manifests or skill text, or an opaque label (one or two capitals and one or two digits) used outside the document that defines it | Scan `task_refs`: `id` and `label` hits on added lines | Comments and docstrings structural, rewritten to state the reason the reference carried; published skill text report |
 
 **D5 and D7 need criteria.** For a task with no `## Acceptance criteria`
 section, write "not checked: no criteria" against both.
@@ -37,6 +38,10 @@ dismiss each with its reason in the chunk notes, not in the report:
   recognises only `main` and the `__main__` block as entry points.
 - **Unreferenced files** that are loaded by a glob, such as test scenario
   files, which no other file names.
+- **Task labels** that are another kind of short code, such as an eval
+  prompt id or a model name, in prose or a data file other than JSON; and
+  this checklist's own item ids, cited from the gate's other files and
+  scripts, which the scan reads as defined only here.
 - **Clone groups** of shared boilerplate: the same imports, signatures or
   table headers in files that are meant to look alike.
 

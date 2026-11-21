@@ -19,7 +19,8 @@ finding is verified against the code:
   the code it tests.
 - **Leftover cleanup**: scratch files, temporary files, debug output and
   commented-out code (D9), and comments that restate or contradict the code
-  (D10).
+  (D10), and a comment or docstring that cites a task id or an opaque label,
+  rewritten to state the reason the reference carried (D13).
 - **Convention fixes** (D11) that the repository's own linters or contract
   tests pin.
 
@@ -51,6 +52,7 @@ making it.
 - Any change to a published skill's behaviour that predates the tranche: its
   `SKILL.md` or references, a bundled script's flags or output, or anything in
   a publish target.
+- A task id or opaque label in published skill text (D13).
 - A test deleted or weakened while its subject remains (D6).
 - Any behaviour change: removing a feature or an option (D7), a changed
   failure path (D8), a dependency (D12).

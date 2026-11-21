@@ -1,6 +1,6 @@
 ---
 name: tranche-gate
-description: 'Gate a closed tranche, or any batch of agent commits, before the owner''s review: scan base to tip against a closed checklist of twelve defects (churn, reinvented helpers, duplication, dead code, surplus or weakened tests, over-building, leftovers and more), remediate only behaviour-preserving cleanup of what the batch introduced in revertable local commits, and append one report to the tranche record. Use when supervise-implementation closes a tranche, or when asked to "run the tranche gate", "gate this batch", "clean up what the agents left", or to analyse and remediate a range of agent-written commits before packaging.'
+description: 'Gate a closed tranche, or any batch of agent commits, before the owner''s review: scan base to tip against a closed checklist of thirteen defects (churn, reinvented helpers, duplication, dead code, surplus or weakened tests, over-building, leftovers and more), remediate only behaviour-preserving cleanup of what the batch introduced in revertable local commits, and append one report to the tranche record. Use when supervise-implementation closes a tranche, or when asked to "run the tranche gate", "gate this batch", "clean up what the agents left", or to analyse and remediate a range of agent-written commits before packaging.'
 ---
 
 # Gate a tranche

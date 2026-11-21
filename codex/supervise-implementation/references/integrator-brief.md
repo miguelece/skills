@@ -58,4 +58,11 @@ that commits to the main line while you run, and you never push.
 
 Follow the repository's commit convention. Do not push, publish, set or
 clear an `owner` or `manual` gate, or edit another stream's files.
+
+Read the diff, and write your own commits, with the board's names kept out.
+An opaque label is never used outside the document that defines it, in any
+committed file, and a task id never appears in code, tests, manifests or
+skill text; project docs and research findings may cite one. Fixture data a
+test parses is exempt. A reference that explains something is rewritten to
+state the reason it carried; provenance goes in the commit message.
 ```

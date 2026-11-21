@@ -36,6 +36,15 @@ verifies each against the code before it acts on it.
 - **markers** (D10): `TODO` and `FIXME` in comments on lines the tranche
   added: a Python file's comment tokens, or the whole line when it does not
   tokenize; in any other file, after a `#`, `//` or `<!--` on the line.
+- **task_refs** (D13): task-board references on lines the tranche added. A
+  `kind: id` is a whole-word match of a board id (the `id:` of each task file
+  under a `tasks/` directory) in anything but a doc, which is Markdown outside
+  a project's shipped `src/` or `shared/`. A `kind: label` is an opaque label,
+  one or two capitals and one or two digits, in any file, unless the same file
+  defines it by opening a table row or list item with it; heading levels H1 to
+  H6 and lint codes such as MD024 are not labels. Python is read in its
+  comments and docstrings only, YAML and TOML in their comments, JSON not at
+  all; anything under a `tasks/` or `fixtures/` directory is not read.
 - **size**: changed lines, as `git diff --shortstat` counts them, raw and
   without generated regions. `--size` prints only the second number; the
   supervisor closes a tranche on it.
@@ -67,6 +76,7 @@ import subprocess
 import sys
 import tokenize
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -752,6 +762,93 @@ def markers(patches: list[FilePatch], files: dict[str, str]) -> list[dict]:
     return sorted(found, key=lambda m: (m["path"], m["line"]))
 
 
+# --- D13, task references ----------------------------------------------------------------------
+
+
+LABEL = re.compile(r"(?<![\w-])[A-Z]{1,2}[0-9]{1,2}(?![\w-])")
+NOT_A_LABEL = re.compile(r"H[1-6]|MD[0-9]+")
+DEFINES_LABEL = re.compile(
+    r"^\s*(?:\||[-*+]\s|[0-9]+[.)]\s)\s*(?:\*\*|`)?([A-Z]{1,2}[0-9]{1,2})(?![\w-])",
+    re.MULTILINE,
+)
+TASK_ID = re.compile(r"^id:\s*(\S+)\s*$", re.MULTILINE)
+YAML_COMMENT = re.compile(r"(?:^|\s)(#.*)$")
+DATA_SUFFIXES = (".json",)
+COMMENTED_SUFFIXES = (".yaml", ".yml", ".toml")
+NOT_SCANNED = {"tasks", "fixtures"}
+SHIPPED = {"src", "shared"}
+
+
+def board_ids(files: dict[str, str]) -> list[str]:
+    """The `id:` of every task file under a `tasks/` directory, from its frontmatter."""
+    ids = set()
+    for path, text in files.items():
+        if "tasks" in path.split("/")[:-1] and path.endswith(".md") and text.startswith("---\n"):
+            front = text[4:].split("\n---", 1)[0]
+            ids.update(TASK_ID.findall(front))
+    return sorted(ids, key=lambda i: (-len(i), i))
+
+
+def docstring_lines(text: str) -> set[int] | None:
+    """Every line a module, class or function docstring spans, or None when it does not parse."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return None
+    spans: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, *DEFS)) and node.body:
+            first = node.body[0]
+            if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str):
+                spans.update(range(first.lineno, first.end_lineno + 1))
+    return spans
+
+
+def scanned_text(path: str, files: dict[str, str]) -> Callable[[int, str], str] | None:
+    """How to read an added line of `path` for references, or None when the file is not scanned.
+
+    Python is read in its comments and docstrings only, so string literals a
+    test parses stay out; YAML and TOML in their comments; JSON not at all, as
+    data; anything else whole.
+    """
+    if NOT_SCANNED & set(path.split("/")[:-1]) or path.endswith(DATA_SUFFIXES):
+        return None
+    if path.endswith(".py"):
+        text = files.get(path, "")
+        comments, docs = python_comments(text), docstring_lines(text)
+        if comments is None or docs is None:
+            return lambda _, line: line
+        return lambda n, line: " ".join(filter(None, (comments.get(n), line if n in docs else None)))
+    if path.endswith(COMMENTED_SUFFIXES):
+        return lambda _, line: (m.group(1) if (m := YAML_COMMENT.search(line)) else "")
+    return lambda _, line: line
+
+
+def ids_barred(path: str) -> bool:
+    """A task id is allowed only in a doc: Markdown outside a project's shipped `src/` or `shared/`."""
+    return not path.endswith(".md") or bool(SHIPPED & set(path.split("/")[:-1]))
+
+
+def task_refs(patches: list[FilePatch], files: dict[str, str]) -> list[dict]:
+    """Over authored patches: task ids where they are barred, and labels a file does not define."""
+    ids = board_ids(files)
+    id_pattern = re.compile(r"(?<![\w-])(?:" + "|".join(map(re.escape, ids)) + r")(?![\w-])") if ids else None
+    found = []
+    for fp in patches:
+        if fp.new is None or (read := scanned_text(fp.new, files)) is None:
+            continue
+        defined = set(DEFINES_LABEL.findall(files.get(fp.new, "")))
+        with_ids = id_pattern is not None and ids_barred(fp.new)
+        for line_no, text in fp.added:
+            scanned = read(line_no, text)
+            hits = {("id", m.group(0)) for m in id_pattern.finditer(scanned)} if with_ids else set()
+            hits |= {("label", m.group(0)) for m in LABEL.finditer(scanned)
+                     if not NOT_A_LABEL.fullmatch(m.group(0)) and m.group(0) not in defined}
+            found += [{"path": fp.new, "line": line_no, "kind": kind, "token": token, "text": text.strip()}
+                      for kind, token in hits]
+    return sorted(found, key=lambda r: (r["path"], r["line"], r["kind"], r["token"]))
+
+
 # --- the report ---------------------------------------------------------------------------------
 
 
@@ -845,6 +942,7 @@ def report(repo: Path, base: str, tip: str, record: Path | None) -> dict:
             "print_calls": print_calls(parsed, added),
         },
         "markers": markers([fp for _, fp in diff], files),
+        "task_refs": task_refs([fp for _, fp in diff], files),
         "unparsed": sorted(unparsed),
     }
 

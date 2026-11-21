@@ -75,7 +75,7 @@ any other batch.
 
 ### Proposals
 
-- <a defect outside D1 to D12>: <evidence, path:name>. For the owner to add to
+- <a defect outside D1 to D13>: <evidence, path:name>. For the owner to add to
   the checklist or not; never remediated.
 ```
 
