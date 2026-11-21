@@ -172,7 +172,7 @@ status: supported          # exploring | supported | promoted
 confidence: directional    # directional | evidenced | strong
 updated: 2026-09-17        # the last amendment; moves only when the claim changes
 authority: []              # what a living record is re-verified against
-sources: []                # names in the private layer, public URLs, or <repo>@<sha>
+sources: []                # private-layer names, URLs, <repo>@<sha>, <repo>:<path>
 informs: []                # what this record shapes — guidance, projects, decisions
 covers: []                 # a manifest record only: the files it describes
 ---
@@ -249,6 +249,36 @@ line inside a fenced block is never a heading. After code, `Name` is a symbol th
 file defines. A locator that matches nothing does not resolve. A heading's
 passage runs to the next heading of the same or a higher level, so it includes
 its subsections.
+
+**A record in another repository is named `<repository>:<path-in-repository>`.**
+A relative link cannot cross a repository, so this is the one form for citing
+a record that lives in another repository's store, from a record, a board entry
+or a task:
+
+- `<repository>` is the repository's directory name, which is also its remote's
+  name, never a machine path.
+- `<path-in-repository>` is the record's path from that repository's root,
+  with forward slashes.
+- `#<heading>` follows the path to name one entry inside a file, by the full
+  text of its heading, as a `path:Name` locator does. The colon is already
+  spent on the repository, so the heading takes `#`.
+- `@<sha>` comes last to pin the reference, as a frozen record pins every
+  citation. Without it the reference is living and names the record as it
+  stands now.
+
+```text
+knowledge-store:findings/cache-keys-outlive-their-schema.md
+knowledge-store:findings/cache-keys-outlive-their-schema.md#What was measured
+example-app:research/findings/retry-budget.md@4f2c9e1
+```
+
+**A cross-repository reference goes in `sources` or in prose, never in
+`authority`.** `authority` is what an audit is handed to read, resolved
+against this repository's root, and the other repository may not be present;
+a record that rests on another store's claim names that claim in `sources`,
+and in `authority` only what it can read itself. Nothing resolves a
+cross-repository reference: the repository it names is checked out somewhere
+this one cannot see.
 
 **A record does not link to the work item that commissioned it.** A work item moves
 when it closes, and that link is exactly the liability this model is built to

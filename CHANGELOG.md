@@ -16,6 +16,14 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-21 — research-tooling (cross-repository references)
+
+- **Behaviour change.** `research-base-model.md` defines one reference form
+  for a record in another repository's store, under *Citations*:
+  `<repository>:<path-in-repository>`, optionally pinned to a heading or a
+  commit. Such a reference goes in a record's `sources` or in prose, never
+  in `authority`, because nothing resolves it from this repository.
+
 ### 2026-11-21 — task-board-management (sixth tranche)
 
 - **Behaviour change.** `validate_board.py`'s `citation-bare-line-reference`
