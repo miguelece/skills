@@ -116,7 +116,8 @@ Their options are fixed:
    answered entries, the board; reconcile every lease against its agent.
 2. Collect returns and account for each.
 3. Test for stalls; log each condition.
-4. Respond per the table; write entries, park streams, act on answers.
+4. Respond per the table; check the precedent register before writing an
+   entry; write entries, park streams, act on answers.
 5. Integrate: one integrator, if none is in flight.
 6. Lease: count the size; at the limit, no new lease. Otherwise up to three
    workers, criteria first, in interference order.

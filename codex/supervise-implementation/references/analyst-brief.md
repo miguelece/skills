@@ -23,7 +23,9 @@ the owner to decide. You do not decide it, and you do not ask anyone.
 1. Read the evidence, and diagnose the cause as far as it goes.
 2. Research the decision before writing options: the project's own material
    first (its code, its records, prior decisions), then current practice
-   where others have faced the question.
+   where others have faced the question. Read the precedent register,
+   `precedents.md` at the board's root, first of all: where an entry bears
+   on the decision, cite its id and say whether its *When* fits in full.
 3. Write at least two options, each with its evidence, its cost and whether
    it can be undone, and recommend the one the research found best. Where
    the evidence is thin or split, say so.

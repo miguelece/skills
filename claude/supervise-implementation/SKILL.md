@@ -183,6 +183,13 @@ stuck attempt on one task, a need over the per-task cap (the three
 *blocking* ones), and a draft or gated piece (*routine*, for the gate's
 report).
 
+- **Before opening any entry, read the precedent register**: `precedents.md`
+  at the board's root, defined in
+  [references/board-model.md](references/board-model.md). When a `standing`
+  entry's *When* fits, apply its *Ruling*, log the use in the allocation log
+  with the entry's id, append it to the entry's *Applied*, and open no entry.
+  The owner can overturn it from the log. A partial fit is not a fit: open
+  the entry.
 - **Write the mechanical entries yourself**, from the allocation log. For
   each judgement entry (an unexplained cause, a fix that leaves the task),
   launch a fresh analyst from
@@ -236,7 +243,9 @@ The gate leaves the record `in-progress`, because the owner's review closes
 it. The record goes `done` after the owner's decisions on the gate's findings
 are applied: the session that applies them sets `status: done` and its
 `outcome`, moves the record to `completed/` with the link repair, and commits
-it with those decisions.
+it with those decisions. The same session adds each candidate precedent the
+owner's decisions confirm to the precedent register, in the same commit, in
+the format the board model gives.
 
 Afterwards run `scripts/validate_board.py --board <board>` and
 `scripts/generate_index.py --board <board>`.

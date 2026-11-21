@@ -47,7 +47,13 @@ value of a constant.
    it, shaped per [references/report-form.md](references/report-form.md) — this
    report sits between the user and the next question, so it earns its headings
    and it must not drop a hedge.
-4. **Interview relentlessly on the rest.** One branch at a time, to a real decision —
+4. **Interview relentlessly on the rest.** Before each question to the user,
+   read the board's precedent register, `precedents.md` at the board's root,
+   if the board has one; [references/board-model.md](references/board-model.md)
+   defines it. When a `standing` entry's *When* fits the question, record it
+   `RESOLVED` with the entry's id and its *Ruling*, append the use to the
+   entry's *Applied*, and report it for the user to overturn instead of
+   asking. A partial fit is not a fit: ask. Then one branch at a time, to a real decision —
    not a preference gesture. Push back when an answer is ambiguous or when it
    contradicts something already settled. Follow each answer to the questions it
    opens; a resolved decision that reveals a new question is the interview working.

@@ -250,11 +250,19 @@ GENERATED_INDEXES = (README_NAME, ARCHIVE_NAME, TREE_NAME)
 # board reporting four errors on a file its own init skill had just created.
 TEMPLATE_NAME = "_template.md"
 
+# The board's precedent register: the owner's rulings, kept beside the board so
+# every agent that reads the board reads them too. board-model.md defines it. It
+# is hand-written prose with no frontmatter, a record of rules rather than work
+# to do, so reading it as a task would report it on every run.
+PRECEDENTS_NAME = "precedents.md"
+
 # Files on the board that are not task documents: every generated index, the init
-# skill's template, plus index.md for a board that carries a hand-written one under
-# that name. Matched case-insensitively, so TREE.md and tree.md both skip.
+# skill's template, the precedent register, plus index.md for a board that carries
+# a hand-written one under that name. Matched case-insensitively, so TREE.md and
+# tree.md both skip.
 NON_TASK = {name.lower() for name in GENERATED_INDEXES} | {
     TEMPLATE_NAME.lower(),
+    PRECEDENTS_NAME.lower(),
     "index.md",
 }
 

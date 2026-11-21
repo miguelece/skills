@@ -16,6 +16,23 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-21 — task-board-management (precedent register)
+
+- **Behaviour change.** A board may carry a precedent register,
+  `precedents.md` at its root, defined in `board-model.md`. It holds the
+  owner's rulings that settle more than one decision, one entry each, with
+  six fields: *When*, *Ruling*, *Scope*, *Source*, *Applied* and *Status*.
+  `validate_board.py` skips it by name and the index does not list it.
+- **Behaviour change.** `supervise-implementation` reads the register before
+  opening any escalation entry. When a standing entry fits in full, it applies
+  the ruling, logs the use with the entry's id and opens no entry; a partial
+  fit still escalates. The analyst cites any entry bearing on its draft, and
+  the session that applies the owner's decisions on a gate report adds the
+  confirmed candidate precedents to the register in the same commit.
+- **Behaviour change.** `task-interview` reads the register before each
+  question to the user, and records a fitting entry's ruling `RESOLVED` with
+  the entry's id instead of asking.
+
 ### 2026-11-21 — task-board-management (fifth tranche)
 
 - **Behaviour change.** `tranche-gate`'s checklist gains a thirteenth item,

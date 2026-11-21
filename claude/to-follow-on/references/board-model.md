@@ -701,3 +701,43 @@ rule.** A claim that was true when the task closed and has since been overtaken 
 the file shrank, a rule widened, a default changed — is history and is not amended.
 Only a claim that was wrong on the day it was written is corrected, and the original
 stays so the record shows what the closing session believed.
+
+## The precedent register
+
+A board may carry `precedents.md` at its root: the owner's rulings that settle
+more than one decision, kept beside the board so that every agent and host
+reading the board reads them too. It exists because a ruling recorded only in
+the task or tranche record that prompted it is frozen there with that record,
+and the next agent facing the same shape of question asks the owner again.
+
+The register is prose, not a task. It carries no frontmatter, the validator
+skips it, and the index does not list it.
+
+**Each entry is a rule, not a story.** It opens with a level-two heading whose
+text is the entry's id, a `kebab-case` slug that says what the ruling is (a
+numbered label would be cited outside the document that defines it).
+Under the heading, one list item per field, each filled:
+
+- **When:** the shape of the question, stated as the condition a later
+  question must meet for the ruling to apply.
+- **Ruling:** what is done when it applies.
+- **Scope:** where it holds: which skill, which kind of decision, which
+  repository.
+- **Source:** the record and the entry it came from, with the date and the
+  owner's words.
+- **Applied:** every later use, each with its date and the record it was used
+  in. "None yet" until the first.
+- **Status:** `standing`, or `retired` with the date and what replaced it. A
+  retired entry is kept, so that nobody re-proposes the ruling it held.
+
+**Who writes.** An entry is added only from a ruling the owner gave: the
+session that applies the owner's decisions on a report adds that report's
+candidate precedents, in the same commit. No agent promotes its own guess, and
+a question no entry covers, or one that would set a new rule, still goes to the
+owner.
+
+**Who reads.** Any agent about to put a question to the owner reads the
+register first. When a `standing` entry's *When* fits, the agent applies the
+*Ruling* instead of asking, appends the use to *Applied*, and lists it in its
+report with the entry's id, for the owner to overturn. A partial fit is not a
+fit: ask.
