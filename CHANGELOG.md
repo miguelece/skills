@@ -16,6 +16,20 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-21 — task-board-management (tranche length)
+
+- **Behaviour change.** `supervise-implementation` sizes a tranche against a
+  target of 6 to 8 hours of running time, net of owner waits. At opening it
+  estimates the pool from earlier records' per-ticket times. When the pool
+  falls short, it first scopes drafts through `task-interview` agents that
+  use the precedent register, and asks the owner what is left in one batch.
+  It never offers a tranche below the target without reporting the
+  shortfall.
+- **Behaviour change.** A ticket scoped during a tranche joins it while the
+  target is unmet. Lineage follow-ons and worker-reported tooling still wait
+  for the next tranche. The record gains `Target:` and `Running time:`
+  lines, and the tranche still closes only on drain or at the size limit.
+
 ### 2026-11-21 — task-board-management (precedent register)
 
 - **Behaviour change.** A board may carry a precedent register,

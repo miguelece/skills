@@ -81,7 +81,20 @@ Only on the owner's word. Then:
    it to `"head"` in the repository's `.claude/settings.local.json`, and until
    then lease one worker at a time, on a lease branch in the main checkout.
 3. **Select** with [references/task-selection.md](references/task-selection.md)
-   over the whole board, not a sample of it. Present the set and every
+   over the whole board, not a sample of it, and size the pool against the
+   target: **6 to 8 hours of running time**, from the opening to the last
+   integration, net of time spent waiting on the owner. Estimate the pool as
+   its ticket count times the median hours per ticket of the earlier tranche
+   records: each record's `Running time:` over the tickets it integrated, or
+   its base-to-tip wall time where it has no such line. When the pool falls
+   short, scope drafts first: launch one fresh agent per draft, at most three
+   at a time, each running `task-interview` with the precedent register,
+   recording `RESOLVED` what a precedent or the evidence settles, asking no
+   one, and returning the questions left. A draft with none left joins the
+   pool. Ask the owner the questions left in one batch, through the
+   structured prompt. **Never offer a tranche below the target**: when the
+   pool still falls short, report the shortfall in hours and tickets, and
+   open only if the owner, told it, says to. Present the set and every
    exclusion with its reason, shaped per
    [references/report-form.md](references/report-form.md), and get the
    owner's agreement.
@@ -113,9 +126,12 @@ Only on the owner's word. Then:
 8. **Commit** the tranche record. Nothing is in flight yet.
 
 **Joining.** A new `part-of` piece of a tranche item that is `scoped` and
-`gate: none` joins the tranche, logged in the record. A lineage follow-on
-(`parent`) and any tooling a worker reports for a follow-on wait for the next
-tranche. A draft or gated piece becomes a routine entry.
+`gate: none` joins the tranche, logged in the record. So does any other
+ticket that becomes `scoped` and `gate: none` during the tranche, while the
+running time is short of the target and the size limit allows. A lineage
+follow-on (`parent`) of a tranche item and any tooling a worker reports for
+a follow-on still wait for the next tranche, so a tranche never builds the
+tooling it filed. A draft or gated piece becomes a routine entry.
 
 ## Leasing
 
@@ -223,7 +239,9 @@ session. Never stop a tranche for context alone; compaction carries it.
 
 The tranche closes when nothing in it can be leased, or once it reaches the
 size limit the gate declares it can review and the work in flight has
-integrated. Delete the heartbeat. Write
+integrated. It closes by those stops, never by the target: write the
+measured running time into the record's `Running time:` line beside it.
+Delete the heartbeat. Write
 `scripts/account_attempt.py --match-rate` over the project's recent finished
 sessions into the record's `Match rate:` line: each called model's median
 ratio of priced over billed cost. A median outside 0.90 to 1.02 flags the

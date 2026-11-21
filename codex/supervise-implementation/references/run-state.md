@@ -60,6 +60,10 @@ these, in this order:
 
 - Opened: <date>, on the owner's word; base commit <sha>.
 - Size limit: 4,000 changed lines, the gate's, unmeasured.
+- Target: 6 to 8 hours of running time, net of owner waits; pool estimate
+  <hours> from <n> tickets at opening.
+- Running time: <hours, opening to last integration, net of owner waits,
+  written at the close>.
 - Window: <threshold read, or "not readable">; worktree.baseRef: <value>.
 - Match rate: <`account_attempt.py --match-rate`'s figure, written at the
   close, for the gate's report>.
