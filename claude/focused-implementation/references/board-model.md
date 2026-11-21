@@ -418,13 +418,13 @@ colon and a line number written bare, in a table cell or a sentence, carries
 no "line" for the prose rule to key on, so a tranche gate report cited seven
 lines that way and validated clean. `citation-bare-line-reference` matches a
 last path segment `name.ext`, a colon and digits with an optional range, which
-keeps times, ports and versions out by construction. Two shapes after the
-digits are permitted forms and skipped: a full stop and a space (a numbered
-list item's name) and `@` (a commit pin). It reads around links, URLs, fences
-and generated regions, and it is the one traversal that follows a code span
-wrapped onto the next line, which was the source of every false hit measured
-before it landed. The cost of the list-item skip is a sentence that ends on a
-bare line number; write the name instead. It is an `error` like its
+keeps times, ports and versions out by construction. One shape after the
+digits is a permitted form and skipped: `@` (a commit pin). A numbered list
+item's name, digits then a full stop and a space, has the shape of a sentence
+that ends on a bare line number, so it is written in a code span. The rule reads
+around links, URLs, fences and generated regions, and it is the one traversal
+that follows a code span wrapped onto the next line, which was the source of
+every false hit measured before it landed. It is an `error` like its
 neighbours.
 
 **Its resolution is permissive, and the reason is the population rather than
@@ -724,7 +724,8 @@ Under the heading, one list item per field, each filled:
 - **Scope:** where it holds: which skill, which kind of decision, which
   repository.
 - **Source:** the record and the entry it came from, with the date and the
-  owner's words.
+  owner's words. A record in another repository is named in the
+  cross-repository form the research base model defines under *Citations*.
 - **Applied:** every later use, each with its date and the record it was used
   in. "None yet" until the first.
 - **Status:** `standing`, or `retired` with the date and what replaced it. A

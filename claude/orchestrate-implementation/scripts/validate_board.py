@@ -162,11 +162,13 @@ PROSE_LINE_SPAN = re.compile(r"^\*{0,2}\s*(?:to|and|[-–—]|->|→)\s*\d", re.
 # span and no "line" word, so the four rules above cannot reach it, and a gate
 # report cited seven lines this way while every check passed. The last segment
 # must be `name.ext`, which is what keeps times, ports and versions out by
-# construction. Two shapes after the digits are permitted forms, not rot: a full
-# stop and a space is a numbered list item's name, and `@` is a commit pin. The
-# `(?!\d)` stops a backtrack from shortening the digits until a lookahead passes.
+# construction. One shape after the digits is a permitted form, not rot: `@` is
+# a commit pin. A numbered list item's name has the shape a sentence ending on a
+# bare line number has, so it is written in a code span, which this rule reads
+# around. The `(?!\d)` stops a backtrack from shortening the digits until a
+# lookahead passes.
 BARE_LINE_REF = re.compile(
-    r"(?<![\w.\-/])((?:[\w.\-]+/)*[\w.\-]*\w\.[A-Za-z0-9]+:\d+(?:-\d+)?)(?!\d|@|-\d|\.\s)"
+    r"(?<![\w.\-/])((?:[\w.\-]+/)*[\w.\-]*\w\.[A-Za-z0-9]+:\d+(?:-\d+)?)(?!\d|@|-\d)"
 )
 
 # What a bare line reference is read *around*: a whole link (its text is the

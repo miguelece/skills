@@ -37,7 +37,7 @@ nothing. "Not applicable: no supervisor ran" for any other batch.
 
 | Session | Attempts | Priced | Harness total | Ratio |
 | --- | --- | --- | --- | --- |
-| <session id> | <task> <n>, ... | <`priced_usd`> | <`recorded_usd` \| absent> | <`ratio` \| absent> |
+| <session id> | `<task>` <n>, ... | <`priced_usd`> | <`recorded_usd` \| absent> | <`ratio` \| absent> |
 
 Copied from the record's session table, which the supervisor printed at its
 close with one `account_attempt.py --sessions <run-dir>/leases.md --project
@@ -72,6 +72,12 @@ any other batch.
 ### Guidance candidates
 
 - D<n>, found in two or more tasks: <task ids>; <path:name, path:name>.
+- D<n>, found in this tranche and in <earlier tranche records>: F<n> here;
+  <record> F<n>, <record> F<n>.
+  Either form qualifies: two or more tasks of this tranche, or this tranche
+  and at least one earlier closed tranche, read from those records' findings
+  tables. An item meeting both is listed once, in the first form, with the
+  earlier tranches added.
 
 ### Proposals
 

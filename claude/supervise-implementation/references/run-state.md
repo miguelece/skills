@@ -84,7 +84,7 @@ attempts ran in. Each `Cost` above stays transcript-priced, not scaled.>
 
 | Session | Attempts | Priced | Harness total | Ratio |
 | --- | --- | --- | --- | --- |
-| <session id> | <task> <n>, ... | <`priced_usd`> | <`recorded_usd` \| absent> | <`ratio` \| absent> |
+| <session id> | `<task>` <n>, ... | <`priced_usd`> | <`recorded_usd` \| absent> | <`ratio` \| absent> |
 
 ## Previous tranche's session costs
 

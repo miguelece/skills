@@ -602,7 +602,10 @@ def session_markdown(rows: list[dict]) -> str:
         ratio = "absent" if absent else ("n/a" if row["ratio"] is None else f"{row['ratio']:.3f}")
         cells = [
             row["session"],
-            ", ".join(f"{a['task']} {a['attempt']}" for a in row["attempts"]),
+            # The id is code-spanned: the table is pasted into committed records,
+            # where an id ending in a word like "conventions" followed by the
+            # attempt number would otherwise read as a numbered citation.
+            ", ".join(f"`{a['task']}` {a['attempt']}" for a in row["attempts"]),
             priced,
             "absent" if absent else dollars(row["recorded_usd"]),
             ratio,

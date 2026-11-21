@@ -108,12 +108,19 @@ validator reads every `.md` there. `git clean -x` deletes it.
    structural cleanup, one kind per commit, after the tip; re-verify each
    commit and revert it on failure. Prepare each surplus-verification removal
    as an unapplied patch. Everything else is reported.
-6. **Write the report** from [references/report.md](references/report.md), as
+6. **Count guidance candidates across tranches.** Read the findings tables
+   of the board's earlier closed tranche records, each one's `## Gate report`,
+   and list each checklist item this tranche found that at least one earlier
+   tranche also found, with the tranches and the findings it rests on. A
+   defect found once in each of several tranches recurs as surely as one
+   found twice in one, and those records are the only place the findings are
+   kept. With no board, or no earlier record, there is nothing to count.
+7. **Write the report** from [references/report.md](references/report.md), as
    a `## Gate report` section appended to the tranche record. It carries at
    most 32 findings, in the template's order, and counts the rest. Count
    findings per changed line as well as raw, so tranches of different sizes
    compare.
-7. **Close out.** Run `scripts/validate_board.py --board <board>` and
+8. **Close out.** Run `scripts/validate_board.py --board <board>` and
    `scripts/generate_index.py --board <board>`, then commit the report.
    Leave the record's status and gate as they are: the owner's review closes
    it. Tell the owner where the report is, how many commits the gate added

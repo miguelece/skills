@@ -45,8 +45,11 @@ dismiss each with its reason in the chunk notes, not in the report:
 - **Clone groups** of shared boilerplate: the same imports, signatures or
   table headers in files that are meant to look alike.
 
-One known miss goes the other way: a dead name that also appears in unrelated
-text is not reported, because the scan searches for it as a token.
+Two known misses go the other way. A dead name that also appears in unrelated
+text is not reported, because the scan searches for it as a token. And a
+marker on a later line of a multi-line Markdown `<!-- ... -->` comment is not
+reported, because in Markdown the scan counts a marker only after a `<!--` on
+the same line; search the tranche's added Markdown comments by hand.
 
 ## Out of the list
 

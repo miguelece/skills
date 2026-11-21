@@ -35,7 +35,9 @@ verifies each against the code before it acts on it.
   and `print` calls on added lines outside `main` and the `__main__` block.
 - **markers** (D10): `TODO` and `FIXME` in comments on lines the tranche
   added: a Python file's comment tokens, or the whole line when it does not
-  tokenize; in any other file, after a `#`, `//` or `<!--` on the line.
+  tokenize or decode; in Markdown, after a `<!--` on the line once its inline
+  code spans are dropped, so a marker on a later line of a multi-line comment
+  is missed; in any other file, after a `#`, `//` or `<!--` on the line.
 - **task_refs** (D13): task-board references on lines the tranche added. A
   `kind: id` is a whole-word match of a board id (the `id:` of each task file
   under a `tasks/` directory) in anything but a doc, which is Markdown outside
@@ -85,6 +87,7 @@ WINDOW = 5
 TOKEN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 MARKER = re.compile(r"\b(TODO|FIXME)\b")
 COMMENT_OPENERS = ("#", "//", "<!--")
+CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`).*?(?<!`)\1(?!`)")
 TEST_FILE = re.compile(r"(^|/)(test_[^/]*|[^/]*_test)\.py$")
 CONVENTION_FILES = {"conftest.py", "__init__.py"}
 REGION_OPEN = re.compile(r"^\s*<!--\s*BEGIN (GENERATED|SLICES)\b.*-->\s*$")
@@ -738,23 +741,39 @@ def after_comment_opener(text: str) -> re.Match | None:
     return MARKER.search(text, min(starts)) if starts else None
 
 
+def after_markdown_comment_opener(text: str) -> re.Match | None:
+    """The first marker after a `<!--` outside the line's inline code spans.
+
+    A heading's `#` and a `//` open nothing in Markdown, and a code span
+    quoting a comment is prose about one. Each span is blanked, not removed,
+    so the match still indexes the line.
+    """
+    text = CODE_SPAN.sub(lambda m: " " * len(m.group(0)), text)
+    start = text.find("<!--")
+    return MARKER.search(text, start) if start >= 0 else None
+
+
 def markers(patches: list[FilePatch], files: dict[str, str]) -> list[dict]:
     """Over authored patches, so lines in generated regions are already gone.
 
     A marker counts only inside a comment, so prose, strings and code that
     name one are not reported. A Python file's comments are its `COMMENT`
-    tokens at the tip; one that does not tokenize falls back to the whole line.
+    tokens at the tip; one that does not tokenize, or is missing from the
+    tip's decoded files, falls back to the whole line.
     """
     found = []
     for fp in patches:
         if fp.new is None:
             continue
-        comments = python_comments(files.get(fp.new, "")) if fp.new.endswith(".py") else None
+        is_python = fp.new.endswith(".py")
+        comments = python_comments(files[fp.new]) if is_python and fp.new in files else None
         for line_no, text in fp.added:
             if comments is not None:
                 match = MARKER.search(comments.get(line_no, ""))
-            elif fp.new.endswith(".py"):
+            elif is_python:
                 match = MARKER.search(text)
+            elif fp.new.endswith(".md"):
+                match = after_markdown_comment_opener(text)
             else:
                 match = after_comment_opener(text)
             if match:

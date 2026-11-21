@@ -16,6 +16,25 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-21 — task-board-management (sixth tranche)
+
+- **Behaviour change.** `validate_board.py`'s `citation-bare-line-reference`
+  rule now reports a bare `name.ext` + colon + number that ends a sentence
+  mid-paragraph. The skip for a full stop and a space after the digits is
+  retired; a numbered list item's name form is written in a code span,
+  which the rule reads around. `board-model.md`'s citation rules say so.
+- **Behaviour change.** `tranche-gate` counts a guidance candidate across
+  tranches as well as within one: before writing *Guidance candidates* it
+  reads the findings tables of every earlier closed tranche record.
+- **Behaviour change.** `scan_tranche.py` reads a marker in Markdown only
+  after an HTML comment opener outside code spans, so prose and code spans
+  that merely mention a marker are no longer reported.
+- **Behaviour change.** `account_attempt.py --sessions` prints each attempt
+  in the session table's attempts cell as its id in a code span, then the
+  attempt number, so the cell no longer reads as a citation.
+  `supervise-implementation`'s `run-state.md` and `tranche-gate`'s
+  `report.md` show the new form.
+
 ### 2026-11-21 — task-board-management (tranche length)
 
 - **Behaviour change.** `supervise-implementation` sizes a tranche against a
