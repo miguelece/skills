@@ -16,6 +16,13 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-21 — research-tooling (capture-knowledge)
+
+- **Behaviour change.** A new skill, `capture-knowledge`, files one session
+  item into a knowledge base's private `sources/` layer, at the path its
+  bundled `capture_path.py` names, and only where git ignores that path. It
+  runs on command.
+
 ### 2026-11-21 — task-board-management (seventh tranche)
 
 - **Behaviour change.** `scan_tranche.py --size --board <board>` leaves the

@@ -1,0 +1,6 @@
+interface:
+  display_name: Capture Knowledge
+  short_description: File one session item into a knowledge base
+  default_prompt: Use $capture-knowledge to capture this into the knowledge base.
+policy:
+  allow_implicit_invocation: true
