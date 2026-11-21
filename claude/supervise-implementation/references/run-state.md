@@ -44,6 +44,9 @@ per attempt:
 | <task-id> | 1 | running | <agent-id> | <branch> | <sha> | standard: 40 calls | $0.00 |
 ```
 
+The `Start commit` cell holds `HEAD` as read at lease until collection
+replaces it with `git merge-base <main line> <branch>`.
+
 `State` is one of `running`, `returned`, `integrating`, `merged`,
 `unmerged`, `parked on E<n>` or `released`. Store the agent id, not only a
 name: after a restart a subagent is reached by its id. The task's criteria
@@ -59,7 +62,7 @@ these, in this order:
 ## Tranche
 
 - Opened: <date>, on the owner's word; base commit <sha>.
-- Size limit: 4,000 changed lines, the gate's, unmeasured.
+- Size limit: 4,000 changed lines outside the board, the gate's, unmeasured.
 - Target: 6 to 8 hours of running time, net of owner waits; pool estimate
   <hours> from <n> tickets at opening.
 - Running time: <hours, opening to last integration, net of owner waits,

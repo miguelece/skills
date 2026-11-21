@@ -16,6 +16,26 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-21 — task-board-management (seventh tranche)
+
+- **Behaviour change.** `scan_tranche.py --size --board <board>` leaves the
+  board's files out of the tranche size count, so the limit measures
+  integrated work rather than the record-keeping around it.
+- **Behaviour change.** `supervise-implementation`'s *Collect* step corrects
+  each lease's start commit to the branch's `git merge-base` with the main
+  line before any integrator runs, and the worker brief names no commit.
+- **Behaviour change.** `tranche-gate` ships `scripts/earlier_findings.py`,
+  which lists the checklist items the earlier done gate reports found, and
+  its step 6 runs it instead of counting by hand.
+- **Behaviour change.** `scan_tranche.py` reads the gate's checklist ids from
+  `checklist.md` at run time and treats them as defined inside their own
+  project, reads YAML and TOML comments quote-aware, names its prose
+  suffixes, and skips eval run output by path.
+- **Behaviour change.** Each gate guidance candidate and candidate precedent
+  carries a proposed scope, this repository or transferable, and the
+  supervisor's close routes a ruled one there: a transferable precedent also
+  goes to the central judgment register. The board model states promotion.
+
 ### 2026-11-21 — quality-of-life (working-conventions)
 
 - **Behaviour change.** A new skill, `working-conventions`, packages three

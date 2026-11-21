@@ -737,6 +737,18 @@ candidate precedents, in the same commit. No agent promotes its own guess, and
 a question no entry covers, or one that would set a new rule, still goes to the
 owner.
 
+A ruling the owner scoped *transferable* is added to the board's register and
+to the central judgment register in the same pass; the central copy's *Source*
+names the board entry in the cross-repository form, with the date and the
+owner's words. The board keeps the full entry, so a promoted ruling exists
+twice: a retirement, or a rewrite of its *Ruling*, in either copy is carried to
+the other in the same pass. An agent the owner directs to import an entry from
+the central register copies it whole into the board's register: *When*,
+*Ruling*, *Scope* and *Status* verbatim, *Source* naming the central entry in
+the cross-repository form with the date of the owner's direction, and
+*Applied* reading "None yet". This is the one way an entry is added other than
+from a report, and it is still the owner's ruling.
+
 **Who reads.** Any agent about to put a question to the owner reads the
 register first. When a `standing` entry's *When* fits, the agent applies the
 *Ruling* instead of asking, appends the use to *Applied*, and lists it in its

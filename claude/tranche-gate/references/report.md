@@ -12,7 +12,8 @@ block the next tranche; the rest is reviewed at leisure.
 ## Gate report
 
 - Gated: <date>; base <sha>, tip <sha>; gate commits <sha>..<sha>, or none.
-- Size: <n> changed lines, against a declared limit of 4,000 (unmeasured).
+- Size: <n> changed lines outside the board, <m> in all, against a declared limit
+  of 4,000 (unmeasured).
 - Record: <the supervisor's | filed by the gate | none, uncommitted>.
 
 ### Open escalation entries
@@ -24,6 +25,9 @@ block the next tranche; the rest is reviewed at leisure.
 
 - E<n>: <the rule its answer set, in the owner's words>, applying to <tasks>.
   An answered entry whose answer sets a rule for more than one task.
+  Each candidate ends `Scope: this repository` or `Scope: transferable`, the
+  gate's proposal, for the owner to rule with it: transferable holds in any
+  repository on any machine and names nothing machine- or person-specific.
 
 ### Match rate
 
@@ -78,6 +82,9 @@ any other batch.
   and at least one earlier closed tranche, read from those records' findings
   tables. An item meeting both is listed once, in the first form, with the
   earlier tranches added.
+  Each candidate ends `Scope: this repository` or `Scope: transferable`, the
+  gate's proposal, for the owner to rule with it: transferable holds in any
+  repository on any machine and names nothing machine- or person-specific.
 
 ### Proposals
 

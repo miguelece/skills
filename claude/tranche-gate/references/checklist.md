@@ -39,9 +39,7 @@ dismiss each with its reason in the chunk notes, not in the report:
 - **Unreferenced files** that are loaded by a glob, such as test scenario
   files, which no other file names.
 - **Task labels** that are another kind of short code, such as an eval
-  prompt id or a model name, in prose or a data file other than JSON; and
-  this checklist's own item ids, cited from the gate's other files and
-  scripts, which the scan reads as defined only here.
+  prompt id or a model name, in prose or a data file other than JSON.
 - **Clone groups** of shared boilerplate: the same imports, signatures or
   table headers in files that are meant to look alike.
 

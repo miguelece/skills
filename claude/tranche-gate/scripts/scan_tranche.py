@@ -6,9 +6,10 @@ JSON report. Every list is a set of candidates, not of defects: the gate
 verifies each against the code before it acts on it.
 
     scripts/scan_tranche.py --repo . --base <tranche-base> --tip <tranche-tip> \\
-        [--record <board>/<tranche-record>.md]
+        [--record <board>/<tranche-record>.md] [--board <board>]
 
-    scripts/scan_tranche.py --repo . --base <tranche-base> --tip <head> --size
+    scripts/scan_tranche.py --repo . --base <tranche-base> --tip <head> --size \\
+        [--board <board>]
 
 - **units**: who changed what. With `--record`, each task is the ranges
   `<sha>^1..<sha>` of the `merged <sha>` verdicts under the record's
@@ -40,16 +41,33 @@ verifies each against the code before it acts on it.
   is missed; in any other file, after a `#`, `//` or `<!--` on the line.
 - **task_refs** (D13): task-board references on lines the tranche added. A
   `kind: id` is a whole-word match of a board id (the `id:` of each task file
-  under a `tasks/` directory) in anything but a doc, which is Markdown outside
-  a project's shipped `src/` or `shared/`. A `kind: label` is an opaque label,
-  one or two capitals and one or two digits, in any file, unless the same file
-  defines it by opening a table row or list item with it; heading levels H1 to
-  H6 and lint codes such as MD024 are not labels. Python is read in its
-  comments and docstrings only, YAML and TOML in their comments, JSON not at
-  all; anything under a `tasks/` or `fixtures/` directory is not read.
+  under a `tasks/` directory) in anything but a doc. A doc is a prose file,
+  `.md`, `.rst`, `.txt` or `.adoc`, outside a project's shipped `src/` or
+  `shared/`: those are the formats a reader follows a task id from, while
+  code, configuration and data run or ship with the id in them. A `.txt`
+  that is really configuration, such as a requirements file, is read as a
+  doc too. A `kind: label` is an opaque label, one or two capitals and one
+  or two digits, in any file, unless the same file defines it by opening a
+  table row or list item with it; heading levels H1 to H6 and lint codes such
+  as MD024 are not labels. The tranche gate's own checklist ids, read at the
+  tip from the table of each tracked
+  `<project>/src/tranche-gate/references/checklist.md`, count as defined in
+  every file under that `<project>/` and nowhere else, since the gate's
+  files, scripts and tests cite them by design. Python is read in its
+  comments and docstrings only, YAML and TOML in their comments, from the
+  first `#` after a space that is not inside a single- or double-quoted
+  value on the same line, JSON not at all; anything under a `tasks/` or
+  `fixtures/` directory is not read, nor anything under `research/eval/runs/`
+  at the repository's root, an eval driver's printed report of data its
+  eval set defines.
 - **size**: changed lines, as `git diff --shortstat` counts them, raw and
-  without generated regions. `--size` prints only the second number; the
-  supervisor closes a tranche on it.
+  without generated regions, and `outside_board`: the second count less
+  every file patch whose sides, old and new, all lie under `--board`, so a
+  file moved out of the board counts. `--board` resolves against the working
+  directory and is matched relative to the repository's root, so only that
+  directory is left out, never a `tasks/` elsewhere; without it,
+  `outside_board` is `null`. `--size` prints only `outside_board`, or the
+  second count without a board; the supervisor closes a tranche on it.
 
 A generated region runs from a line holding only a `BEGIN GENERATED` or
 `BEGIN SLICES` HTML comment to the next line holding only the matching `END`
@@ -61,7 +79,8 @@ not reported as unreferenced. Generated lines are still searched for
 references, and `excluded` lists each region base..tip changed a line in.
 
 Standard library and `git` only, deterministic. Exits 0 with a report, 2 when
-the repository, a commit or the record cannot be read. A verdict bullet that
+the repository, a commit or the record cannot be read, or the board does not
+resolve inside the repository. A verdict bullet that
 names `merged` but yields no task and sha is a record that cannot be read: it
 exits 2, naming the bullet. A record with no merged verdict exits 0.
 """
@@ -791,10 +810,14 @@ DEFINES_LABEL = re.compile(
     re.MULTILINE,
 )
 TASK_ID = re.compile(r"^id:\s*(\S+)\s*$", re.MULTILINE)
-YAML_COMMENT = re.compile(r"(?:^|\s)(#.*)$")
+QUOTE_OPENS_AFTER = " \t:[{,="
+DOC_SUFFIXES = (".md", ".rst", ".txt", ".adoc")
+CHECKLIST = "src/tranche-gate/references/checklist.md"
+CHECKLIST_ROW = re.compile(r"^\|\s*([A-Z]{1,2}[0-9]{1,2})\s*\|", re.MULTILINE)
 DATA_SUFFIXES = (".json",)
 COMMENTED_SUFFIXES = (".yaml", ".yml", ".toml")
 NOT_SCANNED = {"tasks", "fixtures"}
+NOT_SCANNED_UNDER = ("research/eval/runs/",)
 SHIPPED = {"src", "shared"}
 
 
@@ -806,6 +829,40 @@ def board_ids(files: dict[str, str]) -> list[str]:
             front = text[4:].split("\n---", 1)[0]
             ids.update(TASK_ID.findall(front))
     return sorted(ids, key=lambda i: (-len(i), i))
+
+
+def checklist_ids(files: dict[str, str]) -> dict[str, set[str]]:
+    """Each project holding the tranche gate's checklist, as its path prefix, with the ids of its table."""
+    return {path[:-len(CHECKLIST)]: set(CHECKLIST_ROW.findall(text)) for path, text in files.items()
+            if path == CHECKLIST or path.endswith("/" + CHECKLIST)}
+
+
+def hash_comment(line: str) -> str:
+    """A YAML or TOML line's comment: from the first `#` at its start or after a space, outside quotes.
+
+    A quote opens a value only at the start of a token, so an apostrophe in a
+    plain value does not; a backslash escapes inside double quotes and `''` inside
+    single ones. A value quoted across lines is not followed.
+    """
+    quote, i = None, 0
+    while i < len(line):
+        c = line[i]
+        if quote == '"':
+            if c == "\\":
+                i += 1
+            elif c == '"':
+                quote = None
+        elif quote == "'":
+            if c == "'" and line[i + 1:i + 2] == "'":
+                i += 1
+            elif c == "'":
+                quote = None
+        elif c in "\"'" and (i == 0 or line[i - 1] in QUOTE_OPENS_AFTER):
+            quote = c
+        elif c == "#" and (i == 0 or line[i - 1].isspace()):
+            return line[i:]
+        i += 1
+    return ""
 
 
 def docstring_lines(text: str) -> set[int] | None:
@@ -828,9 +885,11 @@ def scanned_text(path: str, files: dict[str, str]) -> Callable[[int, str], str] 
 
     Python is read in its comments and docstrings only, so string literals a
     test parses stay out; YAML and TOML in their comments; JSON not at all, as
-    data; anything else whole.
+    data; anything else whole. Eval run output is skipped by its full path
+    prefix, so a `runs/` directory elsewhere and a `.txt` doc stay read.
     """
-    if NOT_SCANNED & set(path.split("/")[:-1]) or path.endswith(DATA_SUFFIXES):
+    if (NOT_SCANNED & set(path.split("/")[:-1]) or path.endswith(DATA_SUFFIXES)
+            or path.startswith(NOT_SCANNED_UNDER)):
         return None
     if path.endswith(".py"):
         text = files.get(path, "")
@@ -839,24 +898,26 @@ def scanned_text(path: str, files: dict[str, str]) -> Callable[[int, str], str] 
             return lambda _, line: line
         return lambda n, line: " ".join(filter(None, (comments.get(n), line if n in docs else None)))
     if path.endswith(COMMENTED_SUFFIXES):
-        return lambda _, line: (m.group(1) if (m := YAML_COMMENT.search(line)) else "")
+        return lambda _, line: hash_comment(line)
     return lambda _, line: line
 
 
 def ids_barred(path: str) -> bool:
-    """A task id is allowed only in a doc: Markdown outside a project's shipped `src/` or `shared/`."""
-    return not path.endswith(".md") or bool(SHIPPED & set(path.split("/")[:-1]))
+    """A task id is allowed only in a doc: a prose file outside a project's shipped `src/` or `shared/`."""
+    return not path.endswith(DOC_SUFFIXES) or bool(SHIPPED & set(path.split("/")[:-1]))
 
 
 def task_refs(patches: list[FilePatch], files: dict[str, str]) -> list[dict]:
     """Over authored patches: task ids where they are barred, and labels a file does not define."""
     ids = board_ids(files)
     id_pattern = re.compile(r"(?<![\w-])(?:" + "|".join(map(re.escape, ids)) + r")(?![\w-])") if ids else None
+    checklists = checklist_ids(files)
     found = []
     for fp in patches:
         if fp.new is None or (read := scanned_text(fp.new, files)) is None:
             continue
         defined = set(DEFINES_LABEL.findall(files.get(fp.new, "")))
+        defined.update(*(ids for project, ids in checklists.items() if fp.new.startswith(project)))
         with_ids = id_pattern is not None and ids_barred(fp.new)
         for line_no, text in fp.added:
             scanned = read(line_no, text)
@@ -871,10 +932,35 @@ def task_refs(patches: list[FilePatch], files: dict[str, str]) -> list[dict]:
 # --- the report ---------------------------------------------------------------------------------
 
 
-def size_of(repo: Path, base: str, tip: str, diff: list[tuple[FilePatch, FilePatch]]) -> dict:
+def board_path(repo: Path, board: Path) -> str:
+    """The board as a path relative to the repository's root, `""` for the root itself."""
+    root = Path(git(repo, "rev-parse", "--show-toplevel").decode().strip()).resolve()
+    try:
+        relative = board.resolve().relative_to(root)
+    except ValueError:
+        raise GitError(f"the board is not inside the repository: {board}") from None
+    return "" if relative == Path(".") else relative.as_posix()
+
+
+def under(path: str, board: str) -> bool:
+    return board == "" or path == board or path.startswith(board + "/")
+
+
+def size_of(repo: Path, base: str, tip: str, diff: list[tuple[FilePatch, FilePatch]],
+            board: str | None = None) -> dict:
+    """Changed lines: raw, without generated regions, and that less the board's patches."""
+    def count(patches: list[FilePatch]) -> int:
+        return sum(len(fp.added) + len(fp.removed) for fp in patches)
+
+    patches = [fp for _, fp in diff]
+    outside = None
+    if board is not None:
+        outside = count([fp for fp in patches
+                         if not all(under(side, board) for side in (fp.old, fp.new) if side is not None)])
     return {
         "raw": sum(a + d for a, d, _ in numstat(repo, base, tip)),
-        "excluding_generated": sum(len(fp.added) + len(fp.removed) for _, fp in diff),
+        "excluding_generated": count(patches),
+        "outside_board": outside,
     }
 
 
@@ -895,7 +981,7 @@ def unit_files(diffs: list[list[tuple[FilePatch, FilePatch]]]) -> dict[str, list
     return files
 
 
-def report(repo: Path, base: str, tip: str, record: Path | None) -> dict:
+def report(repo: Path, base: str, tip: str, record: Path | None, board: str | None = None) -> dict:
     gen = Regions(repo)
     merges = record_merges(record.read_text(encoding="utf-8")) if record is not None else None
     units, ignored, attributed = build_units(repo, base, tip, merges)
@@ -945,7 +1031,7 @@ def report(repo: Path, base: str, tip: str, record: Path | None) -> dict:
         "attribution": "record" if record is not None else "first-parent",
         "record": None if record is None else {"path": record.as_posix(), "ignored": ignored, "attributed": attributed},
         "excluded": [{"path": path, "side": side, "lines": list(span)} for path, side, span in sorted(hit)],
-        "size": size_of(repo, base, tip, diff),
+        "size": size_of(repo, base, tip, diff, board),
         "units": unit_rows,
         "churn": {
             "files": churn_files(per_unit),
@@ -973,16 +1059,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tip", required=True, help="the tranche's tip commit")
     parser.add_argument("--record", type=Path, default=None, help="the tranche record, to attribute commits to tasks")
     parser.add_argument("--size", action="store_true", help="print only the changed-line count, generated regions left out")
+    parser.add_argument("--board", type=Path, default=None,
+                        help="the board directory, whose files the size outside the board leaves out")
     args = parser.parse_args(argv)
 
     try:
         base = resolve(args.repo, args.base)
         tip = resolve(args.repo, args.tip)
+        board = board_path(args.repo, args.board) if args.board is not None else None
         if args.size:
             diff = authored_diff(args.repo, Regions(args.repo), base, tip)
-            sys.stdout.write(f"{size_of(args.repo, base, tip, diff)['excluding_generated']}\n")
+            counted = size_of(args.repo, base, tip, diff, board)
+            sys.stdout.write(f"{counted['excluding_generated' if board is None else 'outside_board']}\n")
             return 0
-        result = report(args.repo, base, tip, args.record)
+        result = report(args.repo, base, tip, args.record, board)
     except (GitError, OSError, UnicodeDecodeError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

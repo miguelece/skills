@@ -57,8 +57,10 @@ Read [references/board-model.md](references/board-model.md).
   each task that has none. They are never judged against a guessed standard.
 
 **The size limit the gate declares is 4,000 changed lines**, as
-`scripts/scan_tranche.py --size` counts them over base..tip, without
-generated regions. It is a starting value, unmeasured: no study gives
+`scripts/scan_tranche.py --size --board <board>` counts them over base..tip,
+without generated regions and leaving out the board's files, which are
+bookkeeping the gate reads for detector candidates only. A batch with no
+board counts everything. It is a starting value, unmeasured: no study gives
 a size at which an agent reviewer fails. A supervisor closes its tranche on
 it. Run alone over a larger batch, say so in the report and read it all the
 same; the chunks stay small.
@@ -79,7 +81,8 @@ validator reads every `.md` there. `git clean -x` deletes it.
    to tip, so the tranche-wide defects need no model:
 
    ```text
-   scripts/scan_tranche.py --repo <path> --base <base> --tip <tip> [--record <record>]
+   scripts/scan_tranche.py --repo <path> --base <base> --tip <tip> [--record <record>] \
+       [--board <board>]
    ```
 
    With `--record`, a verdict bullet that names `merged` but yields no task
@@ -110,11 +113,15 @@ validator reads every `.md` there. `git clean -x` deletes it.
    as an unapplied patch. Everything else is reported.
 6. **Count guidance candidates across tranches.** Read the findings tables
    of the board's earlier closed tranche records, each one's `## Gate report`,
-   and list each checklist item this tranche found that at least one earlier
-   tranche also found, with the tranches and the findings it rests on. A
-   defect found once in each of several tranches recurs as surely as one
-   found twice in one, and those records are the only place the findings are
-   kept. With no board, or no earlier record, there is nothing to count.
+   by running `scripts/earlier_findings.py --board <board>`: it prints each
+   checklist item those records found, with the record and finding each
+   rests on, and exits 2 naming a record whose table it cannot read. Compare
+   it with this tranche's own findings, and list each checklist item this
+   tranche found that at least one earlier tranche also found, with the
+   tranches and the findings it rests on. A defect found once in each of
+   several tranches recurs as surely as one found twice in one, and those
+   records are the only place the findings are kept. With no board, or no
+   earlier record, there is nothing to count.
 7. **Write the report** from [references/report.md](references/report.md), as
    a `## Gate report` section appended to the tranche record. It carries at
    most 32 findings, in the template's order, and counts the rest. Count
@@ -156,4 +163,5 @@ validator reads every `.md` there. `git clean -x` deletes it.
   [references/task.schema.yaml](references/task.schema.yaml)
 - Plan template, for a record the gate files: [assets/task.md](assets/task.md)
 - Scripts: `scripts/scan_tranche.py`, `scripts/check_test_changes.py`,
-  `scripts/validate_board.py`, `scripts/generate_index.py`
+  `scripts/validate_board.py`, `scripts/generate_index.py`, and the gate's
+  own `scripts/earlier_findings.py`

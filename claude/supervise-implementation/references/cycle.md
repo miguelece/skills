@@ -94,10 +94,12 @@ value, which no study has sized. Count it every cycle, at step 6 before
 leasing:
 
 ```text
-scripts/scan_tranche.py --repo <path> --base <tranche base> --tip HEAD --size
+scripts/scan_tranche.py --repo <path> --base <tranche base> --tip HEAD --size --board <board>
 ```
 
-It prints one number, leaving out generated regions. Write it to
+It prints one number, leaving out generated regions and every file under
+the board, so the limit counts the code and docs the gate reads by task
+chunk, not board bookkeeping. Write it to
 the lease table's header. At or past the limit, grant no new lease: let the
 work in flight finish and integrate, then close the tranche.
 
@@ -114,7 +116,9 @@ Their options are fixed:
 
 1. Re-read: this file, the record's current sections, the lease table, the
    answered entries, the board; reconcile every lease against its agent.
-2. Collect returns and account for each.
+2. Collect returns and account for each; correct each branch's
+   `Start commit` to `git merge-base <main line> <branch>`, logged, before
+   any integrator.
 3. Test for stalls; log each condition.
 4. Respond per the table; check the precedent register before writing an
    entry; write entries, park streams, act on answers.

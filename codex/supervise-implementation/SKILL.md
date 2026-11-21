@@ -32,7 +32,11 @@ turn.
 2. **Collect** each finished return. Record it against its lease, save a
    worker's declared test changes under `.supervise-implementation/declared/`,
    and write its allocation-log row from
-   `scripts/account_attempt.py <transcript>`.
+   `scripts/account_attempt.py <transcript>`. For a stream with a branch
+   here, read its fork point with `git merge-base <main line> <branch>`;
+   where it differs from the lease row's `Start commit`, correct the row and
+   log the correction in the record, so step 5's integrator reads the real
+   base. A stream with no branch here has nothing to read.
 3. **Test for stalls** (see *Progress and stalls*), writing each condition to
    the allocation log. Detection only; no action yet.
 4. **Respond** to each condition: re-size, top up or escalate. Act on each
@@ -40,7 +44,8 @@ turn.
 5. **Integrate**: if no integrator is in flight, mark the next ready
    stream's lease `integrating` and dispatch one for it. There is at most one
    integrator at a time.
-6. **Lease**: count the tranche's size with `scripts/scan_tranche.py --size`;
+6. **Lease**: count the tranche's size with
+   `scripts/scan_tranche.py --size --board <board>`;
    at the size limit in [references/cycle.md](references/cycle.md), grant no
    new lease. Otherwise fill free capacity, up to three workers, from the
    tranche's leasable items in interference order (see *Leasing*).
@@ -140,6 +145,8 @@ Set the task `in-progress` and, before launching the worker, add a
 write from the task's *Plan*, with the check fixed for each. The worker never
 sets its own bar. Then write the lease row ([references/run-state.md](references/run-state.md)):
 task, attempt, grant with its justification, the start commit, the agent id.
+The start commit is `HEAD` as read, and collection corrects it to the fork
+point.
 
 **Admission.** Price the task's spend so far plus the next grant's estimate.
 If it would pass the per-task cap, escalate instead of granting.
@@ -263,7 +270,20 @@ are applied: the session that applies them sets `status: done` and its
 `outcome`, moves the record to `completed/` with the link repair, and commits
 it with those decisions. The same session adds each candidate precedent the
 owner's decisions confirm to the precedent register, in the same commit, in
-the format the board model gives.
+the format the board model gives. A candidate the owner ruled *transferable*
+is also added to the central judgment register in the same pass, its *Source*
+naming the board entry in the cross-repository form: one commit in each
+repository, each push asked of the owner. That register's location is read
+from the user's own instructions; with none, ask the owner.
+
+A guidance candidate the owner rules in goes where its ruled scope says:
+*this repository* into that repository's `CLAUDE.md`, its rules or a check;
+*transferable* as a reference file and a table line in the
+`working-conventions` skill's lab source,
+`projects/quality-of-life/src/working-conventions/`, filed as a lab ticket
+when this board is not the lab's, and shipped by an ordinary publish. A
+convention already written down stays where it is until the owner rules
+otherwise.
 
 Afterwards run `scripts/validate_board.py --board <board>` and
 `scripts/generate_index.py --board <board>`.
