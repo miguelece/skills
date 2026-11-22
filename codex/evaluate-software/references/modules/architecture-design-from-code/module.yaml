@@ -1,0 +1,93 @@
+# Architecture, read from a codebase by reading its imports, not by running an
+# analyser. Each check rests on a finding in research.md beside this file. The
+# manifests are those of the languages the library's first modules cover; a
+# repository in another language does not load this module, and the report
+# records the skip.
+id: architecture-design-from-code
+languages: [language-neutral]
+concept: architecture
+triggers:
+  files:
+    - "**/ARCHITECTURE.md"
+    - "docs/adr/**"
+    - "docs/decisions/**"
+    - "**/.importlinter"
+    - "**/.dependency-cruiser.*"
+    - "**/.go-arch-lint.yml"
+  manifests:
+    - pyproject.toml
+    - package.json
+    - go.mod
+  design-markers: []
+inputs: [design-from-code]
+phases: [static]
+checks:
+  - id: architecture-design-from-code/import-cycle
+    statement: >-
+      Two or more packages or modules of the codebase import one another in a
+      cycle.
+    evidence: >-
+      Every edge of the cycle, each as the importing file and its import
+      line, quoted, so that following the lines leads from the first package
+      back to itself. Third-party and standard-library imports are not
+      edges, and an import guarded so that it never runs at import time, such
+      as one under a type-checking guard, is named as such rather than
+      counted.
+    severity: medium
+    rationale: >-
+      Packages in a cycle cannot be understood, tested, built or released
+      apart from one another, so a change to any one of them can break all
+      of them, and the cycle grows as code is added to it.
+    references:
+      - https://www.oreilly.com/library/view/clean-architecture-a/9780134494272/ch14.xhtml
+      - https://www.archunit.org/userguide/html/000_Index.html
+      - https://github.com/sverweij/dependency-cruiser/blob/main/doc/rules-reference.md
+    findings: [dependencies-are-acyclic]
+  - id: architecture-design-from-code/import-against-stated-layering
+    statement: >-
+      An import runs against a layering or dependency rule the repository
+      itself states.
+    evidence: >-
+      The stated rule, quoted with its file: a layer contract such as an
+      import-linter, dependency-cruiser or go-arch-lint configuration, or a
+      document the repository keeps, such as an architecture record, a
+      decision record or a README, that names which part may depend on which,
+      or what a part may import; and the
+      importing file and its import line, quoted, showing the dependency the
+      rule forbids. Where the repository states no layering or dependency
+      rule, this check reports nothing: a layering inferred from directory
+      names is not a stated rule.
+    severity: medium
+    rationale: >-
+      A stated layering is the repository's own architecture; an import that
+      breaks it couples a lower layer to a higher one, so the layers can no
+      longer change or be replaced independently, and each break makes the
+      next one look acceptable.
+    references:
+      - https://import-linter.readthedocs.io/en/stable/contract_types/layers/
+      - https://www.archunit.org/userguide/html/000_Index.html
+      - https://github.com/fe3dback/go-arch-lint
+    findings: [layering-is-declared-not-inferred, layers-depend-downward]
+  - id: architecture-design-from-code/structural-decision-without-confirmation
+    statement: >-
+      A decision the repository records about its code structure has nothing
+      in the repository that confirms the code keeps to it.
+    evidence: >-
+      The decision record, architecture document or README, quoted with its
+      file, stating a rule about dependencies, layering or module boundaries;
+      and
+      the files read in looking for a confirmation, showing none: no
+      confirmation section in the record naming a check, no layer contract
+      expressing the rule, and no test that asserts it. A recorded decision
+      about anything other than code structure is out of this check's scope,
+      and where the repository records no decision this check reports
+      nothing.
+    severity: low
+    rationale: >-
+      A structural decision that nothing checks is kept only by memory and
+      review, so the code drifts from it unnoticed, and the record goes on
+      describing an architecture the code no longer has.
+    references:
+      - https://adr.github.io/madr/
+      - https://www.thoughtworks.com/radar/techniques/architectural-fitness-function
+    findings: [decisions-name-their-confirmation]

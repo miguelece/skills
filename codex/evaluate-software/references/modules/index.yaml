@@ -1,0 +1,9 @@
+# The router's module index: one id per module directory beside this file,
+# and no id without a directory. The router reads it to know what the library
+# holds, then each listed module's module.yaml header to decide what to load.
+modules:
+  - application-runtime
+  - architecture-design-document
+  - architecture-design-from-code
+  - python-testing
+  - typescript-type-safety

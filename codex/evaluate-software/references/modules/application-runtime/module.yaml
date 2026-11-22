@@ -1,0 +1,82 @@
+# The behaviour of a running application, observed from outside it: that it
+# starts and reports ready, answers a smoke check of its documented
+# behaviour, and shuts down cleanly. It runs only in the dynamic phase, by the
+# command the repository itself declares, and reads no source language, so it
+# serves every language the library covers. Each check rests on a finding in
+# research.md beside this file.
+id: application-runtime
+languages: [language-neutral]
+concept: runtime-behaviour
+triggers:
+  files: []
+  manifests:
+    - 'package.json:"start"'
+    - "pyproject.toml:[project.scripts]"
+    - compose.yaml
+    - compose.yml
+    - docker-compose.yaml
+    - docker-compose.yml
+    - Procfile
+  design-markers: []
+# A diff is run only when its head is the checked-out working tree. A design
+# has nothing to start, so neither design input kind is served.
+inputs: [diff, repository]
+phases: [dynamic]
+checks:
+  - id: application-runtime/does-not-start-or-report-ready
+    statement: >-
+      The application does not start by its declared command, or never
+      reports ready within the time its documentation or configuration sets.
+    evidence: >-
+      The declared command, quoted with the manifest that declares it; the
+      readiness signal waited for (a health endpoint, a log line, a listening
+      port), with where it is documented or configured; and the observed
+      outcome: the exit code and the last lines of output, or the time waited
+      with no signal. Where nothing documents a readiness signal or a wait,
+      the wait used is stated, and only an exit or a crash is reported.
+    severity: high
+    rationale: >-
+      An application that does not start by its own declared command fails
+      every user of that command, and one that serves before it is ready
+      fails the first requests sent to it.
+    references:
+      - https://docs.npmjs.com/cli/v10/commands/npm-start
+      - https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+    findings: [start-commands-are-declared, readiness-is-its-own-signal]
+  - id: application-runtime/smoke-check-fails
+    statement: >-
+      A behaviour the repository documents for its running application is
+      not what the running application does.
+    evidence: >-
+      The documented behaviour, quoted with its file (a README, a usage
+      section, an API description or an example request); the request or
+      command sent to the running application; and the response observed
+      against the one documented. Only behaviour the repository documents is
+      checked, the most basic first, and no request that writes outside the
+      application's own local state is sent.
+    severity: high
+    rationale: >-
+      A smoke check is the shallow gate on whether a build is worth anything
+      further: when the documented basics fail, the application is broken
+      for anyone following its documentation, whatever its code reads like.
+    references:
+      - https://book.the-turing-way.org/reproducible-research/testing/testing-smoketest/
+      - https://about.gitlab.com/topics/devsecops/sast-vs-dast/
+    findings: [running-the-application-finds-what-reading-misses, smoke-checks-are-shallow-gates]
+  - id: application-runtime/shutdown-is-not-clean
+    statement: >-
+      The application does not exit promptly and cleanly when asked to stop.
+    evidence: >-
+      The stop signal sent (SIGTERM, SIGINT or the platform's equivalent, or
+      the declared stop command); the time waited, at least 10 seconds; and
+      what was observed: the process still running, the port still open, a
+      non-zero exit, or an error logged during shutdown. A process stopped by
+      force after the wait is named as such.
+    severity: medium
+    rationale: >-
+      A process that ignores the stop signal is killed mid-request, so work
+      in flight is lost, and one that leaves its port bound blocks the next
+      start on the same machine.
+    references:
+      - https://12factor.net/disposability
+    findings: [processes-stop-gracefully-on-a-signal]

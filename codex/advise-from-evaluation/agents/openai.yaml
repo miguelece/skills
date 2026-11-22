@@ -1,0 +1,6 @@
+interface:
+  display_name: Advise From Evaluation
+  short_description: Turn an evaluation report into ranked advisories
+  default_prompt: Use $advise-from-evaluation to advise on this evaluation report.
+policy:
+  allow_implicit_invocation: true

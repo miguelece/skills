@@ -1,0 +1,112 @@
+# Architecture, read from a design document written before or without code.
+# Each check rests on a finding in research.md beside this file, and each
+# finding a run reports names the document section it was read in.
+id: architecture-design-document
+languages: [language-neutral]
+concept: architecture
+triggers:
+  files: []
+  manifests: []
+  design-markers:
+    - Goals
+    - Non-goals
+    - Alternatives considered
+    - Considered options
+    - Decision
+    - Consequences
+    - Quality attributes
+    - Architecture
+inputs: [design-document]
+phases: [static]
+checks:
+  - id: architecture-design-document/quality-attribute-without-measure
+    statement: >-
+      A quality attribute the design sets out to achieve is stated with no
+      scenario or measure by which it could be judged met.
+    evidence: >-
+      The section that states the quality attribute, quoted, and the absence
+      in the whole document of a scenario for it with a response and a
+      measurable threshold, such as a latency, a rate, a recovery time or a
+      count of components a change touches. A measure anywhere in the
+      document that the section points to satisfies the check.
+    severity: medium
+    rationale: >-
+      A quality goal with no measure, such as "fast" or "scalable", cannot be
+      verified, sets no limit and is read differently by each reader, so no
+      decision in the design can be shown to serve it or to trade it away.
+    references:
+      - https://quality.arc42.org/articles/specify-quality-requirements
+      - https://www.sei.cmu.edu/library/architecture-tradeoff-analysis-method-collection/
+    findings: [quality-goal-needs-a-measure]
+  - id: architecture-design-document/decision-without-alternatives
+    statement: >-
+      An architecturally significant decision names no other option that was
+      considered.
+    evidence: >-
+      The section that makes the decision, quoted, showing that it bears on
+      the structure, a quality attribute, a dependency, an interface or a
+      construction technique, and the absence of any alternative to it, in
+      that section or in an alternatives or considered-options section of the
+      document.
+    severity: medium
+    rationale: >-
+      A decision with no alternative recorded cannot show why it fits the
+      goals better than the designs it displaced, so a reader cannot tell a
+      weighed choice from a default, and the question is reopened later
+      without the original reasoning.
+    references:
+      - https://www.industrialempathy.com/posts/design-docs-at-google/
+      - https://adr.github.io/madr/
+    findings: [significance-is-structural, decisions-are-weighed-against-alternatives]
+  - id: architecture-design-document/alternative-without-reason
+    statement: >-
+      An alternative the design considered is listed with no reason for not
+      choosing it.
+    evidence: >-
+      The alternatives or considered-options section, quoting the alternative
+      by name, and the absence of any trade-off, drawback or argument against
+      it there, in a pros-and-cons entry for it, or in the decision's own
+      justification.
+    severity: low
+    rationale: >-
+      An alternative with no reason recorded shows that something else was
+      possible but not why it lost, so the trade-off cannot be re-judged when
+      the forces behind it change.
+    references:
+      - https://www.industrialempathy.com/posts/design-docs-at-google/
+      - https://adr.github.io/madr/
+    findings: [rejected-options-carry-reasons]
+  - id: architecture-design-document/decision-without-consequences
+    statement: >-
+      An architecturally significant decision states no consequence, or only
+      favourable ones.
+    evidence: >-
+      The section that makes the decision, quoted, and either the absence of
+      any stated result of it, or a list of results in which none is a cost,
+      a risk or a quality attribute given up.
+    severity: medium
+    rationale: >-
+      Every significant decision trades one quality for another; a decision
+      recorded with no cost hides the trade-off, so the risk it carries is
+      neither weighed when it is made nor watched once it ships.
+    references:
+      - https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions
+      - https://adr.github.io/madr/
+      - https://www.sei.cmu.edu/library/architecture-tradeoff-analysis-method-collection/
+    findings: [significance-is-structural, consequences-include-costs]
+  - id: architecture-design-document/goals-without-non-goals
+    statement: >-
+      The design states its goals and names nothing it deliberately leaves
+      out of scope.
+    evidence: >-
+      The goals section, quoted, and the absence in the document of any
+      non-goal or out-of-scope statement: an objective that could reasonably
+      have been a goal and is excluded, not the negation of a goal.
+    severity: low
+    rationale: >-
+      Without non-goals, reasonable objectives the design does not serve are
+      left for readers to assume in or out, so priorities are unclear and the
+      design is judged against expectations it never meant to meet.
+    references:
+      - https://www.industrialempathy.com/posts/design-docs-at-google/
+    findings: [non-goals-bound-the-design]

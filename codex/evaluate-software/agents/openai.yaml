@@ -1,0 +1,6 @@
+interface:
+  display_name: Evaluate Software
+  short_description: Evaluate code or a design with per-concept modules
+  default_prompt: Use $evaluate-software to run a static, then a dynamic, evaluation of this repository.
+policy:
+  allow_implicit_invocation: true

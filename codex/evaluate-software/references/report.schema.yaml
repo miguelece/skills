@@ -1,0 +1,265 @@
+# The evaluation report: what one run of the evaluation writes, and what every
+# skill that reads an evaluation reads. One file per run, in JSON.
+#
+# Documentation that a test can read. The tree under `report:` gives each
+# field a `type` (mapping, list, string, integer), a `required` flag and, for a
+# closed value, an `enum` naming one of the lists under `enums:`. An optional
+# field may be absent or null. What a tree cannot say is under `rules:`, each
+# with an id and a statement. The bundled validator, scripts/validate_report.py,
+# implements each rule and holds this tree and `enums:` as constants, since it
+# reads only JSON; the authoring repository's tests pin its constants and its
+# rule ids against this file. The schema itself stays YAML: it is read by a
+# person, a model and those tests, never by the validator.
+#
+# The module contract (references/module-contract.md) draws its allowed input
+# kinds, phases and severities from `enums:` here, so a module can declare only
+# what a report can carry.
+#
+# THE DYNAMIC PHASE IS RESERVED. Every field marked `reserved-for: dynamic` is
+# defined now so that the dynamic phase lands on this schema without changing
+# it. In a run that did not include the dynamic phase each such field is empty
+# -- an empty list, or null -- and a static-only report is complete and valid.
+#
+# Mapped onto SARIF 2.1.0, a finding is a `result`, its `check` the `ruleId`,
+# its `location.file` a `physicalLocation.artifactLocation.uri`, its
+# `location.symbol` a `logicalLocation.fullyQualifiedName`, and the run's
+# `modules` the tool's `rules`; references/prior-art.md records the mapping and
+# what this schema adds that SARIF has no field for.
+
+schema-version: 1
+
+enums:
+  # What the run evaluated. A diff and a repository are code; the two design
+  # kinds are a design read from a codebase and a design document written
+  # before any code exists.
+  input-kind: [diff, repository, design-from-code, design-document]
+  # The two phases run independently; either alone is a complete evaluation.
+  phase: [static, dynamic]
+  # How bad the defect is if the finding is true. critical and high map to
+  # SARIF `error`, medium to `warning`, low and info to `note`.
+  severity: [critical, high, medium, low, info]
+  # How sure this run is that the finding is true, after verifying it against
+  # the code or the design -- not how good the check's research is.
+  confidence: [high, medium, low]
+
+report:
+  type: mapping
+  fields:
+    schema-version:
+      type: integer
+      required: true
+      values: [1]
+    input:
+      type: mapping
+      required: true
+      fields:
+        kind:
+          type: string
+          required: true
+          enum: input-kind
+        scope:
+          type: string
+          required: true
+          note: >-
+            What exactly was read, so the run can be repeated: a revision range
+            for a diff, a root path and revision for a repository, a document
+            path for a design document.
+        excluded:
+          type: list
+          required: false
+          items:
+            type: string
+          note: paths or globs left out of the scope on purpose, each stated
+    phases:
+      type: mapping
+      required: true
+      fields:
+        requested:
+          type: list
+          required: true
+          items:
+            type: string
+            enum: phase
+        run:
+          type: list
+          required: true
+          items:
+            type: string
+            enum: phase
+          note: >-
+            A requested phase that did not run is reported by its absence
+            here, never silently, and by an entry in `phases.not-run` that
+            says why.
+        not-run:
+          type: list
+          required: true
+          note: >-
+            Every requested phase that did not run, once each, with the reason
+            it did not; an empty list when every requested phase ran. Its
+            phases are exactly `phases.requested` minus `phases.run`.
+          items:
+            type: mapping
+            fields:
+              phase:
+                type: string
+                required: true
+                enum: phase
+              reason:
+                type: string
+                required: true
+                note: >-
+                  why the phase did not run: that it is not yet available, or
+                  that no module matched
+    modules:
+      type: mapping
+      required: true
+      note: >-
+        Every module the library's index lists appears in exactly one of the
+        two lists, with the reason it was or was not loaded.
+      fields:
+        loaded:
+          type: list
+          required: true
+          items:
+            type: mapping
+            fields:
+              id:
+                type: string
+                required: true
+              reason:
+                type: string
+                required: true
+                note: the trigger that matched, quoted
+        skipped:
+          type: list
+          required: true
+          items:
+            type: mapping
+            fields:
+              id:
+                type: string
+                required: true
+              reason:
+                type: string
+                required: true
+                note: >-
+                  why no trigger matched, or that the module does not support
+                  this input kind or phase
+    dynamic:
+      type: mapping
+      required: true
+      reserved-for: dynamic
+      note: >-
+        What the dynamic phase stood up. Reserved: empty in a run without the
+        dynamic phase.
+      fields:
+        started:
+          type: list
+          required: true
+          items:
+            type: mapping
+            fields:
+              target:
+                type: string
+                required: true
+                note: the application, service or server that was started
+              command:
+                type: string
+                required: true
+                note: the exact command that started it
+              ready:
+                type: string
+                required: false
+                note: how readiness was confirmed before any check ran
+    findings:
+      type: list
+      required: true
+      note: one record per finding; an empty list is a clean run
+      items:
+        type: mapping
+        fields:
+          module:
+            type: string
+            required: true
+          check:
+            type: string
+            required: true
+            note: the check id, `<module-id>/<name>`
+          phase:
+            type: string
+            required: true
+            enum: phase
+          location:
+            type: mapping
+            required: true
+            note: a file, with a symbol or a line where one applies, or a design-document section
+            fields:
+              file:
+                type: string
+                required: false
+                note: path relative to the scope's root
+              symbol:
+                type: string
+                required: false
+                note: the fully qualified function, class or module
+              line:
+                type: integer
+                required: false
+              section:
+                type: string
+                required: false
+                note: a design document's heading path, for a design-document input
+          evidence:
+            type: string
+            required: true
+            note: what the check's `evidence` asks for, quoted or described from the source
+          severity:
+            type: string
+            required: true
+            enum: severity
+          confidence:
+            type: string
+            required: true
+            enum: confidence
+          dynamic:
+            type: mapping
+            required: false
+            reserved-for: dynamic
+            note: >-
+              The dynamic phase's own evidence for a finding. Reserved: absent
+              or null on every finding of a run without the dynamic phase.
+            fields:
+              command:
+                type: string
+                required: true
+                note: the request or command that exercised the behaviour
+              observed:
+                type: string
+                required: true
+                note: the behaviour observed
+              expected:
+                type: string
+                required: true
+                note: the behaviour the check expected
+
+rules:
+  - id: run-within-requested
+    statement: every phase in `phases.run` is also in `phases.requested`
+  - id: not-run-is-requested-minus-run
+    statement: >-
+      the phases in `phases.not-run` are exactly those in `phases.requested`
+      and not in `phases.run`, each listed once
+  - id: module-accounted-once
+    statement: no module id appears twice across `modules.loaded` and `modules.skipped`
+  - id: finding-phase-was-run
+    statement: every finding's `phase` is in `phases.run`
+  - id: finding-module-was-loaded
+    statement: every finding's `module` is in `modules.loaded`
+  - id: finding-check-belongs-to-its-module
+    statement: every finding's `check` starts with its `module` and a slash
+  - id: location-names-a-file-or-a-section
+    statement: a location names a `file` or a design-document `section`, not both
+  - id: dynamic-fields-empty-in-a-static-run
+    statement: >-
+      when `dynamic` is not in `phases.run`, every field under `dynamic` is
+      empty and no finding carries a `dynamic` block

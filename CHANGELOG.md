@@ -16,6 +16,31 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-22 — software-evaluation (first publish)
+
+- **Behaviour change.** First publish of two skills.
+  - `evaluate-software` evaluates a diff, a whole repository, or a design
+    (read from code or from a design document) against modules loaded per
+    language, framework and concept.
+    - It reads in a static phase. A dynamic phase starts the application,
+      but only by its declared command and only after asking.
+    - Modules shipped: `python-testing`, `typescript-type-safety`,
+      `architecture-design-from-code`, `architecture-design-document` and
+      `application-runtime`.
+    - The report is JSON. A bundled standard-library validator,
+      `validate_report.py`, checks it, and each unrun phase's reason is
+      recorded under `phases.not-run`.
+  - `advise-from-evaluation` turns a report into ranked advisories, in a
+    refactoring mode for code and an implementation mode for a design. It
+    runs the same validator on the report it receives.
+- Each check names the research findings it rests on. A diff finding sits in
+  the changed lines, while its evidence may be read anywhere at the new
+  revision. A check that depends on a tool's version names where the version
+  is read.
+- Open, and not settled by this publish:
+  - which module a declined dynamic launch leaves loaded;
+  - whether `design-headings: []` must be written out.
+
 ### 2026-11-22 — diataxis-doc-migration (render skill)
 
 - **Behaviour change.** A new skill, `diataxis-render-docs`, renders a

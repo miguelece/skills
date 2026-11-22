@@ -1,0 +1,262 @@
+# The quality of a Python test suite, read from its test code and its test
+# configuration, not by running it. Each check rests on a finding in
+# research.md beside this file. The checks are written for pytest and also
+# read unittest test cases, which pytest collects. What a check reads for a
+# diff follows the module contract's `diff` input kind.
+id: python-testing
+languages: [python]
+concept: testing
+triggers:
+  files:
+    - "**/test_*.py"
+    - "**/*_test.py"
+    - "**/conftest.py"
+  manifests:
+    - "pyproject.toml:[tool.pytest.ini_options]"
+    - pytest.ini
+    - "tox.ini:[pytest]"
+    - "setup.cfg:[tool:pytest]"
+  design-markers: []
+inputs: [diff, repository]
+phases: [static]
+checks:
+  - id: python-testing/test-without-assertion
+    statement: >-
+      A test function verifies nothing: it asserts nothing and expects no
+      exception or warning.
+    evidence: >-
+      The test's name and file, and its whole body, quoted or described,
+      showing no `assert`, no `pytest.raises`, `pytest.warns` or
+      `pytest.fail`, no unittest `assert*` or `fail` call, no mock assertion
+      call, and no call to a helper or fixture that asserts; each helper it
+      calls is opened and named as read. A test whose stated purpose is that
+      the call completes without raising is reported only when its name or
+      docstring does not say so.
+    severity: medium
+    rationale: >-
+      A test that verifies nothing passes on a broken implementation, so it
+      adds coverage and confidence the suite does not have.
+    references:
+      - https://abseil.io/resources/swe-book/html/ch11.html
+      - https://docs.pytest.org/en/stable/how-to/assert.html
+    findings: [coverage-is-not-verification]
+  - id: python-testing/test-returns-instead-of-asserting
+    statement: >-
+      A test function returns the result of its check instead of asserting
+      it.
+    evidence: >-
+      The test's name and file, and the `return` statement returning a
+      value other than None, quoted, with no `assert` of that same value in
+      the test. A fixture or helper that returns a value is not a test.
+    severity: high
+    rationale: >-
+      pytest ignores a test's return value, so a test that returns False
+      passes; the check it was meant to make never runs.
+    references:
+      - https://docs.pytest.org/en/stable/how-to/assert.html
+    findings: [return-values-are-ignored]
+  - id: python-testing/assertion-that-cannot-fail
+    statement: >-
+      An assertion in a test is true whatever the code under test does.
+    evidence: >-
+      The assertion, quoted with its file and line, in one of two forms: an
+      `assert` whose condition is a parenthesised non-empty tuple, such as
+      `assert (x == y, "message")`; or a mock assertion method named but not
+      called, such as `mock.assert_called_once_with` with no parentheses.
+    severity: high
+    rationale: >-
+      An assertion that cannot fail reads as a check in review while
+      checking nothing, so the defect it was written to catch ships.
+    references:
+      - https://docs.astral.sh/ruff/rules/assert-tuple/
+      - https://docs.astral.sh/ruff/rules/invalid-mock-access/
+    findings: [some-assertions-cannot-fail]
+  - id: python-testing/assertion-behind-a-condition
+    statement: >-
+      A test's assertions run only on one branch of a condition, so the test
+      can pass without asserting anything.
+    evidence: >-
+      The test's name and file, and the `if`, `try` or early `return` quoted
+      with the assertions it guards, showing a path through the test that
+      reaches its end with no assertion run. A loop that asserts on every
+      pass is not this defect, and neither is a `pytest.skip` on the other
+      branch, which reports itself.
+    severity: medium
+    rationale: >-
+      When the branch is not taken the test passes silently, and whether it
+      is taken depends on the very behaviour under test, so a regression can
+      turn the test off rather than fail it.
+    references:
+      - https://abseil.io/resources/swe-book/html/ch12.html
+    findings: [tests-hold-no-logic, coverage-is-not-verification]
+  - id: python-testing/raises-block-with-several-statements
+    statement: >-
+      A `pytest.raises` block holds more than one statement, so an earlier
+      statement can raise the expected exception in place of the call under
+      test.
+    evidence: >-
+      The `with pytest.raises(...)` block, quoted with its file and line,
+      holding two or more statements, and the statement after the first
+      that the test needs to run. An empty-bodied `for` loop used to drive
+      an iterator is one statement.
+    severity: medium
+    rationale: >-
+      Once an earlier statement raises, the rest of the block never runs, so
+      the test passes on setup failing and never exercises the call it
+      names.
+    references:
+      - https://docs.astral.sh/ruff/rules/pytest-raises-with-multiple-statements/
+      - https://docs.pytest.org/en/stable/how-to/assert.html
+    findings: [raises-block-holds-one-statement]
+  - id: python-testing/raises-without-match
+    statement: >-
+      A `pytest.raises` names a broad exception type and constrains neither
+      its message nor the exception itself.
+    evidence: >-
+      The `pytest.raises` call, quoted with its file and line, naming
+      `Exception`, `BaseException`, `ValueError`, `TypeError`, `OSError`,
+      `RuntimeError` or another type the code under test can raise for more
+      than one cause, with no `match` or `check` argument and no assertion
+      on the captured exception after the block.
+    severity: low
+    rationale: >-
+      A broad type also matches an unrelated failure of the same type, so
+      the test passes when the code fails for the wrong reason.
+    references:
+      - https://docs.astral.sh/ruff/rules/pytest-raises-too-broad/
+      - https://docs.pytest.org/en/stable/how-to/assert.html
+    findings: [raises-should-be-constrained]
+  - id: python-testing/test-shadowed-by-same-name
+    statement: >-
+      Two tests in one module or one class share a name, so only the later
+      one is collected and the earlier never runs.
+    evidence: >-
+      Both definitions quoted by name, file and line, in the same module
+      scope or the same class body, with no decorator or reassignment
+      between them that keeps the first under another name.
+    severity: high
+    rationale: >-
+      The later definition replaces the earlier one, so the earlier test is
+      silently lost and the behaviour it covered goes untested while the
+      file still shows it.
+    references:
+      - https://pylint.readthedocs.io/en/stable/user_guide/messages/error/function-redefined.html
+      - https://docs.pytest.org/en/stable/explanation/goodpractices.html
+    findings: [redefinition-hides-the-first]
+  - id: python-testing/test-not-collected
+    statement: >-
+      Code written as a test is not collected by pytest, so it never runs.
+    evidence: >-
+      The definition quoted with its file, and the collection rule it
+      misses: a `Test` class defining `__init__`, a test function or method
+      whose name lacks the `test` prefix while its siblings carry it, or a
+      test file whose name matches neither `test_*.py` nor `*_test.py`; and
+      the test configuration read, showing that no `python_files`,
+      `python_classes` or `python_functions` setting widens the patterns to
+      cover it. A helper called by tests is not a test.
+    severity: medium
+    rationale: >-
+      An uncollected test reports nothing at all, neither a pass nor a
+      failure, so the suite looks complete while part of it never runs.
+    references:
+      - https://docs.pytest.org/en/stable/explanation/goodpractices.html
+    findings: [collection-is-by-name]
+  - id: python-testing/skip-without-reason
+    statement: >-
+      A test is skipped or marked as an expected failure with no reason
+      given.
+    evidence: >-
+      The `pytest.mark.skip`, `pytest.mark.skipif`, `pytest.mark.xfail`,
+      `pytest.skip` or `pytest.xfail` call, or the unittest `skip`
+      decorator, quoted with its file and line, carrying no reason argument
+      or an empty one. A marker written inside a string literal, as test
+      data, is not a call.
+    severity: low
+    rationale: >-
+      A skip with no reason cannot be re-judged later, so it outlives the
+      condition that justified it and the test stays switched off.
+    references:
+      - https://docs.pytest.org/en/stable/how-to/skipping.html
+    findings: [skips-carry-reasons]
+  - id: python-testing/xfail-not-strict
+    statement: >-
+      A test is marked as an expected failure without strict mode, so it
+      keeps passing the suite after the failure it records is fixed or
+      changed.
+    evidence: >-
+      The `pytest.mark.xfail` marker quoted with its file and line, with no
+      `strict=True`, and the test configuration read, showing the
+      strict-xfail option (`xfail_strict` or `strict_xfail`) not set to
+      true.
+    severity: low
+    rationale: >-
+      Without strict mode an unexpected pass does not fail the suite, so a
+      fixed bug leaves a stale marker and a later regression of the same
+      test goes unseen.
+    references:
+      - https://docs.pytest.org/en/stable/how-to/skipping.html
+      - https://docs.pytest.org/en/stable/explanation/flaky.html
+    findings: [skips-carry-reasons]
+  - id: python-testing/float-compared-exactly
+    statement: >-
+      A test compares a computed floating-point value for exact equality.
+    evidence: >-
+      The assertion quoted with its file and line, comparing with `==` or
+      `!=` a value the code under test computes by float arithmetic, shown
+      by the expected side being a non-integral float literal or by the
+      computation quoted, with no `pytest.approx`, `math.isclose` or
+      tolerance argument. A float that is only stored and returned, never
+      computed, is not this defect, and neither is a comparison with `0.0`
+      or `1.0` of a ratio of whole counts, which is exact.
+    severity: medium
+    rationale: >-
+      Floating-point rounding makes exact equality depend on the order of
+      operations and the platform, so the test fails without a behaviour
+      change, or is loosened by hand until it hides a real one.
+    references:
+      - https://docs.pytest.org/en/stable/reference/reference.html
+      - https://docs.pytest.org/en/stable/explanation/flaky.html
+    findings: [floats-compare-with-tolerance]
+  - id: python-testing/state-leaks-out-of-test
+    statement: >-
+      A test or fixture changes state outside itself and does not undo it,
+      so later tests depend on its having run.
+    evidence: >-
+      The change quoted with its file and line: an assignment to
+      `os.environ`, `sys.path`, `sys.modules` or a module attribute, or a
+      write to a fixed path outside `tmp_path` or `tmpdir`, such as the
+      working directory or the home directory; and the test or fixture
+      body, showing no `monkeypatch`, no `patch` context or decorator, and
+      no teardown or `finally` that restores it. An idempotent `sys.path`
+      insert of the repository's own source directory, made by every test
+      or helper that imports from it, is not this defect: no test's outcome
+      then depends on another having run.
+    severity: medium
+    rationale: >-
+      State one test leaves behind makes others pass or fail by the order
+      they run in, so the suite breaks under a random order, a parallel run
+      or a single-test rerun, far from the test that caused it.
+    references:
+      - https://docs.pytest.org/en/stable/explanation/flaky.html
+      - https://docs.pytest.org/en/stable/how-to/monkeypatch.html
+      - https://docs.pytest.org/en/stable/how-to/tmp_path.html
+    findings: [tests-are-isolated]
+  - id: python-testing/sleep-in-test
+    statement: >-
+      A test waits a fixed time with a sleep instead of waiting on the
+      condition it needs.
+    evidence: >-
+      The `time.sleep` or `asyncio.sleep` call quoted with its file and
+      line, in a test or a fixture it uses, with a non-zero literal or
+      constant duration, and the condition the wait stands in for, named
+      from the code around it. A sleep inside a polling loop that checks the
+      condition and has a deadline is not this defect.
+    severity: low
+    rationale: >-
+      A fixed wait is either longer than needed, slowing every run, or
+      shorter than a slow machine needs, so the test fails by timing rather
+      than by behaviour.
+    references:
+      - https://abseil.io/resources/swe-book/html/ch11.html
+      - https://docs.pytest.org/en/stable/explanation/flaky.html
+    findings: [sleeping-tests-are-slow-and-flaky]
