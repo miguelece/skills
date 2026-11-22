@@ -25,6 +25,11 @@ Synthesizing sources into a finding, sharpening an existing finding with new
 evidence, or judging whether a finding is ready to promote. Not for domain research
 a single skill needs — in this lab, that belongs in the project's `refs/`.
 
+For a digest, list the undigested captures with
+`python ${CLAUDE_SKILL_DIR}/scripts/index.py --base <base> --undigested`: the
+untracked-layer files no record's `sources` names and the base's
+`declined-captures.txt` does not decline.
+
 ## Boundaries
 
 - **Confidence is the whole game. Never launder it.** A claim is `directional`
@@ -106,6 +111,6 @@ a single skill needs — in this lab, that belongs in the project's `refs/`.
 - Every frontmatter key and rule, as a schema:
   [references/record.schema.yaml](references/record.schema.yaml)
 - Finding template: [assets/finding.md](assets/finding.md)
-- Index generator: `scripts/index.py --base <base> [--check]`
+- Index generator: `scripts/index.py --base <base> [--check | --undigested]`
 - The base's checker, and the one frontmatter parser the index reads through:
   `scripts/validate_base.py --base <base>`

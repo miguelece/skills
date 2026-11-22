@@ -3,6 +3,7 @@
 
     scripts/index.py --base <base>
     scripts/index.py --base <base> --check
+    scripts/index.py --base <base> --undigested
 
 Derives the index table from each record's frontmatter, so the one place a
 record's status and confidence are recorded is the record itself. Everything
@@ -25,6 +26,19 @@ a base holding a record that is not UTF-8**: exit 2, naming every such record
 with `record-not-utf8`, with or without `--check`, so `--check`'s exit 1 still
 means *stale* and nothing else.
 
+**`--undigested` is the only mode that reads the untracked layer**, and it
+reads names, never contents. It prints, one per line and sorted, the
+layer-relative name of every file under each untracked layer that no tracked
+record's `sources` names, less every one the base's `declined-captures.txt`
+names, and writes nothing. A name matches an entry given as the layer-relative
+path, as that path without `.md`, or as a directory prefix ending `/`; a decline
+line matches the same way. Undigested is therefore derived, never stored. The
+decline list is hand-written and tracked at the base root, one line per declined
+capture: its name and the date it was declined (`YYYY-MM-DD`), separated by a
+space; blank lines are skipped. An absent list is an empty one. A line that does
+not parse is reported with `decline-line-malformed`, naming the line, and the
+mode exits 2 and lists nothing rather than guess what was meant.
+
 **The base is an argument, not a location.** This script used to derive it from
 `__file__` and so only worked while it sat inside `research/` itself; it is
 bundled into a skill payload now, where no such directory exists at any depth.
@@ -39,7 +53,9 @@ one parser, which sits beside this script in every bundle that carries it.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
+from datetime import date
 from pathlib import Path
 
 import validate_base
@@ -124,6 +140,91 @@ def render(rows: list[dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
+DECLINE_FILE = "declined-captures.txt"
+DECLINE_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def names_entry(entry: str, name: str) -> bool:
+    """Whether a `sources` or decline entry names this layer-relative file."""
+    if entry.endswith("/"):
+        return name.startswith(entry)
+    return name == entry or (name.endswith(".md") and name[: -len(".md")] == entry)
+
+
+def cited_entries(
+    base: Path, layers: dict[str, dict]
+) -> tuple[list[str], list[validate_base.Finding]]:
+    """Every `sources` entry of every record in every tracked layer."""
+    entries: list[str] = []
+    refusals: list[validate_base.Finding] = []
+    for directory in sorted(layers):
+        if not layers[directory]["tracked"]:
+            continue
+        for path in sorted((base / directory).glob("*.md")):
+            if path.name.lower() in validate_base.NON_RECORDS:
+                continue
+            text, unreadable = validate_base.read_record(base, path)
+            if text is None:
+                refusals.extend(unreadable)
+                continue
+            sources = validate_base.read_frontmatter(text).get("sources", [])
+            entries.extend([sources] if isinstance(sources, str) else sources)
+    return entries, refusals
+
+
+def declined_entries(base: Path) -> tuple[list[str], list[validate_base.Finding]]:
+    """The names the decline list holds; an absent list is an empty one."""
+    path = base / DECLINE_FILE
+    if not path.is_file():
+        return [], []
+    entries: list[str] = []
+    refusals: list[validate_base.Finding] = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        fields = line.split()
+        valid = len(fields) == 2 and DECLINE_DATE.fullmatch(fields[1]) is not None
+        if valid:
+            try:
+                date.fromisoformat(fields[1])
+            except ValueError:
+                valid = False
+        if not valid:
+            refusals.append((
+                f"{DECLINE_FILE}:{number}", "decline-line-malformed",
+                f"expected '<name> <YYYY-MM-DD>', got {line.strip()!r}",
+            ))
+            continue
+        entries.append(fields[0])
+    return entries, refusals
+
+
+def undigested(
+    base: Path, layers: dict[str, dict]
+) -> tuple[list[str], list[validate_base.Finding]]:
+    """The untracked layers' file names no record cites and no line declines.
+
+    Reads each untracked file's name only, never its contents.
+    """
+    cited, refusals = cited_entries(base, layers)
+    declined, malformed = declined_entries(base)
+    refusals += malformed
+    if refusals:
+        return [], refusals
+    entries = cited + declined
+    names: list[str] = []
+    for directory in sorted(layers):
+        root = base / directory
+        if layers[directory]["tracked"] or not root.is_dir():
+            continue
+        for path in root.rglob("*"):
+            if path.is_file():
+                name = path.relative_to(root).as_posix()
+                if not any(names_entry(entry, name) for entry in entries):
+                    names.append(name)
+    return sorted(names), []
+
+
 def splice(text: str, block: str) -> str:
     start, end = text.find(BEGIN), text.find(END)
     if start == -1 or end == -1 or end < start:
@@ -142,10 +243,16 @@ def main() -> int:
         required=True,
         help="research base holding base.json and README.md",
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--check",
         action="store_true",
         help="report staleness without writing; exit 1 if the index would change",
+    )
+    mode.add_argument(
+        "--undigested",
+        action="store_true",
+        help="list the untracked layer's files no record cites and none declined",
     )
     args = parser.parse_args()
 
@@ -170,6 +277,16 @@ def main() -> int:
         for name, rule, message in refusals:
             print(f"{name}: [{rule}] {message}", file=sys.stderr)
         return 2
+
+    if args.undigested:
+        names, refusals = undigested(base, layers)
+        for name, rule, message in refusals:
+            print(f"{name}: [{rule}] {message}", file=sys.stderr)
+        if refusals:
+            return 2
+        for name in names:
+            print(name)
+        return 0
 
     readme = base / "README.md"
     if not readme.is_file():

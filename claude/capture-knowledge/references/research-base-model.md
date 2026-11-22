@@ -292,6 +292,7 @@ where the reference is one the mover already repairs.
 | The index of records, with their status and confidence | **yes** — regenerated from frontmatter, never hand-edited |
 | A record's directory | **no** — keyed to kind, and changed only by a deliberate re-classification |
 | A record's regime, status, confidence | **no** — declared in frontmatter |
+| The undigested captures: each untracked-layer file no tracked record's `sources` names, less those `declined-captures.txt` names | **yes** — listed by `index.py --undigested`, never stored; the decline list it subtracts is hand-written and tracked at the base root, one line per declined capture, its name and the date |
 
 **Generated regions are delimited and never hand-edited.** Narrative outside the
 markers is hand-written and never touched by the generator. Regenerating is how a

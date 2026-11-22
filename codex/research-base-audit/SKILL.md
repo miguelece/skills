@@ -43,6 +43,12 @@ frontmatter. **Frozen records are outside the audit's subject entirely.** A
 frozen record described a moment and never claimed the present, so re-verifying
 one is a category error.
 
+**With a `since <rev>` clause**, the audit narrows to only the living records
+whose files changed between `<rev>` and `HEAD`, by
+`git diff --name-only <rev> HEAD` in the base's repository, so a review after a
+digest reads the range the digest wrote. Without the clause, every living record
+is audited.
+
 ## 3. Re-verify each claim against its authority
 
 Read what the record says is currently true, then check it against each entry
@@ -126,7 +132,7 @@ retirement to frozen only as a decision the user may take.
 
 ## 4. Ask about what needs a decision
 
-On every run, with no parameter, put each finding to the user as its own
+On every run, with or without a `since` clause, put each finding to the user as its own
 answerable question: each *contradicted*, *drifted* or *authority missing*
 result, and each validator finding carried into the report. For each *not
 checked* authority, ask the user to confirm it or to leave it *not checked*. A

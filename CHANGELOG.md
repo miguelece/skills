@@ -16,6 +16,17 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-22 — research-tooling (digest support)
+
+- **Behaviour change.** `index.py` lists a base's undigested captures, less
+  those its decline list names. The research base model declares
+  `undigested` as derived and names the digest command.
+- **Behaviour change.** `research-base-audit` takes a `since <rev>` clause
+  that narrows the audit to the living records changed in that range. The
+  clause runs `git diff`, which the audit's read-only grant does not cover,
+  so it may prompt. A follow-up changes it to take the record list from the
+  caller.
+
 ### 2026-11-22 — task-board-management (eighth tranche)
 
 - **Behaviour change.** The board accepts `kind: digest` on any board, and
