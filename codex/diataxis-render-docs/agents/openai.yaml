@@ -1,0 +1,6 @@
+interface:
+  display_name: Diataxis Documentation Render
+  short_description: Render Diataxis Markdown docs as interactive HTML
+  default_prompt: Use $diataxis-render-docs to render this repository's Diataxis docs as interactive HTML.
+policy:
+  allow_implicit_invocation: true

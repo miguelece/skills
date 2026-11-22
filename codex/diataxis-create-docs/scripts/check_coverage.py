@@ -19,6 +19,9 @@ import yaml
 HEADING_PATTERN = re.compile(
     r"^ {0,3}(?P<marks>#{2,6})[ \t]+(?P<title>.+?)[ \t]*$"
 )
+ANCHOR_HEADING_PATTERN = re.compile(
+    r"^ {0,3}(?P<marks>#{1,6})[ \t]+(?P<title>.+?)[ \t]*$"
+)
 SETEXT_PATTERN = re.compile(r"^ {0,3}(?P<marks>=+|-+)[ \t]*$")
 FENCE_PATTERN = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,}).*$")
 FINGERPRINT_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -59,7 +62,36 @@ def fingerprint(value: str) -> str:
     return f"sha256:{digest}"
 
 
-def markdown_headings(markdown: str) -> tuple[str, list[Heading]]:
+def frontmatter_end(lines: list[str]) -> int:
+    """Return the index of the first line after a frontmatter block, or 0.
+
+    Only a block opening on the first line counts: YAML between `---` and a
+    later `---` or `...`, or TOML between `+++` and `+++`. A leading
+    byte-order mark is tolerated, and an unclosed opener is not frontmatter.
+    """
+    if not lines:
+        return 0
+    opener = lines[0].lstrip("﻿").rstrip()
+    closers = {"---": {"---", "..."}, "+++": {"+++"}}.get(opener)
+    if closers is None:
+        return 0
+    for index in range(1, len(lines)):
+        if lines[index].rstrip() in closers:
+            return index + 1
+    return 0
+
+
+def markdown_headings(
+    markdown: str,
+    *,
+    include_atx_level_one: bool = False,
+) -> tuple[str, list[Heading]]:
+    """Return the normalized text and its headings, outside code fences.
+
+    A leading frontmatter block is never read for headings; its text stays
+    before the first heading. ATX level-1 headings are skipped unless asked
+    for, so a page's `#` title belongs to its preamble for section coverage.
+    """
     normalized = markdown.replace("\r\n", "\n").replace("\r", "\n")
     headings: list[Heading] = []
     lines = normalized.splitlines(keepends=True)
@@ -70,8 +102,14 @@ def markdown_headings(markdown: str) -> tuple[str, list[Heading]]:
         offset += len(line)
     fence_character: str | None = None
     fence_length = 0
+    body_start = frontmatter_end(lines)
+    heading_pattern = (
+        ANCHOR_HEADING_PATTERN if include_atx_level_one else HEADING_PATTERN
+    )
 
     for index, line in enumerate(lines):
+        if index < body_start:
+            continue
         content = line.rstrip("\n")
         fence_match = FENCE_PATTERN.match(content)
         if fence_character is not None:
@@ -89,7 +127,7 @@ def markdown_headings(markdown: str) -> tuple[str, list[Heading]]:
             fence_character = fence[0]
             fence_length = len(fence)
             continue
-        heading_match = HEADING_PATTERN.match(content)
+        heading_match = heading_pattern.match(content)
         if heading_match:
             title = re.sub(
                 r"[ \t]+#+[ \t]*$",
@@ -105,7 +143,7 @@ def markdown_headings(markdown: str) -> tuple[str, list[Heading]]:
             )
             continue
         setext_match = SETEXT_PATTERN.match(content)
-        if setext_match and index > 0:
+        if setext_match and index > body_start:
             previous = lines[index - 1].rstrip("\n")
             if previous.strip():
                 headings.append(
@@ -394,7 +432,7 @@ def rendered_heading_text(title: str) -> str:
 
 def destination_anchors(path: Path) -> set[str]:
     text = path.read_text(encoding="utf-8", errors="strict")
-    _, headings = markdown_headings(text)
+    _, headings = markdown_headings(text, include_atx_level_one=True)
     anchors: set[str] = set()
     occurrences: dict[str, int] = {}
     for heading in headings:

@@ -16,6 +16,14 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-22 — diataxis-doc-migration (render skill)
+
+- **Behaviour change.** A new skill, `diataxis-render-docs`, renders a
+  Diataxis Markdown tree to interactive HTML.
+- **Behaviour change.** The coverage heading reader skips a page's leading
+  frontmatter, and destination anchors get level-one titles, so a page's
+  first heading is no longer misread or skipped.
+
 ### 2026-11-22 — research-tooling (digest support)
 
 - **Behaviour change.** `index.py` lists a base's undigested captures, less

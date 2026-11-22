@@ -12,8 +12,10 @@ dirty path that does not overlap the proposed work.
 
 Build the plan from section-level inventory, not whole-file moves. Section IDs and
 fingerprints must match `scripts/check_coverage.py`: meaningful content before
-the first section is `__preamble__`; ATX or Setext headings are occurrence-
-qualified (`setup`, `setup-2`); fenced-code headings are ignored. Run coverage
+the first section is `__preamble__`, and that includes a frontmatter block
+opening the file and an ATX level-1 (`#`) title, neither of which starts a
+section; other ATX or Setext headings are occurrence-qualified (`setup`,
+`setup-2`); fenced-code headings are ignored. Run coverage
 with both `--archive-root` and `--repository-root` so migrated destination files
 and anchors are verified.
 including the heading and content through the next heading of equal or higher
