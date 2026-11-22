@@ -34,7 +34,7 @@ from pathlib import Path
 STATUSES = ("draft", "scoped", "in-progress", "done", "superseded")
 GATES = ("none", "manual", "owner")
 PRIORITIES = ("high", "medium", "low")
-KINDS = ("ticket", "spec")
+KINDS = ("ticket", "spec", "digest")
 DEFAULT_KIND = "ticket"
 UNFINISHED = ("draft", "scoped", "in-progress")
 

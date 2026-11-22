@@ -29,6 +29,12 @@ Output is one JSON object on stdout:
 `records` is sorted; `items` is ordered by item number, and each item's pairs
 by record, then finding number. Standard library only, and deterministic.
 
+A record's `status` is read by the board's own parser, `validate_board.py`,
+imported as a sibling module, so a value the board accepts, such as a quoted
+`"done"`, reads the same here. The script therefore runs from its bundle's
+`scripts/` directory, where the build places `validate_board.py` beside it,
+and not from `src/` alone.
+
 Exit 0 with the report. Exit 2, naming the record, when a gate report has no
 findings subsection, its table's header is not *ID* then *Item*, or a row's
 first two cells are not a finding id and an item id; exit 2 when the board is
@@ -43,7 +49,8 @@ import re
 import sys
 from pathlib import Path
 
-STATUS = re.compile(r"^status:\s*(\S+)\s*$", re.MULTILINE)
+from validate_board import parse_frontmatter
+
 GATE_REPORT = re.compile(r"^## Gate report[ \t]*$", re.MULTILINE)
 NEXT_SECTION = re.compile(r"^## ", re.MULTILINE)
 FINDINGS = re.compile(r"^### Findings[ \t]*$", re.MULTILINE)
@@ -64,11 +71,8 @@ def cells(line: str) -> list[str]:
 
 def gate_report(text: str) -> str | None:
     """The body of the `## Gate report` section of a done task, or None."""
-    if not text.startswith("---\n"):
-        return None
-    front = text[4:].split("\n---", 1)[0]
-    status = STATUS.search(front)
-    if status is None or status.group(1) != "done":
+    front, _ = parse_frontmatter(text)
+    if front is None or front.get("status") != "done":
         return None
     heading = GATE_REPORT.search(text)
     if heading is None:

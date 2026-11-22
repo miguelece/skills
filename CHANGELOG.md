@@ -16,6 +16,18 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-22 — task-board-management (eighth tranche)
+
+- **Behaviour change.** The board accepts `kind: digest` on any board, and
+  the index tags it.
+- **Behaviour change.** `supervise-implementation` leases digest tickets
+  only, or none, in one tranche. It closes a digest tranche with a
+  `research-base-audit` of the records the tranche changed, after the gate.
+- `supervise-implementation`'s *Closing a tranche* names the transferable
+  guidance destination by its role, not by a lab path.
+- `tranche-gate`'s earlier-findings reader reads a record's status through
+  the board's own frontmatter parser, so a quoted `done` is counted.
+
 ### 2026-11-21 — research-tooling (capture-knowledge)
 
 - **Behaviour change.** A new skill, `capture-knowledge`, files one session

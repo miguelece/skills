@@ -39,7 +39,9 @@ contract and folder mapping. Start from [assets/task.md](assets/task.md).
 3. **Choose the id and the kind.** Kebab-case id, specific enough to be unambiguous a
    year later — prefer `<area>-<problem>` over a bare verb; it becomes the filename.
    Set `kind: spec` only if this task is the architecture/vision a set of tickets
-   will realize; otherwise leave it `ticket` (the default). If it is one slice of an
+   will realize, and `kind: digest` if it is a digest ticket, turning captured
+   items into cited findings in a research base; otherwise leave it `ticket` (the
+   default). If it is one slice of an
    existing spec, set `part-of` to that spec — composition, not lineage.
 4. **Fill the template.** `Why this exists` carries the evidence. `What the code
    says` carries the grounded findings with citations. `Plan` carries phases with

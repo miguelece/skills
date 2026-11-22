@@ -26,7 +26,7 @@ first makes the disagreement a validation error instead.
 ---
 id: cache-variance-harness          # kebab-case; must equal the filename stem
 title: Build the cache variance measurement harness
-kind: ticket                        # ticket (default) | spec
+kind: ticket                        # ticket (default) | spec | digest
 status: draft                       # draft | scoped | in-progress | done | superseded
 gate: none                          # none | manual | owner
 priority: medium                    # high | medium | low
@@ -43,7 +43,7 @@ outcome: null                       # required when status is done — one line
 ---
 ```
 
-### `kind` — spec or ticket
+### `kind` — ticket, spec or digest
 
 Every task is one document-level unit of work, at any level. `kind` names its role:
 
@@ -51,10 +51,11 @@ Every task is one document-level unit of work, at any level. `kind` names its ro
 | --- | --- |
 | `ticket` | A particular role or portion — usually implementation, sometimes exploratory (research, a spike). The smallest ticket is still worth a subagent or a fresh session. **Default** when `kind` is absent. |
 | `spec` | Architecture and composition: the vision, the decisions, how steps compose to a result. A spec keeps residual work of its own that may be too small to ticket. |
+| `digest` | A ticket whose work is a digest: turning captured items into cited findings in a research base. Leased and composed like a ticket, on any board; the value marks it so a reader and a tranche can tell it apart. |
 
-`kind` does **not** affect which folder a task derives — a spec and a ticket both
-file by their own `status`/`gate`/`blocked-by` like any task. It affects only how
-the task is read and how it composes (below).
+`kind` does **not** affect which folder a task derives — a spec, a ticket and a
+digest all file by their own `status`/`gate`/`blocked-by` like any task. It
+affects only how the task is read and how it composes (below).
 
 ### `part-of` — composition, kept distinct from lineage
 

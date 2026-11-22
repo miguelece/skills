@@ -14,7 +14,7 @@ Kept apart by name, because conflating them has already wrecked this subject
 twice.
 
 - Conciseness of skill prose — how a `SKILL.md` is written for an agent to read.
-  That is `standards/skill-authoring-guide.md`'s subject and is settled there.
+  That is the lab's skill-authoring standard's subject and is settled there.
 - The shape of a document a skill writes to disk — a handoff, a task, a finding.
   Those carry their own prescribed structure, and the rules below do not apply
   to them. A handoff's nine headings are not subject to a heading threshold.
@@ -158,7 +158,7 @@ this file marks something, it uses a heading.
 
 ## Where the figures come from
 
-`research/findings/output-compression-technique-package.md`, whose
+The lab's finding on the output-compression technique package, whose
 discourse-level half is marked `evidenced`. Its overall confidence is
 `directional` because a different half of it — a six-item, self-scored round
 trip — is unchanged, and the two must not be read as one.

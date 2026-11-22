@@ -91,7 +91,11 @@ Only on the owner's word. Then:
    integration, net of time spent waiting on the owner. Estimate the pool as
    its ticket count times the median hours per ticket of the earlier tranche
    records: each record's `Running time:` over the tickets it integrated, or
-   its base-to-tip wall time where it has no such line. When the pool falls
+   its base-to-tip wall time where it has no such line. **A tranche leases
+   digest tickets only, or no digest ticket**, read from each leased ticket's
+   `kind: digest`, so digest work neither crowds out nor is crowded out by
+   other tickets; the budget, the target and the precedent register apply
+   unchanged. When the pool falls
    short, scope drafts first: launch one fresh agent per draft, at most three
    at a time, each running `task-interview` with the precedent register,
    recording `RESOLVED` what a precedent or the evidence settles, asking no
@@ -261,7 +265,13 @@ transcript-priced costs and never scaling them. A session row that reads
 launch a fresh agent at `high` that runs `tranche-gate` with the tranche's
 base and tip commits, the record, each task's acceptance criteria and every
 integrator verdict. Its report, appended to the record, lists the open
-entries first, then the candidate precedents, then that match rate. Push once
+entries first, then the candidate precedents, then that match rate. Then,
+on a digest tranche, one whose leased tickets are `kind: digest`, after the
+gate, launch a fresh agent at `high` that runs
+`research-base-audit since <base>` on `.knowledge`, with the gate's base
+commit, and append its report, questions included, to the record after the
+gate's, so the owner's review answers both: the gate's checklist is written
+for code, and the audit re-verifies the claims the tranche wrote. Push once
 when the report is ready. The next tranche opens only on the owner's word.
 
 The gate leaves the record `in-progress`, because the owner's review closes
@@ -279,9 +289,8 @@ from the user's own instructions; with none, ask the owner.
 A guidance candidate the owner rules in goes where its ruled scope says:
 *this repository* into that repository's `CLAUDE.md`, its rules or a check;
 *transferable* as a reference file and a table line in the
-`working-conventions` skill's lab source,
-`projects/quality-of-life/src/working-conventions/`, filed as a lab ticket
-when this board is not the lab's, and shipped by an ordinary publish. A
+`working-conventions` skill's own source, filed as a lab ticket when this
+board is not the lab's, and shipped by an ordinary publish. A
 convention already written down stays where it is until the owner rules
 otherwise.
 

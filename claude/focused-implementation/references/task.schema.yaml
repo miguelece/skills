@@ -33,11 +33,12 @@ fields:
     type: enum
     required: false
     default: ticket
-    values: [ticket, spec]
+    values: [ticket, spec, digest]
     note: >-
       ticket = a role/portion (usually implementation, sometimes research or a
-      spike); spec = architecture/composition/vision. Does not affect folder
-      derivation.
+      spike); spec = architecture/composition/vision; digest = a ticket that
+      turns captured items into cited findings in a research base, leased and
+      composed like a ticket, on any board. Does not affect folder derivation.
 
   status:
     type: enum
@@ -180,7 +181,7 @@ rules:
   - id: id-matches-filename
     check: id equals the filename stem
   - id: kind-invalid
-    check: kind, when present, is one of [ticket, spec]
+    check: kind, when present, is one of [ticket, spec, digest]
   - id: part-of-self
     check: part-of does not name the task itself
   - id: part-of-cycle

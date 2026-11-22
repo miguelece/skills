@@ -17,7 +17,8 @@ is not.
 **Schedule tickets, not specs.** A `kind: spec` is the vision a set of tickets
 realizes, not a unit of implementable work — you schedule its tickets (the tasks
 `part-of` it). Leave the spec's own status alone; closing it is a deliberate
-call after its slices land, not an automatic consequence.
+call after its slices land, not an automatic consequence. A `kind: digest` is
+scheduled like a ticket: it is one, marked as a digest.
 
 ## Interference
 

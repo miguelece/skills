@@ -172,6 +172,12 @@ def resolved_task_ids(tasks: list[dict]) -> frozenset[str]:
     )
 
 
+def kind_tag(task: dict) -> str:
+    """The index tag for a kind other than the default ticket, else nothing."""
+    kind = task_kind(task)
+    return f"`[{kind}]` " if kind in ("spec", "digest") else ""
+
+
 def entry_line(task: dict, resolved_ids: frozenset[str]) -> str:
     """One flat-view row. The composition breadcrumb makes this the audit view:
     every ticket shows what it is part of, so the tree is legible without nesting.
@@ -184,7 +190,7 @@ def entry_line(task: dict, resolved_ids: frozenset[str]) -> str:
     title = str(task.get("title") or task.get("id"))
     priority = str(task.get("priority") or "?")
     status = str(task.get("status") or "?")
-    tag = "`[spec]` " if task_kind(task) == "spec" else ""
+    tag = kind_tag(task)
 
     if task.get("superseded-by"):
         suffix = f" → `{task['superseded-by']}`"
@@ -334,7 +340,7 @@ def render_tree(tasks: list[dict]) -> str:
         if tid in seen:
             return
         seen.add(tid)
-        tag = "`[spec]` " if task_kind(task) == "spec" else ""
+        tag = kind_tag(task)
         title = str(task.get("title") or tid)
         status = str(task.get("status") or "?")
         body.append(f"{'  ' * depth}- {tag}[{title}]({task['_path']}) — `{status}`")
