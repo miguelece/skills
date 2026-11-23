@@ -13,7 +13,7 @@ block the next tranche; the rest is reviewed at leisure.
 
 - Gated: <date>; base <sha>, tip <sha>; gate commits <sha>..<sha>, or none.
 - Size: <n> changed lines outside the board, <m> in all, against a declared limit
-  of 4,000 (unmeasured).
+  of 8,000 (unmeasured, a trial).
 - Record: <the supervisor's | filed by the gate | none, uncommitted>.
 
 ### Open escalation entries
@@ -69,6 +69,8 @@ any other batch.
 - At most 32 rows. Verified findings not reported: <n>, by item.
 - Dropped on verification: <n>.
 - Findings per changed line: <findings / changed lines>; raw: <n>.
+- Chunks read: <n> of <m>; every chunk, or sampled: <which were skipped, and
+  why>.
 - Not checked: no criteria: D5 and D7 for <task ids>, or "none".
 - D6 declared: <test>, <change>, declared by <task>: <reason>; or "none".
 - D6 declared, nothing matched: <each `declared_unmatched` entry>, or "none".

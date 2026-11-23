@@ -201,6 +201,11 @@ the brief points it at *Repairing the links a move breaks* in
 [references/board-model.md](references/board-model.md). A stream returned
 unmerged is an attempt with no progress; streams behind it are unaffected.
 
+Write each verdict into the record's *Integrator verdicts* in the form
+[references/run-state.md](references/run-state.md) gives, date first:
+`<date>, <task> attempt <n>:`. `scripts/scan_tranche.py` reads that form
+and exits 2 on any other, so a task-first verdict stops the gate.
+
 ## Escalation
 
 An entry is an exception report with an id, written to the tranche record in

@@ -89,9 +89,12 @@ integrator's verdict decides that, not the episodes.
 
 ## The size limit
 
-**4,000 changed lines**, declared by the gate and unmeasured: a starting
-value, which no study has sized. Count it every cycle, at step 6 before
-leasing:
+**8,000 changed lines**, declared by the gate and unmeasured. It is a trial,
+from the owner's ruling of 2026-11-22: tranches closed on the earlier 4,000
+well short of the running-time target, and no study sized either value. The
+next gates measure it, by their findings per changed line and by whether
+they read every chunk or sampled; a seeded replay at that size is the open
+measurement. Count it every cycle, at step 6 before leasing:
 
 ```text
 scripts/scan_tranche.py --repo <path> --base <tranche base> --tip HEAD --size --board <board>

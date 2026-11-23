@@ -56,12 +56,15 @@ Read [references/board-model.md](references/board-model.md).
 - **Without criteria**, D5 and D7 are marked "not checked: no criteria" for
   each task that has none. They are never judged against a guessed standard.
 
-**The size limit the gate declares is 4,000 changed lines**, as
+**The size limit the gate declares is 8,000 changed lines**, as
 `scripts/scan_tranche.py --size --board <board>` counts them over base..tip,
 without generated regions and leaving out the board's files, which are
 bookkeeping the gate reads for detector candidates only. A batch with no
-board counts everything. It is a starting value, unmeasured: no study gives
-a size at which an agent reviewer fails. A supervisor closes its tranche on
+board counts everything. It is unmeasured: no study gives a size at which an
+agent reviewer fails. 8,000 is a trial, from the owner's ruling of
+2026-11-22, raised from 4,000; the next reports measure it by their findings
+per changed line and their `Chunks read:` line, and a seeded replay at that
+size is the open measurement. A supervisor closes its tranche on
 it. Run alone over a larger batch, say so in the report and read it all the
 same; the chunks stay small.
 
@@ -126,7 +129,8 @@ validator reads every `.md` there. `git clean -x` deletes it.
    a `## Gate report` section appended to the tranche record. It carries at
    most 32 findings, in the template's order, and counts the rest. Count
    findings per changed line as well as raw, so tranches of different sizes
-   compare.
+   compare, and record whether you read every chunk or sampled, and which
+   chunks a sample skipped.
 8. **Close out.** Run `scripts/validate_board.py --board <board>` and
    `scripts/generate_index.py --board <board>`, then commit the report.
    Leave the record's status and gate as they are: the owner's review closes

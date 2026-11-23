@@ -16,6 +16,18 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-23 — task-board-management
+
+- **Behaviour change.** `supervise-implementation` closes a tranche at
+  8,000 changed lines outside the board, up from 4,000, and `tranche-gate`
+  declares the same limit. The new value is a trial: the next gates measure
+  it, and a seeded replay at that size has not been run.
+- `tranche-gate`'s report gains a `Chunks read:` line saying whether the gate
+  read every chunk or sampled, and which chunks a sample skipped.
+- `supervise-implementation` quotes the integrator-verdict form,
+  `<date>, <task> attempt <n>:`, where it writes a verdict, because the
+  gate's scan reads only that form.
+
 ### 2026-11-22 — software-evaluation (first publish)
 
 - **Behaviour change.** First publish of two skills.
