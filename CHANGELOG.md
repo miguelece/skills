@@ -16,6 +16,16 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-23 — diataxis-doc-migration (render fixes)
+
+- **Behaviour change.** `diataxis-render-docs` renders nested lists, and a
+  tight list item holding a code block renders as `<li>step<pre>`.
+- **Behaviour change.** Six files the render skill never runs leave its
+  bundle on each platform: two scripts, the manifest schema, and the three
+  manifest assets.
+- `diataxis-migrate-docs`'s lifecycle reference is rewrapped, with no change
+  in meaning.
+
 ### 2026-11-23 — software-evaluation (Go modules)
 
 - **Behaviour change.** Three Go modules ship: `go-testing`,

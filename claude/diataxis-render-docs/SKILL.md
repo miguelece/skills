@@ -31,6 +31,9 @@ nothing over the network.
   writing surface is the marked slots of a hybrid page.
 - Never reference anything over the network: no external script, stylesheet,
   font or image, and no `fetch`. Diagrams are inline SVG.
+- Show raw HTML in the Markdown as escaped text, never pass it through: a
+  passed-through tag could reference the network. Leave an HTML comment out of
+  the page, since no Markdown viewer shows one.
 - Do not record HTML pages in `.docs-migration/manifest.yaml`; the embedded
   fingerprint is the hybrid page's record.
 - Never commit target changes. Committing a hybrid page is the user's step.

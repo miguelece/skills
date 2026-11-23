@@ -110,6 +110,8 @@ class Converter:
 
         text = re.sub(r"(`+)(.+?)\1", lambda m: hold(
             f"<code>{html.escape(m.group(2).strip(), quote=False)}</code>"), text)
+        # A comment is left out, as a Markdown viewer leaves it out; never shown as text.
+        text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
         text = re.sub(r"<((?:https?|mailto):[^>\s]+)>", lambda m: hold(
             self.anchor(m.group(1), html.escape(m.group(1), quote=False))), text)
         text = html.escape(text, quote=True)
@@ -148,8 +150,12 @@ class Converter:
             self.toc.append((level, anchor, content))
         return f'<h{level} id="{anchor}">{content}</h{level}>'
 
-    def blocks(self, lines: list[str]) -> list[tuple[int, str]]:
-        """Return (heading level or 0, html) per block."""
+    def blocks(self, lines: list[str], in_item: bool = False) -> list[tuple[int, str]]:
+        """Return (heading level or 0, html) per block.
+
+        Inside a list item (`in_item`), a nested list may start straight after the
+        item's text, so a list line ends the paragraph there rather than joining it.
+        """
         out: list[tuple[int, str]] = []
         paragraph: list[str] = []
         index = 0
@@ -168,6 +174,9 @@ class Converter:
                 flush()
                 while "-->" not in lines[index] and index + 1 < len(lines):
                     index += 1
+                tail = lines[index].split("-->", 1)[-1] if "-->" in lines[index] else ""
+                if tail.strip():
+                    paragraph.append(tail)  # the comment ends; the rest of its line is text
             elif fence:
                 flush()
                 marker, language, code = fence.group(1), fence.group(2), []
@@ -211,7 +220,8 @@ class Converter:
                     index += 1
                 out.append((0, self.table(rows)))
                 continue
-            elif ITEM.match(line) and not paragraph:
+            elif ITEM.match(line) and (in_item or not paragraph):
+                flush()
                 index = self.list_block(lines, index, out)
                 continue
             else:
@@ -234,28 +244,43 @@ class Converter:
     def list_block(self, lines: list[str], index: int, out: list[tuple[int, str]]) -> int:
         ordered = ITEM.match(lines[index]).group(2)[0].isdigit()
         items: list[list[str]] = []
+        width = 0  # the open item's content indent: leading spaces, marker, spaces after
+
+        def sibling(line: str) -> bool:
+            match = ITEM.match(line)
+            return bool(match) and match.group(2)[0].isdigit() == ordered
+
+        def inside(line: str) -> bool:
+            return bool(line.strip()) and len(line) - len(line.lstrip(" ")) >= width
+
         while index < len(lines):
             line = lines[index]
             match = ITEM.match(line)
-            if match and match.group(2)[0].isdigit() == ordered:
+            if items and inside(line):
+                # Belongs to the open item, de-indented by exactly its content indent,
+                # so an item nested under it becomes a child list.
+                items[-1].append(line[width:])
+            elif sibling(line):
+                width = match.start(3)
                 items.append([match.group(3)])
-            elif line.strip() and (line.startswith((" ", "\t")) or not (
-                    ATX.match(line) or FENCE.match(line) or RULE.match(line) or ITEM.match(line))):
-                items[-1].append(line[2:] if line.startswith("  ") else line.lstrip())
+            elif line.strip() and not (
+                    ATX.match(line) or FENCE.match(line) or RULE.match(line) or match):
+                items[-1].append(line.lstrip())  # lazy continuation
             elif not line.strip() and index + 1 < len(lines) and (
-                    lines[index + 1].startswith("  ") or (
-                        ITEM.match(lines[index + 1]) and
-                        ITEM.match(lines[index + 1]).group(2)[0].isdigit() == ordered)):
+                    inside(lines[index + 1]) or sibling(lines[index + 1])):
                 items[-1].append("")
             else:
                 break
             index += 1
         rendered = []
         for item in items:
-            blocks = self.blocks([re.sub(r"^ {1,2}", "", line) for line in item])
-            content = "".join(block for _, block in blocks)
-            if len(blocks) == 1 and content.startswith("<p>"):
-                content = content[3:-4]
+            while item and not item[-1].strip():
+                item.pop()
+            blocks = self.blocks(item, in_item=True)
+            # A tight item, with no blank line inside it, holds no paragraphs.
+            tight = len(blocks) == 1 or all(line.strip() for line in item)
+            content = "".join(block[3:-4] if tight and block.startswith("<p>") else block
+                              for _, block in blocks)
             rendered.append(f"<li>{content}</li>")
         tag = "ol" if ordered else "ul"
         out.append((0, f"<{tag}>{''.join(rendered)}</{tag}>"))

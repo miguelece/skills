@@ -60,8 +60,8 @@ The manifest remains the machine-readable authority.
 
 ## Resumable batches
 
-Before each batch, verify current status and dirty-path hashes. Limit a batch to a
-coherent set of source sections and destinations. After it:
+Before each batch, verify current status and dirty-path hashes. Limit a batch to
+a coherent set of source sections and destinations. After it:
 
 1. Update ledger dispositions and destinations.
 2. Update inbound links, navigation, and redirects in that batch's approved scope.
