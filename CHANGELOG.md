@@ -16,6 +16,16 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-23 — task-board-management (digest close lists records)
+
+- **Behaviour change.** `supervise-implementation`'s digest close lists the
+  records the tranche changed in the knowledge base's repository and passes
+  that list to `research-base-audit`, skipping the audit when the list is
+  empty.
+- `tranche-gate`'s remediation reference sets its test-change command in a
+  code block, so the command no longer splits across a line.
+- Every other change is a line rewrap, with no change in meaning.
+
 ### 2026-11-23 — research-tooling (audit by changed records)
 
 - **Behaviour change.** `research-base-audit` takes an optional list of

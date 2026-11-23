@@ -16,13 +16,13 @@ Read [references/board-model.md](references/board-model.md). Start from
 Two different relations, two different frontmatter fields. Decide which before you
 write anything — they behave oppositely at completion.
 
-- **Composition (`part-of`)** — the new task is *a piece of completing the parent*: a
-  ticket that is one slice of a spec, or a subticket that is one slice of a larger
-  ticket. Its outcome **folds back up** into the parent when it finishes. Set
-  `part-of`, and set `kind: ticket`.
-- **Lineage (`parent`)** — the new task is *separate work discovered while doing the
-  parent*, explicitly carved **out** of it. The parent completes **without** it, and
-  it must **not** fold back up. Set `parent`.
+- **Composition (`part-of`)** — the new task is *a piece of completing the
+  parent*: a ticket that is one slice of a spec, or a subticket that is one
+  slice of a larger ticket. Its outcome **folds back up** into the parent when
+  it finishes. Set `part-of`, and set `kind: ticket`.
+- **Lineage (`parent`)** — the new task is *separate work discovered while doing
+  the parent*, explicitly carved **out** of it. The parent completes **without**
+  it, and it must **not** fold back up. Set `parent`.
 
 A task can carry both: separate work (lineage) that is also a piece of some other
 effort (composition). If you cannot say which relation applies, you have not yet
@@ -59,8 +59,8 @@ scope and merely tedious, it stays in the parent.
 1. **Name the trigger.** Write, in one sentence, what in the parent produced this:
    which decision, which finding, which overturned premise. If you cannot, the split
    is probably arbitrary — reconsider.
-2. **Test the boundary.** State what the parent is now explicitly *not* doing. If you
-   cannot draw that line cleanly, the work belongs in the parent.
+2. **Test the boundary.** State what the parent is now explicitly *not* doing.
+   If you cannot draw that line cleanly, the work belongs in the parent.
 3. **Write the follow-on** from the template. In `Why this exists`, lead with the
    trigger and link the parent. Carry across the evidence the parent already
    gathered — a follow-on that makes its implementer re-read the same code wastes
@@ -82,13 +82,13 @@ scope and merely tedious, it stays in the parent.
 
 ## Guardrails
 
-- Do not write the follow-on and stop. The parent amendment is half the job, and it
-  is the half that gets skipped.
+- Do not write the follow-on and stop. The parent amendment is half the job, and
+  it is the half that gets skipped.
 - Do not inherit the parent's gate, priority, or status without deciding each one.
 - Do not restate the parent's whole context. Link it, and carry across only the
   evidence the follow-on actually needs.
-- Do not split one task into many small ones speculatively. Each follow-on should be
-  something you could hand to someone today.
+- Do not split one task into many small ones speculatively. Each follow-on
+  should be something you could hand to someone today.
 - Do not use a follow-on to park a disagreement. If the user and the evidence
   disagree, say so directly.
 - Do not set `part-of` for work merely spawned by the parent, or `parent` for a

@@ -110,9 +110,9 @@ this lab audits elsewhere — measured on nothing, carried everywhere.
 **Having a queue does not authorize skipping selection.**
 `orchestrate-implementation` admits `status: scoped` with `gate: none` and
 nothing else, and it re-runs that selection for every set rather than carrying
-items forward by default. **That guardrail is unchanged by this file**, and the reason it exists
-is that an unreviewed set drifts: a queue built last week names tasks whose
-status, gate, or premises have since moved.
+items forward by default. **That guardrail is unchanged by this file**, and the
+reason it exists is that an unreviewed set drifts: a queue built last week names
+tasks whose status, gate, or premises have since moved.
 
 The queue supplies an **ordering and a set of boundaries**. **Selection still
 runs**, every set, and it is what decides eligibility. An item reaching the

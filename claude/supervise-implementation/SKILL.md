@@ -266,17 +266,22 @@ and flags nothing. Fill the allocation log's session table from
 `scripts/account_attempt.py --sessions <run-dir>/leases.md --project
 <project-dir>`, which prints one row per session, beside the
 transcript-priced costs and never scaling them. A session row that reads
-`absent` is filled by the next opening's true-up, not estimated. Commit the record, then
-launch a fresh agent at `high` that runs `tranche-gate` with the tranche's
+`absent` is filled by the next opening's true-up, not estimated. Commit the
+record, then launch a fresh agent at `high` that runs `tranche-gate` with the tranche's
 base and tip commits, the record, each task's acceptance criteria and every
 integrator verdict. Its report, appended to the record, lists the open
 entries first, then the candidate precedents, then that match rate. Then,
 on a digest tranche, one whose leased tickets are `kind: digest`, after the
-gate, launch a fresh agent at `high` that runs
-`research-base-audit since <base>` on `.knowledge`, with the gate's base
-commit, and append its report, questions included, to the record after the
-gate's, so the owner's review answers both: the gate's checklist is written
-for code, and the audit re-verifies the claims the tranche wrote. Push once
+gate, run `git diff --name-only <base> HEAD` in the knowledge base's
+repository, with the gate's base commit, to list the records the tranche
+changed: the audit's grant runs no shell, so it cannot list them itself. On an
+empty list, skip the audit and log why in the record: the range changed no
+record. Otherwise launch a fresh agent at `high` that runs
+`research-base-audit` on the central knowledge base the user's instructions
+name, passing it that list of changed records, and append its report,
+questions included, to the record after the gate's, so the owner's review
+answers both: the gate's checklist is written for code, and the audit
+re-verifies the claims the tranche wrote. Push once
 when the report is ready. The next tranche opens only on the owner's word.
 
 The gate leaves the record `in-progress`, because the owner's review closes

@@ -68,9 +68,9 @@ part-of: dashboard-redesign-spec   # this ticket is one slice of that spec
 ```
 
 It is single-valued (a slice belongs to exactly one parent) and works at any depth:
-a ticket is `part-of` a spec; a subticket is `part-of` a ticket. Depth comes from the
-chain, not from new kinds — a subticket is just a ticket that is `part-of` another
-ticket.
+a ticket is `part-of` a spec; a subticket is `part-of` a ticket. Depth comes
+from the chain, not from new kinds — a subticket is just a ticket that is
+`part-of` another ticket.
 
 **`part-of` is not `parent`, and the difference is load-bearing:**
 
@@ -84,8 +84,8 @@ A task can carry both: split off X (lineage) yet be a piece of Y (composition).
 **A spec's status is its own — never derived from its tickets.** It is tempting to
 compute "spec done when all its tickets are done", but three real states break that:
 a ticket with no spec at all (work too small to design-doc); a spec that is
-`done`+`revisit` while the tickets for its deferred work stay open; and a spec's own
-residual work that was never ticketed. Spec completion is more than "all tickets
+`done`+`revisit` while the tickets for its deferred work stay open; and a spec's
+own residual work that was never ticketed. Spec completion is more than "all tickets
 done", so the spec carries its own `status`. At most, triage may emit a **soft note**
 when a spec is `done` with open ticket descendants — never a hard failure.
 
@@ -106,9 +106,9 @@ record of how each slice went, and because the rollup is regenerated rather than
 maintained by hand, it cannot drift. The full ticket document stays in the archive
 normally.
 
-**Depth: permissive mechanism, restrictive policy.** The model allows any depth. The
-conventions do not: prefer siblings over nesting, and nest only when a group is a
-real handoff unit with its own acceptance boundary. The validator emits a **soft
+**Depth: permissive mechanism, restrictive policy.** The model allows any depth.
+The conventions do not: prefer siblings over nesting, and nest only when a group
+is a real handoff unit with its own acceptance boundary. The validator emits a **soft
 warning** past a shallow depth rather than forbidding it — the mechanism never fights
 a genuine need, but everything steers toward flat. Over-decomposition, not the data
 model, is the failure mode to guard against.
@@ -139,8 +139,8 @@ The split is **action vs decision**:
 | `manual` | Waiting on a person to **perform an action** an agent cannot: provision, deploy, install, run against a live environment, verify by hand, or supply material. |
 | `owner` | Waiting on a person to **make a decision** — product, founder, legal, or vendor. |
 
-The two clear differently: a `manual` gate closes when someone *does* the thing; an
-`owner` gate closes when someone *answers*. That is why they are separate values
+The two clear differently: a `manual` gate closes when someone *does* the thing;
+an `owner` gate closes when someone *answers*. That is why they are separate values
 rather than one "blocked on a human" bucket.
 
 `manual` deliberately covers more than testing. An earlier version of this model
@@ -213,8 +213,8 @@ Required once `status` is `done`: what changed, and how it was confirmed. The
 `## Execution log` is the full account; `outcome` is its one-line form.
 
 Write it for someone scanning a hundred finished tasks who will **not** open the
-file. "Done" and "shipped" are rejected — an outcome under fifteen characters is a
-label, not a summary.
+file. "Done" and "shipped" are rejected — an outcome under fifteen characters is
+a label, not a summary.
 
 A one-line *value* need not be a one-line *source*. Wrap it with a folded scalar
 and the parser joins it back into one line:
@@ -252,16 +252,17 @@ The subdirectory is derived from the frontmatter, first match wins:
 
 The board root therefore holds exactly the tasks an agent can start right now. That
 is the property worth protecting: **if a task is sitting at the top level, it is
-actionable.** Everything else is filed by *what* it waits on — a person's action, a
-person's decision, or another task.
+actionable.** Everything else is filed by *what* it waits on — a person's
+action, a person's decision, or another task.
 
 Three orderings in that table are deliberate:
 
 - **Gate outranks `done`**, encoding the rule above that a gated task is not
   finished.
-- **Both gates outrank `blocked-by`.** A task waiting on a sibling *and* a person is
-  still un-startable when the sibling closes, so it files by the person. Filing it
-  under `task-blocked/` would promote it to the root on a false signal.
+- **Both gates outrank `blocked-by`.** A task waiting on a sibling *and* a
+  person is still un-startable when the sibling closes, so it files by the
+  person. Filing it under `task-blocked/` would promote it to the root on a
+  false signal.
 - **`done` outranks `blocked-by`**, which is what lets a finished task keep its
   `blocked-by` as provenance instead of being dragged back into `task-blocked/`.
 
@@ -304,8 +305,8 @@ reference is a validation error.
 The prose links are checked too, but as a **warning** rather than an error. Every
 relative Markdown link in a task's body is resolved against that task's own
 directory; one whose target no longer exists is reported without failing the run.
-The asymmetry is deliberate: an id is inert text that only a person edits, while a
-relative path breaks on its own. Setting `status: done` derives the file into
+The asymmetry is deliberate: an id is inert text that only a person edits, while
+a relative path breaks on its own. Setting `status: done` derives the file into
 `completed/`, stranding every link that pointed at it and every link it carried —
 and the inbound half is silent, because the file that moved is the one under
 attention and the files citing it are not. A hard failure would redden the board
@@ -694,8 +695,8 @@ non-completed tasks. The exceptions are narrow and deliberate:
 - A dangling cross-reference is repaired anywhere, since it breaks navigation rather
   than making a stale claim.
 - A claim that was already false when the closing session wrote it is corrected by
-  a dated amendment beneath it, with the original left standing. This is an error in
-  the record, not drift: the claim never described what was true.
+  a dated amendment beneath it, with the original left standing. This is an
+  error in the record, not drift: the claim never described what was true.
 
 **The line between the last exception and the worked example above is the whole
 rule.** A claim that was true when the task closed and has since been overtaken —

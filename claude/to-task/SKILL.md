@@ -13,12 +13,12 @@ contract and folder mapping. Start from [assets/task.md](assets/task.md).
 
 ## Boundaries
 
-- A task doc must stand alone. Someone reading only this file, with no memory of the
-  conversation that produced it, must be able to act on it. Conversation context that
-  does not make it into the file is lost.
-- **Ground the task before writing it.** Read the code the task touches and cite what
-  you find. A task built on a remembered claim sends its implementer down a false
-  trail, and that costs far more than the reading would have.
+- A task doc must stand alone. Someone reading only this file, with no memory of
+  the conversation that produced it, must be able to act on it. Conversation
+  context that does not make it into the file is lost.
+- **Ground the task before writing it.** Read the code the task touches and cite
+  what you find. A task built on a remembered claim sends its implementer down a
+  false trail, and that costs far more than the reading would have.
 - Separate what you verified from what you suspect. Label hypotheses as hypotheses.
 - New tasks are `draft` unless the interview has already happened in this
   conversation. Do not write `scoped` on something you merely feel confident about.
@@ -36,12 +36,12 @@ contract and folder mapping. Start from [assets/task.md](assets/task.md).
 2. **Ground it.** Read the relevant code, config, or docs. Collect paths, line
    numbers, and current values. Note anything that contradicts the request's premise
    — an overturned premise is the single most valuable thing this step produces.
-3. **Choose the id and the kind.** Kebab-case id, specific enough to be unambiguous a
-   year later — prefer `<area>-<problem>` over a bare verb; it becomes the filename.
-   Set `kind: spec` only if this task is the architecture/vision a set of tickets
-   will realize, and `kind: digest` if it is a digest ticket, turning captured
-   items into cited findings in a research base; otherwise leave it `ticket` (the
-   default). If it is one slice of an
+3. **Choose the id and the kind.** Kebab-case id, specific enough to be
+   unambiguous a year later — prefer `<area>-<problem>` over a bare verb; it
+   becomes the filename. Set `kind: spec` only if this task is the
+   architecture/vision a set of tickets will realize, and `kind: digest` if it
+   is a digest ticket, turning captured items into cited findings in a research
+   base; otherwise leave it `ticket` (the default). If it is one slice of an
    existing spec, set `part-of` to that spec — composition, not lineage.
 4. **Fill the template.** `Why this exists` carries the evidence. `What the code
    says` carries the grounded findings with citations. `Plan` carries phases with
@@ -69,10 +69,10 @@ contract and folder mapping. Start from [assets/task.md](assets/task.md).
 
 - Do not write the file before reading the code. "Why this exists" with no evidence
   is a wish, not a task.
-- Do not copy the request's wording as the problem statement. Restate the problem in
-  terms of observable behavior.
-- Do not set `gate: none` to make a task look actionable. The board root's value is
-  entirely in being trustworthy.
+- Do not copy the request's wording as the problem statement. Restate the
+  problem in terms of observable behavior.
+- Do not set `gate: none` to make a task look actionable. The board root's value
+  is entirely in being trustworthy.
 - Do not use `blocked-by` for a dependency on a person; that is what `gate` is for.
   It names tasks on this board and nothing else.
 - Do not put a solution in `Why this exists`. The plan is a separate section because

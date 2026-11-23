@@ -43,9 +43,9 @@ Fix findings in this order, because later ones depend on earlier ones:
    the frontmatter. Never "fix" both to meet in the middle. A move breaks every
    relative link into and out of the file; repair them per *Repairing the links a
    move breaks* in [references/board-model.md](references/board-model.md).
-5. **Dangling references** — a `parent`, `supersedes`, or `superseded-by` pointing at
-   nothing. Either the id is stale or the target was deleted; recover it from git
-   history rather than dropping the link.
+5. **Dangling references** — a `parent`, `supersedes`, or `superseded-by`
+   pointing at nothing. Either the id is stale or the target was deleted;
+   recover it from git history rather than dropping the link.
 
 Re-run until clean.
 
@@ -57,10 +57,10 @@ The validator cannot tell whether a task's *content* is still true. Read each
 Completed tasks are **frozen**: they are dated records of what was true when the
 work happened, not living documentation, and re-verifying them is wasted effort
 that grows without bound as the board ages. Of the narrow exceptions, two concern
-triage — a `revisit/` task's declined conditions, which are the point of recording a
-condition; and a dangling cross-reference anywhere, which breaks navigation rather
-than making a stale claim. The full rule is *Completed tasks are frozen* in
-[references/board-model.md](references/board-model.md).
+triage — a `revisit/` task's declined conditions, which are the point of
+recording a condition; and a dangling cross-reference anywhere, which breaks
+navigation rather than making a stale claim. The full rule is *Completed tasks
+are frozen* in [references/board-model.md](references/board-model.md).
 
 For each non-completed task:
 
@@ -80,12 +80,13 @@ For each non-completed task:
    `superseded/` with a successor, not at the top level forever.
 4. **Is a `done` task genuinely done?** Its acceptance criterion, not its commit
    count, decides. If the remaining step is gated, it is `in-progress` with a gate.
-5. **Is a `revisit` task's declined condition still declined?** If the condition it
-   named has now occurred, that is a finding worth raising with the user — it is the
-   whole reason the condition was written down.
+5. **Is a `revisit` task's declined condition still declined?** If the condition
+   it named has now occurred, that is a finding worth raising with the user — it
+   is the whole reason the condition was written down.
 
 Record each correction in the task itself, with the date and what it was checked
-against. A corrected claim with no provenance invites the next pass to re-derive it.
+against. A corrected claim with no provenance invites the next pass to re-derive
+it.
 
 ## Pass 3 — index
 
@@ -117,7 +118,8 @@ when a report is shortened.
 - Do not batch-fix folder mismatches without reading each task. The mismatch is
   sometimes the frontmatter's fault and sometimes the folder's.
 - Do not mark verification complete for a claim you did not actually check. Say
-  "not checked" — an unverified claim recorded as verified is worse than an open one.
+  "not checked" — an unverified claim recorded as verified is worse than an open
+  one.
 - Do not delete tasks. `superseded/` exists so provenance survives.
 - Do not re-verify completed tasks against current source, and do not "correct" a
   dated observation in one. That work never ends and produces nothing.

@@ -40,7 +40,12 @@ making it.
    within the repository's commit convention. The gate's commits sit after
    the tranche tip as their own range.
 2. **Re-verify it**: run the owning suite, then
-   `scripts/check_test_changes.py --repo <path> --base <tranche tip> --tip HEAD --declared .tranche-gate/declared.json`,
+
+   ```text
+   scripts/check_test_changes.py --repo <path> --base <tranche tip> --tip HEAD \
+       --declared .tranche-gate/declared.json
+   ```
+
    where the declared list names each test a removal deleted with its
    subject, with that reason. A `blocked` verdict means a test changed that
    the commit did not mean to.

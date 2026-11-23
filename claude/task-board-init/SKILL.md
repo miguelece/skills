@@ -21,8 +21,8 @@ here.
   chosen path is gitignored, or ask whether it should be committed.
 - Adoption is a **migration, not a rewrite**. Preserve every existing task's prose.
   You are adding frontmatter and moving files, not re-authoring specs.
-- Never invent a task's history. If `created` cannot be recovered from the file, git
-  log, or the document itself, ask rather than guessing a date.
+- Never invent a task's history. If `created` cannot be recovered from the file,
+  git log, or the document itself, ask rather than guessing a date.
 - Do not set `status: scoped` on an adopted document just because it reads as
   finished. A document with unresolved questions is `draft` no matter how polished.
 - One board per repository. If one already exists, this is a triage job — use
@@ -73,10 +73,10 @@ here.
 2. Recover dates from `git log --follow --format=%ad --date=short -- <file>` (first
    commit for `created`, last for `updated`). State which dates came from git and
    which the user must supply.
-3. For each document, add frontmatter without touching its prose. Derive `status` and
-   `gate` from the inventory, not from the document's own self-description — a
-   `Status:` line that says "ready for implementation" while four questions are open
-   is exactly the drift this board exists to remove.
+3. For each document, add frontmatter without touching its prose. Derive
+   `status` and `gate` from the inventory, not from the document's own
+   self-description — a `Status:` line that says "ready for implementation"
+   while four questions are open is exactly the drift this board exists to remove.
 4. Normalize the required headings (`Why this exists`, `Plan`, `Open questions`,
    `Owner`). Map existing sections onto them by renaming; add a heading with an
    explicit `_None recorded._` only where the document genuinely has nothing.
@@ -95,8 +95,8 @@ here.
    document, `blocked-by` on anything waiting for another task rather than a person,
    and both sides of every supersedes pair. Where the pile already has design docs
    with implementation slices under them, set `kind: spec` on the design doc and
-   `part-of` on each slice (composition) — but do not manufacture a decomposition the
-   source material does not already have.
+   `part-of` on each slice (composition) — but do not manufacture a
+   decomposition the source material does not already have.
 9. Run the validator and fix findings until clean, then generate the indexes.
 
 If the source material had a hand-maintained summary of finished work, that content

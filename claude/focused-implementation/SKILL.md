@@ -49,20 +49,20 @@ Set `status: in-progress` and update `updated` before starting.
 4. **Test first where a test can fail.** Write the failing test, watch it fail for
    the expected reason, then make it pass. A test that has never failed has proved
    nothing.
-5. **Anti-fix validation for anything a test cannot catch.** When the evidence is a
-   measurement rather than an assertion — a request count, a render count, a load
-   count, a timing — prove the probe detects the bug: revert or stash the fix, run
-   the probe, confirm it reports the defect, then restore the fix. An instrument that
-   has only ever seen the healthy state is not an instrument. If proving the probe
-   needs an instrument the repository does not have, that instrument is new
-   verification tooling (step 8).
+5. **Anti-fix validation for anything a test cannot catch.** When the evidence
+   is a measurement rather than an assertion — a request count, a render count,
+   a load count, a timing — prove the probe detects the bug: revert or stash the
+   fix, run the probe, confirm it reports the defect, then restore the fix. An
+   instrument that has only ever seen the healthy state is not an instrument. If
+   proving the probe needs an instrument the repository does not have, that
+   instrument is new verification tooling (step 8).
 6. **Measure against a realistic build.** Development modes lie: they double-invoke,
    skip caching, and disable optimizations. Anything you measure in counts must be
    measured against a production-equivalent build. Use a build the repository
    already produces; building one is new verification tooling (step 8).
 7. **Verify against the budget from step 2.** Every assertion, run, with the result
-   recorded. When they pass, stop: no further review rounds, reviewer subagents, or
-   re-runs of a green suite. Mention anything more you think would help in the
+   recorded. When they pass, stop: no further review rounds, reviewer subagents,
+   or re-runs of a green suite. Mention anything more you think would help in the
    execution log instead of doing it. Report shortfalls as shortfalls, shaped per
    [references/report-form.md](references/report-form.md) — a shortfall is a
    negation, and that file's first guardrail is the one that keeps it from being
@@ -70,8 +70,8 @@ Set `status: in-progress` and update `updated` before starting.
 8. **Handle what implementation turns up.** Work discovered mid-task that the task
    should not absorb gets split with `to-follow-on`, not quietly added. New
    verification tooling is always such work. File it with its reason, at the
-   priority its value warrants — tooling that makes code easier to change is not low
-   priority for being tooling — and finish with the checks step 2 fixed. If those
+   priority its value warrants — tooling that makes code easier to change is not
+   low priority for being tooling — and finish with the checks step 2 fixed. If those
    checks cannot run without it, file it as this task's blocker and stop.
 
 ## Closing out
@@ -92,8 +92,9 @@ Set `status: in-progress` and update `updated` before starting.
    [references/board-model.md](references/board-model.md).
 4. **Fold-back is automatic — just regenerate.** If the task is `part-of` a spec,
    its one-line `outcome` rolls up into the spec's `## Slices` block when you run
-   `generate_index.py` (step 6). Do not hand-copy it. Do **not** flip the spec's own
-   status; a spec's status is its own (its other slices or residual work may remain).
+   `generate_index.py` (step 6). Do not hand-copy it. Do **not** flip the spec's
+   own status; a spec's status is its own (its other slices or residual work may
+   remain).
 5. If the remaining step is gated on a human, it is **not done**: keep
    `status: in-progress`, set the gate, and put the exact outstanding action under
    `Owner`.
@@ -117,12 +118,13 @@ Set `status: in-progress` and update `updated` before starting.
   can only be met by a human. Gate it instead.
 - Do not push to a remote unless the user explicitly asks. Committing locally is
   ordinary; publishing is theirs to authorize.
-- Do not write an execution log that only lists commits. It must say how the work was
-  verified, or it is a changelog.
-- Do not write an `outcome` that restates the title. It says what changed and how it
-  was confirmed, or it is not worth generating an index from.
-- Do not flip a spec to `done` just because its tickets are done. A spec's status is
-  its own — check its residual work and any deferred slices before closing it.
+- Do not write an execution log that only lists commits. It must say how the
+  work was verified, or it is a changelog.
+- Do not write an `outcome` that restates the title. It says what changed and
+  how it was confirmed, or it is not worth generating an index from.
+- Do not flip a spec to `done` just because its tickets are done. A spec's
+  status is its own — check its residual work and any deferred slices before
+  closing it.
 
 ## Resources
 

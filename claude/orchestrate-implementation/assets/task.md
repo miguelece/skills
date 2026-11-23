@@ -56,8 +56,8 @@ A task that literally cannot start until another lands belongs in `blocked-by`
 frontmatter, not only in prose here — that is what files it and what clears it.
 
 Set `kind: spec` if this task is the architecture/vision a set of tickets realizes;
-leave it `ticket` (the default) otherwise. A ticket that is one slice of a spec — or
-a subticket that is one slice of a larger ticket — sets `part-of:` to that parent.
+leave it `ticket` (the default) otherwise. A ticket that is one slice of a spec
+— or a subticket that is one slice of a larger ticket — sets `part-of:` to that parent.
 `part-of` is composition (a piece of), distinct from `parent`, which is lineage
 (split from).>
 

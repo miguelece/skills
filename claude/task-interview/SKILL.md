@@ -26,8 +26,8 @@ value of a constant.
 - Interview **one task**. If the conversation keeps pulling in another, that is a
   signal to split (`to-follow-on`), not to widen this one silently.
 - Resolve questions **in place**: append the answer, the date, and the literal token
-  `RESOLVED` to the existing item. Do not delete the question. The record of what was
-  decided and when is the durable value.
+  `RESOLVED` to the existing item. Do not delete the question. The record of
+  what was decided and when is the durable value.
 - Walk the **dependency order**. A decision that changes what later questions even
   mean must be settled first. Do not present a flat list of every question at once.
 - Expect the interview to change the task. Growing scope and overturning a premise
@@ -38,8 +38,8 @@ value of a constant.
 
 1. **Re-verify the premises first.** Before asking anything, check the task's factual
    claims against source. Tasks rot: paths move, counts change, a constant gets
-   fixed. A premise that no longer holds can dissolve several questions at once — or
-   the whole task.
+   fixed. A premise that no longer holds can dissolve several questions at once
+   — or the whole task.
 2. **Map the decision tree.** Order the open questions by dependency: which answers
    constrain which others. Note which are code-answerable and which need the user.
 3. **Close the code-answerable ones yourself.** Investigate, then record the answer
@@ -53,13 +53,14 @@ value of a constant.
    defines it. When a `standing` entry's *When* fits the question, record it
    `RESOLVED` with the entry's id and its *Ruling*, append the use to the
    entry's *Applied*, and report it for the user to overturn instead of
-   asking. A partial fit is not a fit: ask. Then one branch at a time, to a real decision —
-   not a preference gesture. Push back when an answer is ambiguous or when it
-   contradicts something already settled. Follow each answer to the questions it
-   opens; a resolved decision that reveals a new question is the interview working.
+   asking. A partial fit is not a fit: ask. Then one branch at a time, to a real
+   decision — not a preference gesture. Push back when an answer is ambiguous or
+   when it contradicts something already settled. Follow each answer to the
+   questions it opens; a resolved decision that reveals a new question is the
+   interview working.
 5. **Record each decision** in place, with the date and the reasoning that decided
-   it. Where an option was considered and rejected, say why — that is what stops it
-   being re-proposed next month.
+   it. Where an option was considered and rejected, say why — that is what stops
+   it being re-proposed next month.
 6. **Handle what the interview turns up:**
    - **A premise was wrong** → correct it in the task, and say plainly that it was
      overturned and by what evidence. Re-check whether the task still has a purpose.

@@ -5,9 +5,9 @@ description: 'Plan a coherent set of scoped, ungated board tasks: select them, g
 
 # Orchestrate a set of tasks
 
-Plan a coherent set of board tasks: select them, organize them into streams that do
-not fight each other, and file one plan document. Then dispatch the streams and keep
-the record until the set closes.
+Plan a coherent set of board tasks: select them, organize them into streams that
+do not fight each other, and file one plan document. Then dispatch the streams
+and keep the record until the set closes.
 
 **This is the planning skill.** Selection, sequencing, the plan document and the
 closes are its job. Individual tasks are executed under the rules in
@@ -37,8 +37,8 @@ Then apply the rules that keep a set honest:
 
 - **Do not pad.** A task added only to make the set look substantial is filler, and
   it dilutes the review attention the real work needs.
-- **Do not force in a gated task** because its gate "will probably clear". If it has
-  not cleared, it is not in the set.
+- **Do not force in a gated task** because its gate "will probably clear". If it
+  has not cleared, it is not in the set.
 - **Order by how much readiness can close itself.** Engineering-led work first;
   owner-gated work last, so its gate has the longest possible time to clear.
 
@@ -49,8 +49,8 @@ this skill emits and the one the user decides from.
 
 ## The plan document
 
-Raise it on the board as an ordinary task (`to-task`), with `category` naming it a
-plan. It carries:
+Raise it on the board as an ordinary task (`to-task`), with `category` naming it
+a plan. It carries:
 
 - The set, grouped into streams, with the selection rule that produced it.
 - Explicitly excluded tasks and why — this is what stops the same debate next cycle.
@@ -71,8 +71,8 @@ its execution log intact.
 
 1. **Readiness check.** Re-verify every task's premises against source before the
    first line of code. Tasks scoped weeks ago cite line numbers that have moved.
-   Correct what has drifted, and report it — a premise that dissolved may remove a
-   task from the set entirely.
+   Correct what has drifted, and report it — a premise that dissolved may remove
+   a task from the set entirely.
 2. **Sequence by interference, not by size**, as *Interference* in
    [references/task-selection.md](references/task-selection.md) states it.
 3. **Execute each task under `focused-implementation`**, dispatched per *Dispatch*
@@ -98,8 +98,8 @@ its execution log intact.
 Where each stream runs. The main session plans, verifies and closes; a subagent only
 implements.
 
-**The default.** When two or more independent streams are ready, launch them all at
-once, each in its own subagent. A delegated stream run alone saves context and
+**The default.** When two or more independent streams are ready, launch them all
+at once, each in its own subagent. A delegated stream run alone saves context and
 nothing else, because the main session waits on it. So a lone ready stream runs
 inline, unless the plan records that the main session's context is the reason to
 delegate it. Where the platform offers no subagent primitive, run the streams
