@@ -8,8 +8,8 @@ description: Build the smallest throwaway prototype in scratch space that answer
 Build the smallest throwaway thing that answers one question, in scratch space,
 and decide deliberately what happens to it.
 
-A spike's deliverable is **an answer, not code**. The code is the instrument; it is
-expected to be discarded. Holding that line is what makes a spike cheap — the
+A spike's deliverable is **an answer, not code**. The code is the instrument; it
+is expected to be discarded. Holding that line is what makes a spike cheap — the
 moment it has to be production-quality, it stops being a spike.
 
 ## Boundaries

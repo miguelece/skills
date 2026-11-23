@@ -16,6 +16,13 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-23 — quality-of-life (two working conventions)
+
+- **Behaviour change.** `working-conventions` adds two conventions: search
+  for an existing helper by what it does before writing one, and add a test
+  only for a failure nothing else in the suite already catches.
+- Every other change is a line rewrap, with no change in meaning.
+
 ### 2026-11-23 — task-board-management (digest close lists records)
 
 - **Behaviour change.** `supervise-implementation`'s digest close lists the

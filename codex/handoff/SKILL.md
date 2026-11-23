@@ -121,8 +121,8 @@ conversation — act on them normally.
    `git status`, `git log --oneline -10`, and the test suite's actual result.
 2. Draft the document from the template.
 3. **Re-read it as a stranger.** For each paragraph ask: could someone act on this
-   with no other context? Every "it", "that file", or "the usual way" is a defect —
-   replace it with the specific thing.
+   with no other context? Every "it", "that file", or "the usual way" is a
+   defect — replace it with the specific thing.
 4. Verify every path, command, and claim you wrote. A handoff's authority is the
    reason it is trusted; one wrong path undermines all of it.
 5. Save it and tell the user the path.

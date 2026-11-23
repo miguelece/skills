@@ -69,8 +69,8 @@ indistinguishable from a skipped one.
   any change, re-check the tracked file count: a broad rule silently swallowing a
   needed fixture is a classic and invisible failure.
 - **Config files** — `.yaml`, `.json`, `.toml`, lockfiles, CI workflows.
-- **Follow-on work** — anything discovered and deliberately not done. Raise it as a
-  task rather than leaving it in the conversation, where it dies.
+- **Follow-on work** — anything discovered and deliberately not done. Raise it
+  as a task rather than leaving it in the conversation, where it dies.
 
 ## 3. Cleanup
 

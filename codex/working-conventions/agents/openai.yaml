@@ -1,6 +1,6 @@
 interface:
   display_name: Working Conventions
-  short_description: Checks before heavy runs, installs and questions
+  short_description: Checks before heavy runs, installs, questions, helpers and tests
   default_prompt: Use $working-conventions to apply the standing checks before this step.
 policy:
   allow_implicit_invocation: true
