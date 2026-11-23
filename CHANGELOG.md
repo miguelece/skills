@@ -16,6 +16,15 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-23 — research-tooling (audit by changed records)
+
+- **Behaviour change.** `research-base-audit` takes an optional list of
+  changed record paths from its caller and audits only those, naming each
+  path it skipped and why; it runs no version control itself. On every run
+  it puts each finding to the user as its own question.
+- The research-base model reference and `synthesize-research` are rewrapped,
+  and `index.py` gains a blank line, with no change in behaviour.
+
 ### 2026-11-23 — diataxis-doc-migration (render fixes)
 
 - **Behaviour change.** `diataxis-render-docs` renders nested lists, and a

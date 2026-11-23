@@ -68,6 +68,7 @@ END = "<!-- END GENERATED INDEX -->"
 # frozen record, which renders its regime in the status column.
 STATUS_RANK = {"exploring": 0, "supported": 1, "promoted": 2}
 
+
 def read_frontmatter(text: str) -> dict[str, str]:
     """Return the top-level scalar fields of a leading `--- ... ---` block.
 

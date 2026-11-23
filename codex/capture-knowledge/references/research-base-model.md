@@ -296,8 +296,8 @@ where the reference is one the mover already repairs.
 
 **Generated regions are delimited and never hand-edited.** Narrative outside the
 markers is hand-written and never touched by the generator. Regenerating is how a
-stale index is fixed; editing one by hand reintroduces the drift the rule exists to
-prevent.
+stale index is fixed; editing one by hand reintroduces the drift the rule exists
+to prevent.
 
 ## Audit means re-verification, not reconciliation
 
@@ -319,8 +319,8 @@ it finds: it reports what does not hold instead of correcting it in place.
 **A base's audit re-verifies living claims against their authorities.** It reads
 what each living record says is currently true, checks it against the authority the
 record names, and reports contradiction, drift and any record whose authority does
-not exist or does not resolve. The nearer relative is a documentation audit, not a
-board triage.
+not exist or does not resolve. The nearer relative is a documentation audit, not
+a board triage.
 
 Two things follow, and both are easy to get wrong:
 
@@ -332,8 +332,8 @@ Two things follow, and both are easy to get wrong:
 ## What this model deliberately does not carry
 
 **No trim role.** The intuition that a base must be pruned as it grows treats
-accumulation as the cost. In the corpus this model was measured against the cost is
-movement, and **trimming a citation-dense corpus creates movement** — every removal
+accumulation as the cost. In the corpus this model was measured against the cost
+is movement, and **trimming a citation-dense corpus creates movement** — every removal
 breaks the citations that named what was removed. Frozen records that nothing
 re-verifies are cheap to keep and expensive to touch.
 
@@ -361,6 +361,6 @@ non-feature, because it is the first thing anyone adapting a board will add back
 4. **Generate the index and commit the generator**, so the index can be rebuilt by
    anyone rather than maintained by whoever wrote it.
 5. **Migrate the existing material with the base's own tooling, not by hand.** A
-   model that cannot migrate the one base that already exists has not been shown to
-   work, and doing it by hand demonstrates nothing about whether the tooling is
+   model that cannot migrate the one base that already exists has not been shown
+   to work, and doing it by hand demonstrates nothing about whether the tooling is
    usable.

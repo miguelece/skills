@@ -45,11 +45,14 @@ frontmatter. **Frozen records are outside the audit's subject entirely.** A
 frozen record described a moment and never claimed the present, so re-verifying
 one is a category error.
 
-**With a `since <rev>` clause**, the audit narrows to only the living records
-whose files changed between `<rev>` and `HEAD`, by
-`git diff --name-only <rev> HEAD` in the base's repository, so a review after a
-digest reads the range the digest wrote. Without the clause, every living record
-is audited.
+**With a list of changed record paths**, passed by the caller, the audit
+narrows to that list, so a review after a digest reads only what the digest
+wrote. Each named path that is a living record is audited. The report names each
+named path it skipped, and why: outside every tracked layer, frozen, not a
+record, or no longer on disk. Nothing else is audited. The audit runs no
+version control to find the changes: the caller lists them, because the audit's
+grant is the two scripts and no shell. Without the list, every living record is
+audited.
 
 ## 3. Re-verify each claim against its authority
 
@@ -134,12 +137,12 @@ retirement to frozen only as a decision the user may take.
 
 ## 4. Ask about what needs a decision
 
-On every run, with or without a `since` clause, put each finding to the user as its own
-answerable question: each *contradicted*, *drifted* or *authority missing*
-result, and each validator finding carried into the report. For each *not
-checked* authority, ask the user to confirm it or to leave it *not checked*. A
-result the user confirms is reported as *confirmed by the owner*, with the date,
-and never as *holds*.
+On every run, with or without a list of changed records, put each finding to the
+user as its own answerable question: each *contradicted*, *drifted* or
+*authority missing* result, and each validator finding carried into the report.
+For each *not checked* authority, ask the user to confirm it or to leave it *not
+checked*. A result the user confirms is reported as *confirmed by the owner*,
+with the date, and never as *holds*.
 
 Each question about a *contradicted*, *drifted* or *authority missing* result
 names both remedies: correct the claim, which moves the record's `updated`, or

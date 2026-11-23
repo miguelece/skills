@@ -93,8 +93,8 @@ untracked-layer files no record's `sources` names and the base's
 
 - Do not write a finding whose claim you cannot state in one line — that is notes,
   and it stays `exploring`.
-- Do not mark a claim `evidenced` without a source you can point to or a run you can
-  reproduce.
+- Do not mark a claim `evidenced` without a source you can point to or a run you
+  can reproduce.
 - Do not name an authority the synthesis did not read and check against the
   claim.
 - Do not copy a whole third-party source into a committed finding.
