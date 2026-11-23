@@ -123,8 +123,9 @@ standard's page reached the fetcher truncated after section 3.38.
 *Taken into the report schema*: a finding is a result, its check the
 `ruleId`, its file the artifact location, its symbol a logical location, and
 the run's loaded modules the tool's rules. What SARIF has no field for, the
-schema adds: the input kind, the phases requested and run, the modules
-skipped and why, and a design-document section as a location. Against the
+schema adds: the input kind, the phases requested and run, the reason each
+requested phase did not run, the modules skipped and why, and a
+design-document section as a location. Against the
 values above:
 
 - **A finding is a `fail` result.** Every check's `statement` is a defect,
@@ -148,6 +149,14 @@ values above:
   module contract declares applicability per module only. A SARIF writer
   would emit it per check, or as `enabled: false` overrides, from
   `modules.skipped` without a schema change.
+- **An unrun phase's reason is a run-level condition**, not a result. A
+  SARIF writer would emit each `phases.not-run` entry as a `notification`
+  (3.58) in the invocation's `toolExecutionNotifications` (3.20.21), the
+  runtime conditions met during the analysis, its `reason` as the
+  notification's `message` (3.58.5), without a schema change.
+  `toolConfigurationNotifications` (3.20.22) does not fit: its examples are
+  faults in how the tool was configured, and a declined launch or an input
+  with nothing to start is not one.
 - **`pass` is implied** by a loaded module with no finding, since every check
   of a loaded module runs.
 - **`open` and `review` are what the evidence rule keeps out of the report**:

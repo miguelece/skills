@@ -17,6 +17,7 @@ triggers:
   manifests:
     - tsconfig.json
   design-markers: []
+  design-headings: []
 inputs: [diff, repository]
 phases: [static]
 checks:

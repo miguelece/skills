@@ -18,6 +18,7 @@ triggers:
     - docker-compose.yml
     - Procfile
   design-markers: []
+  design-headings: []
 # A diff is run only when its head is the checked-out working tree. A design
 # has nothing to start, so neither design input kind is served.
 inputs: [diff, repository]

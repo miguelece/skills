@@ -34,7 +34,7 @@ references/modules/
 | `id` | kebab-case, equal to the module's directory name, unique in the library |
 | `languages` | a list of kebab-case language names, or exactly `[language-neutral]` |
 | `concept` | one kebab-case name for what the module evaluates, such as `testing` |
-| `triggers` | a mapping of the three trigger kinds below; at least one is non-empty |
+| `triggers` | a mapping writing all four trigger kinds below; at least one is non-empty |
 | `inputs` | the input kinds the module supports, a non-empty subset of the four below |
 | `phases` | the phases the module serves, a non-empty subset of the two below |
 
@@ -42,7 +42,8 @@ references/modules/
 architecture or a design practice. It is never listed with a language.
 
 **Triggers** say when the router loads the module. Each kind is a list of
-strings:
+strings, and every header writes all four, as `[]` where empty, so a header
+that omits a kind is refused:
 
 - `files`: glob patterns over paths, such as `**/test_*.py`.
 - `manifests`: a manifest file, optionally with a marker inside it, written

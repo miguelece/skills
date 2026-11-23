@@ -133,8 +133,11 @@ before it runs.
 3. **Ask before each launch.** Put the command and its resource estimate to
    the user and wait for a yes before starting it, every launch, even when
    the harness would let it run without a prompt. A declined launch starts
-   nothing: `dynamic` stays out of `phases.run`, and its entry in
-   `phases.not-run` gives the reason, that the user declined the launch.
+   nothing, and the module chosen for it stays in `modules.loaded`, which
+   lists a module the router chose, whether or not its phase ran. `dynamic`
+   stays out of `phases.run`, and its entry in `phases.not-run` gives the
+   reason, that the user declined the launch; read `phases.not-run`, not
+   `modules.loaded`, for whether the module's checks ran.
 4. **Install nothing unchecked.** When the command needs its dependencies
    installed first, that install is a launch of its own, asked as above,
    and it runs only after its runtime and its packages are checked against
@@ -182,14 +185,17 @@ with their reasons, and repeat why any requested phase did not run.
 
 ## Status
 
-The library holds five modules. Two are on architecture: one for a design
-document and one for the design read from a codebase. The third,
-`python-testing`, reads the quality of a Python test suite in a `diff` or a
-`repository`, and the fourth, `typescript-type-safety`, reads the type
-safety of TypeScript code and its `tsconfig.json` in either. A `diff` or a
-`repository` with neither Python tests or pytest configuration nor
-TypeScript in scope matches no static module, so a static run over it ends
-at step 5's no-match case. The fifth, `application-runtime`, is the only
+The library holds eight modules. Two are on architecture: one for a design
+document and one for the design read from a codebase. Five read code in a
+`diff` or a `repository`: `python-testing` reads the quality of a Python
+test suite, `typescript-type-safety` the type safety of TypeScript code and
+its `tsconfig.json`, `go-testing` the quality of a Go test suite,
+`go-error-handling` the error handling of Go production code, and
+`go-concurrency` the concurrency of Go production code. A `diff` or a
+`repository` with no Python tests or pytest configuration, no TypeScript
+and no Go code or `go.mod` in scope matches no static module, so a static
+run over it ends at step 5's no-match case. The eighth,
+`application-runtime`, is the only
 dynamic module: it starts an application whose manifest declares a start
 or serve command, in any language, and checks that it reports ready,
 answers a smoke check and shuts down cleanly.

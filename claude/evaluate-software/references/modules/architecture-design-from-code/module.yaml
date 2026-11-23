@@ -19,6 +19,7 @@ triggers:
     - package.json
     - go.mod
   design-markers: []
+  design-headings: []
 inputs: [design-from-code]
 phases: [static]
 checks:

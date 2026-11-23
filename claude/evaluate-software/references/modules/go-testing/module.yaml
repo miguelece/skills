@@ -1,0 +1,321 @@
+# The quality of a Go test suite, read from its `_test.go` files and the
+# module's go.mod, not by running `go test` or `go vet`. Each check rests on
+# a finding in research.md beside this file. The checks read the standard
+# `testing` package's tests, subtests, benchmarks, fuzz tests and examples.
+# What a check reads for a diff follows the module contract's `diff` input
+# kind: go.mod, a helper's body or a subtest's parent test is read where it
+# lives, inside or outside the diff.
+id: go-testing
+languages: [go]
+concept: testing
+triggers:
+  files:
+    - "**/*_test.go"
+  manifests:
+    - go.mod
+  design-markers: []
+  design-headings: []
+inputs: [diff, repository]
+phases: [static]
+checks:
+  - id: go-testing/fatal-from-goroutine
+    statement: >-
+      A test calls `Fatal`, `Fatalf`, `FailNow` or a `Skip` method of its
+      `*testing.T` from a goroutine other than the one running the test.
+    evidence: >-
+      The `go` statement quoted with its file and line, and the call inside
+      the goroutine's function, or inside a function that goroutine calls
+      with the test's `T` or `TB`, opened and named as read. `Error`,
+      `Errorf`, `Log` and `Fail` are not this defect, and neither is a call
+      inside a subtest's function passed to `t.Run`, which runs on the
+      subtest's own goroutine.
+    severity: high
+    rationale: >-
+      `FailNow` stops only the goroutine that calls it, so from another
+      goroutine it neither ends the test nor reliably reports, and the test
+      can pass, hang or panic instead of failing where the defect is.
+    references:
+      - https://pkg.go.dev/testing#T.FailNow
+      - https://google.github.io/styleguide/go/best-practices#t-fatal-goroutine
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/testinggoroutine
+    findings: [fatal-only-on-test-goroutine]
+  - id: go-testing/parallel-subtest-captures-loop-variable
+    statement: >-
+      A parallel subtest inside a loop uses the loop variable directly, in a
+      package whose Go version shares that variable across iterations, so
+      every subtest checks the last case.
+    evidence: >-
+      The loop and the subtest function quoted with their file and lines,
+      showing `t.Parallel()` called in the subtest and the loop variable,
+      or a field of it, used in the subtest with no per-iteration copy such
+      as `tc := tc` before it; and the module's Go version quoted from the
+      `go` line of the `go.mod` that holds the package, or from a
+      `//go:build go1.N` line in the file, below 1.22. When neither can be
+      read, the capture is named as unresolved and not reported. For a
+      diff, it is reported when the diff adds the subtest or lowers the Go
+      version below 1.22.
+    severity: high
+    rationale: >-
+      The parallel subtests run only after the loop has finished, so they
+      all read its final value: one case is checked several times, the rest
+      never, and the test passes on code that fails them.
+    references:
+      - https://go.dev/blog/loopvar-preview
+      - https://go.dev/blog/subtests
+      - https://go.dev/wiki/TableDrivenTests
+    findings: [loop-variable-per-iteration-since-1-22]
+  - id: go-testing/teardown-before-parallel-subtests
+    statement: >-
+      A test tears down what its parallel subtests use before they run,
+      because the teardown is deferred or placed after their loop in the
+      parent test.
+    evidence: >-
+      The parent test quoted with its file and lines, showing subtests
+      started by `t.Run` that call `t.Parallel()`, not wrapped in an
+      enclosing `t.Run` group; and a `defer` in the parent, or a statement
+      after the `t.Run` calls, that closes, removes or resets a resource
+      the subtests use, named from the subtest bodies. Teardown registered
+      with `t.Cleanup` is not this defect.
+    severity: high
+    rationale: >-
+      A parallel subtest starts only once its parent function returns, so
+      the subtests run against a closed server, a removed directory or a
+      reset value, and fail or pass for reasons unrelated to the code under
+      test.
+    references:
+      - https://go.dev/blog/subtests
+      - https://pkg.go.dev/testing#T.Cleanup
+    findings: [parallel-subtests-run-after-parent-returns]
+  - id: go-testing/process-state-in-parallel-test
+    statement: >-
+      A test that runs in parallel changes process-wide state: the
+      environment, the working directory or a package-level variable.
+    evidence: >-
+      The test quoted with its file and lines, showing `t.Parallel()` called
+      in it or in an ancestor test, and the change in it or a helper it
+      calls: `os.Setenv`, `os.Unsetenv`, `os.Chdir`, `t.Setenv`, `t.Chdir`,
+      or an assignment to a package-level variable of the code under test.
+      A restore in `defer` or `t.Cleanup` does not excuse it. A
+      package-level variable guarded by a lock or written only once through
+      `sync.Once` is not this defect.
+    severity: high
+    rationale: >-
+      Parallel tests share the process, so another test reads the changed
+      value while this one runs, and both pass or fail by scheduling rather
+      than by behaviour; the testing package forbids its own `Setenv` and
+      `Chdir` in parallel tests for this reason.
+    references:
+      - https://pkg.go.dev/testing#T.Setenv
+      - https://google.github.io/styleguide/go/best-practices#globals
+    findings: [process-state-and-parallel-tests]
+  - id: go-testing/state-leaks-out-of-test
+    statement: >-
+      A test changes process-wide state and does not restore it, so later
+      tests depend on its having run.
+    evidence: >-
+      The change quoted with its file and line: `os.Setenv`, `os.Unsetenv`,
+      `os.Chdir`, an assignment to a package-level variable, or a write to a
+      fixed path outside `t.TempDir()`; and the test or helper body, showing
+      no `t.Setenv`, `t.Chdir`, `t.TempDir`, and no `defer` or `t.Cleanup`
+      that restores it. A change made in `TestMain` before `m.Run` and
+      holding for the whole package is not this defect.
+    severity: medium
+    rationale: >-
+      State a test leaves behind makes others pass or fail by the order they
+      run in, so the suite breaks under `-shuffle`, a single-test rerun or
+      sharding, far from the test that caused it.
+    references:
+      - https://google.github.io/styleguide/go/best-practices#globals
+      - https://pkg.go.dev/testing#T.Setenv
+      - https://pkg.go.dev/testing#T.TempDir
+    findings: [process-state-and-parallel-tests]
+  - id: go-testing/helper-without-t-helper
+    statement: >-
+      A test helper that can fail the test does not call `t.Helper()`, so
+      its failures are reported inside the helper instead of at the caller.
+    evidence: >-
+      The helper quoted with its file and lines: a function, not itself a
+      test, taking a `*testing.T`, `*testing.B` or `testing.TB`, that calls
+      `Error`, `Errorf`, `Fatal`, `Fatalf`, `Fail` or `FailNow` on it, with
+      no `Helper()` call; and at least one test calling it. A helper that
+      cannot fail the test is not this defect.
+    severity: low
+    rationale: >-
+      Every caller's failure points at the same line in the helper, so a
+      failing case cannot be found from the report without reading the
+      test and rerunning it.
+    references:
+      - https://pkg.go.dev/testing#T.Helper
+      - https://google.github.io/styleguide/go/best-practices#test-helper-error-handling
+      - https://go.dev/wiki/TestComments#mark-test-helpers
+    findings: [helpers-mark-themselves]
+  - id: go-testing/fatal-ends-table-loop
+    statement: >-
+      A table-driven test calls `Fatal` or `Fatalf` inside its case loop
+      without a subtest, so the first failing case hides every later one.
+    evidence: >-
+      The loop over the table quoted with its file and lines, and the
+      `t.Fatal` or `t.Fatalf` in its body, directly or through a helper
+      opened and named as read, not inside a `t.Run` function. A `Fatal`
+      on a setup failure the remaining cases cannot run without is not
+      this defect.
+    severity: low
+    rationale: >-
+      The run stops at the first mismatch, so one failure masks how many
+      cases are broken and each fix needs another run to show the next.
+    references:
+      - https://google.github.io/styleguide/go/best-practices#t-fatal
+      - https://go.dev/wiki/TestComments#keep-going
+    findings: [keep-going]
+  - id: go-testing/fuzz-target-misuses-f
+    statement: >-
+      A fuzz test breaks the fuzzing rules: it calls a `*testing.F` method
+      inside its target, holds more than one target, or fuzzes an argument
+      of an unsupported type.
+    evidence: >-
+      The `FuzzXxx` function quoted with its file and lines, showing one of:
+      a method of the outer `*testing.F` other than `Failed` or `Name`
+      called inside the function passed to `f.Fuzz`; two or more `f.Fuzz`
+      calls; a target whose first parameter is not `*testing.T`; or a
+      fuzzing parameter of a type outside the supported ones (strings, byte
+      slices, the integer and float types, `bool` and `rune`).
+    severity: high
+    rationale: >-
+      The fuzz test fails or panics when run, or never fuzzes the input it
+      names, so the code it was written to explore goes unexplored while
+      the test appears in the suite.
+    references:
+      - https://pkg.go.dev/testing#hdr-Fuzzing
+      - https://go.dev/doc/security/fuzz/
+    findings: [fuzz-target-rules]
+  - id: go-testing/fuzz-target-depends-on-shared-state
+    statement: >-
+      A fuzz target depends on state shared across calls, or on a source of
+      nondeterminism, so its failures cannot be reproduced.
+    evidence: >-
+      The function passed to `f.Fuzz` quoted with its file and lines,
+      showing it writes a package-level variable or a variable captured
+      from outside the target and read on a later call, or reads the
+      clock, a random source without a fixed seed, or the network. Reading
+      a value set up once before `f.Fuzz` and never written is not this
+      defect.
+    severity: medium
+    rationale: >-
+      A failure that depends on earlier calls or on chance does not recur
+      when its saved input is run alone, so the regression test written to
+      `testdata/fuzz` passes on the bug it was meant to pin.
+    references:
+      - https://go.dev/doc/security/fuzz/
+      - https://pkg.go.dev/testing#F.Fuzz
+    findings: [fuzz-targets-are-deterministic]
+  - id: go-testing/benchmark-result-discarded
+    statement: >-
+      A benchmark's `b.N` loop discards the result of the call it measures,
+      so the compiler can remove the work being timed.
+    evidence: >-
+      The `for` loop over `b.N` quoted with its file and lines, calling the
+      function under test with its result unused, not assigned to a
+      variable read after the loop or to a package-level sink, and the
+      function's body read to show no side effect the compiler must keep.
+      A benchmark using `b.Loop()` is not this defect.
+    severity: medium
+    rationale: >-
+      If the call is inlined and its result unused, the compiler can
+      eliminate it, and the benchmark reports the cost of an empty loop as
+      the cost of the code.
+    references:
+      - https://go.dev/blog/testing-b-loop
+      - https://pkg.go.dev/testing#B.Loop
+    findings: [b-loop-keeps-the-benchmark-honest]
+  - id: go-testing/benchmark-mixes-loop-and-b-n
+    statement: >-
+      A benchmark uses both `b.Loop()` and a loop over `b.N`.
+    evidence: >-
+      The benchmark function quoted with its file and lines, showing a
+      `b.Loop()` call and a reference to `b.N` driving a loop in the same
+      function body.
+    severity: medium
+    rationale: >-
+      The testing package requires one or the other, so the benchmark's
+      iteration count and timing are not what either form measures, and
+      its result cannot be compared with another run's.
+    references:
+      - https://pkg.go.dev/testing#B.Loop
+      - https://go.dev/blog/testing-b-loop
+    findings: [b-loop-keeps-the-benchmark-honest]
+  - id: go-testing/test-not-run
+    statement: >-
+      A function written as a test, benchmark, fuzz test or example is not
+      run by `go test`, because of its name, its signature or its file.
+    evidence: >-
+      The function quoted with its file and line, and the rule it misses:
+      a `Test`, `Benchmark`, `Fuzz` or `Example` prefix followed by a
+      lowercase letter, such as `Testparse`; a parameter other than one
+      `*testing.T`, `*testing.B` or `*testing.F` as its prefix requires, or
+      a result; or the function in a file whose name does not end in
+      `_test.go`. A helper called by tests is not a test.
+    severity: medium
+    rationale: >-
+      A test that is never run reports neither a pass nor a failure, so the
+      suite looks complete while part of it checks nothing; `go test` vet
+      catches some forms, but not with `-vet=off` and not a test left in a
+      non-test file.
+    references:
+      - https://pkg.go.dev/testing
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/tests
+    findings: [tests-are-found-by-name-and-signature]
+  - id: go-testing/example-output-not-checked
+    statement: >-
+      An example prints output but carries no output comment, so it is
+      compiled and never run.
+    evidence: >-
+      The `Example` function quoted with its file and lines, writing to
+      standard output through `fmt.Print`, `fmt.Println`, `fmt.Printf` or
+      `os.Stdout`, with no `// Output:` or `// Unordered output:` comment at
+      the end of its body.
+    severity: low
+    rationale: >-
+      An example without an output comment is never executed, so the
+      documented usage can break or print something else and the suite
+      still passes.
+    references:
+      - https://pkg.go.dev/testing#hdr-Examples
+    findings: [examples-run-only-with-output]
+  - id: go-testing/error-compared-by-string
+    statement: >-
+      A test decides which error it got by comparing the error's message,
+      where the code under test exposes the error to compare by value or
+      type.
+    evidence: >-
+      The comparison quoted with its file and line, on `err.Error()` with
+      `==`, `!=`, `strings.Contains` or a regular expression, and the
+      sentinel error variable or error type the code under test returns for
+      that case, quoted from its declaration. A check that the message names
+      a parameter or value is not this defect.
+    severity: low
+    rationale: >-
+      A reworded message breaks the test with no change in behaviour, and a
+      different error carrying similar text passes it, so the test checks
+      wording rather than which failure occurred.
+    references:
+      - https://google.github.io/styleguide/go/decisions#test-error-semantics
+      - https://go.dev/wiki/TestComments#test-error-semantics
+    findings: [errors-compared-by-meaning]
+  - id: go-testing/golden-file-rewritten-every-run
+    statement: >-
+      A test writes its golden file on every run before or instead of
+      comparing against it, so the comparison cannot fail.
+    evidence: >-
+      The write quoted with its file and line, `os.WriteFile` or an
+      equivalent on the expected-output file the test then reads or
+      compares, not guarded by an update flag or another opt-in the test
+      checks, such as `*update` or an environment variable.
+    severity: medium
+    rationale: >-
+      The expected output is replaced by the actual output on each run, so
+      any change in behaviour passes the test and the golden file records
+      whatever the code last did.
+    references:
+      - https://pkg.go.dev/gotest.tools/v3/golden
+      - https://pkg.go.dev/cmd/go#hdr-Test_packages
+    findings: [golden-files-update-behind-a-flag]

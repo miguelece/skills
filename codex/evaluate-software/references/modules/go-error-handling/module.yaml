@@ -1,0 +1,336 @@
+# Error handling in Go production code, read from its `.go` files and the
+# module's go.mod, not by running `errcheck` or `go vet`. Each check rests on
+# a finding in research.md beside this file. The checks read files not
+# ending in `_test.go`; tests are the Go testing module's, and errors lost
+# from goroutines are a concurrency module's. What a check reads for a diff
+# follows the module contract's `diff` input kind: go.mod, a called
+# function's signature, a sentinel's declaration or a caller that inspects
+# an error is read where it lives, inside or outside the diff.
+id: go-error-handling
+languages: [go]
+concept: error-handling
+triggers:
+  files:
+    - "**/*.go"
+  manifests:
+    - go.mod
+  design-markers: []
+  design-headings: []
+inputs: [diff, repository]
+phases: [static]
+checks:
+  - id: go-error-handling/error-discarded
+    statement: >-
+      A call's error result is discarded, by calling it as a statement or
+      assigning the error to `_`, so a failure goes unnoticed.
+    evidence: >-
+      The call quoted with its file and line, and the called function's
+      signature, opened and named as read, showing an `error` result. Not
+      this defect: a call in a `fmt` print function, a `Write` or
+      `WriteString` on a `bytes.Buffer` or `strings.Builder`, or another
+      standard library call documented never to return a non-nil error;
+      and a discard carrying a comment that states why the error cannot
+      matter.
+    severity: medium
+    rationale: >-
+      The code carries on as if the call succeeded, so a failed write,
+      close or parse corrupts or loses data with nothing reported, and the
+      failure surfaces later, far from its cause.
+    references:
+      - https://go.dev/wiki/CodeReviewComments#handle-errors
+      - https://github.com/kisielk/errcheck
+    findings: [errors-are-checked]
+  - id: go-error-handling/constructed-error-dropped
+    statement: >-
+      An error is built with `fmt.Errorf` or `errors.New` and its result is
+      discarded, so the failure it describes is never returned.
+    evidence: >-
+      The `fmt.Errorf` or `errors.New` call quoted with its file and line,
+      written as an expression statement, its result neither assigned,
+      returned nor passed on.
+    severity: high
+    rationale: >-
+      The author meant to fail here, usually a missing `return`, and the
+      function instead continues on the path it was guarding and reports
+      success.
+    references:
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/unusedresult
+    findings: [constructed-errors-are-used]
+  - id: go-error-handling/sentinel-compared-with-equality
+    statement: >-
+      An error is compared with a sentinel error by `==` or `!=`, or in a
+      `switch` on the error, where the error may arrive wrapped, so the
+      comparison misses it.
+    evidence: >-
+      The comparison quoted with its file and line, and the sentinel's
+      declaration; and a path by which the compared error can be wrapped:
+      a `%w` wrap, an `Unwrap` method or `errors.Join` between the
+      sentinel's return and the comparison, or a callee documented to
+      return an error wrapping it. A sentinel a function documents it
+      returns unwrapped, such as `io.EOF` from a `Read`, is not this
+      defect, nor is a comparison with `nil`. The `go` line of the
+      package's `go.mod` is read: below 1.13 it is not reported, and when
+      it cannot be read the finding says so.
+    severity: medium
+    rationale: >-
+      Once any layer wraps the error, the comparison is false, so the
+      branch for that failure, a retry, a not-found or an end of input,
+      never runs and the error is treated as some other failure.
+    references:
+      - https://pkg.go.dev/errors#Is
+      - https://go.dev/blog/go1.13-errors
+      - https://google.github.io/styleguide/go/best-practices#error-structure
+    findings: [is-walks-the-chain]
+  - id: go-error-handling/error-type-asserted
+    statement: >-
+      An error's type is tested with a type assertion or a type switch on
+      the error itself, where the error may arrive wrapped, so the test
+      misses it.
+    evidence: >-
+      The assertion or switch quoted with its file and line, and a path by
+      which the error can be wrapped before it, as for the sentinel
+      comparison: a `%w` wrap, an `Unwrap` method, `errors.Join`, or a
+      callee documented to wrap. An assertion inside an `Is`, `As` or
+      `Unwrap` method, or on an error the code constructed itself in the
+      same function, is not this defect. The `go` line of the package's
+      `go.mod` is read: below 1.13 it is not reported, and when it cannot
+      be read the finding says so.
+    severity: medium
+    rationale: >-
+      The assertion sees only the outermost error, so a wrapped error of
+      the type fails it and the handling for that failure, reading its
+      fields or recovering from it, is skipped.
+    references:
+      - https://pkg.go.dev/errors#As
+      - https://pkg.go.dev/errors#AsType
+      - https://go.dev/blog/go1.13-errors
+    findings: [as-walks-the-chain]
+  - id: go-error-handling/errors-as-invalid-target
+    statement: >-
+      `errors.As` is passed a target that is not a non-nil pointer to a
+      type implementing `error` or to an interface type, so the call
+      panics; or a `*error`, which is valid but matches the first error in
+      any chain, so the check tests nothing.
+    evidence: >-
+      The `errors.As` call quoted with its file and line, and the second
+      argument's type from its declaration: a non-pointer, a pointer to a
+      type that does not implement `error` and is not an interface, a
+      `*error`, or a pointer variable that is nil when passed.
+    severity: high
+    rationale: >-
+      `errors.As` panics on such a target, so the error path, rarely
+      exercised, crashes the program at the moment it should be handling a
+      failure; a `*error` target never panics but always matches, so the
+      branch it guards runs for every error.
+    references:
+      - https://pkg.go.dev/errors#As
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/errorsas
+    findings: [as-target-must-be-pointer]
+  - id: go-error-handling/inspected-cause-not-wrapped
+    statement: >-
+      An error is wrapped with `%v` or `%s`, or rebuilt from its text, and a
+      caller then inspects it for the original cause with `errors.Is` or
+      `errors.As`, which can never match.
+    evidence: >-
+      The `fmt.Errorf` quoted with its file and line, formatting an error
+      operand with `%v` or `%s`, or an `errors.New(err.Error())`; and a
+      caller, opened and named as read, that receives the result and tests
+      it with `errors.Is`, `errors.As` or `errors.AsType` for that operand's
+      sentinel or type. A `%v` wrap no caller inspects is not this defect.
+    severity: medium
+    rationale: >-
+      `%v` keeps only the text, so the caller's check is always false and
+      its handling for the cause never runs, while the message still reads
+      as if the cause were there.
+    references:
+      - https://go.dev/blog/go1.13-errors
+      - https://pkg.go.dev/fmt#Errorf
+      - https://google.github.io/styleguide/go/best-practices#error-percent-w
+    findings: [wrap-verb-decides-inspection]
+  - id: go-error-handling/wrap-verb-misused
+    statement: >-
+      The `%w` verb is used where it wraps nothing or wraps the wrong thing:
+      outside `fmt.Errorf`, with an operand that is not an error, or with a
+      pointer to an error type whose value type is the error.
+    evidence: >-
+      The call quoted with its file and line, showing one of: `%w` in a
+      `Printf`, `Sprintf`, `Fprintf`, a `log` function or another call that
+      does not forward to `fmt.Errorf`; a `%w` operand whose type does not
+      implement `error`; or a `%w` operand of type `*E`, where `E`
+      implements `error`, with `E`'s declaration quoted.
+    severity: medium
+    rationale: >-
+      Outside `fmt.Errorf`, or with a non-error operand, the verb prints a
+      malformed `%!w` and wraps nothing; with a pointer operand, `errors.Is`
+      compares pointers and fails to match the value the caller tests for.
+    references:
+      - https://pkg.go.dev/fmt#Errorf
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/printf
+    findings: [wrap-verb-rules]
+  - id: go-error-handling/error-matched-by-text
+    statement: >-
+      Production code tells errors apart by matching their message, with
+      `err.Error()` compared by `==`, `strings.Contains` or a regular
+      expression.
+    evidence: >-
+      The match quoted with its file and line, in a file not ending in
+      `_test.go`, deciding a branch on the text of an error. Matching text
+      from an external process or a protocol that exposes no other signal
+      is not this defect when a comment says so.
+    severity: medium
+    rationale: >-
+      A reworded message, from a dependency upgrade or a new wrap layer,
+      silently changes which branch runs, and a different error with
+      similar text takes the branch meant for this one.
+    references:
+      - https://google.github.io/styleguide/go/best-practices#error-structure
+    findings: [errors-not-matched-by-text]
+  - id: go-error-handling/typed-nil-error-returned
+    statement: >-
+      A function returns a nil pointer of a concrete error type through an
+      `error` result, so callers see a non-nil error on success.
+    evidence: >-
+      The function quoted with its file and lines, declaring an `error`
+      result, and a `return` of a variable or call of a concrete pointer
+      type implementing `error`, such as `*MyError`, on a path where that
+      pointer can be nil; or a function declaring a concrete error pointer
+      result whose nil return a caller assigns to an `error` and compares
+      with `nil`.
+    severity: high
+    rationale: >-
+      The interface holds a type and a nil value, so `err != nil` is true
+      and every caller takes its failure path on a call that succeeded.
+    references:
+      - https://go.dev/doc/faq#nil_error
+    findings: [typed-nil-is-not-nil-error]
+  - id: go-error-handling/result-used-before-error-check
+    statement: >-
+      A value returned beside an error is used, or a call on it deferred,
+      before the error is checked.
+    evidence: >-
+      The call quoted with its file and line, returning a value and an
+      error, and the use of the value, such as `defer resp.Body.Close()` or
+      `defer f.Close()`, placed before the `if err != nil` that follows. A
+      function documented to return a usable value with its error, such as
+      the byte count of an `io.Reader`'s `Read`, is not this defect.
+    severity: high
+    rationale: >-
+      On failure the value is typically nil, so the deferred or immediate
+      use dereferences it and the program panics on the error path instead
+      of handling the error.
+    references:
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/httpresponse
+    findings: [check-error-before-using-result]
+  - id: go-error-handling/panic-for-expected-failure
+    statement: >-
+      Code panics on a failure a caller should handle, such as bad input,
+      a missing file or a network error, instead of returning an error.
+    evidence: >-
+      The `panic` quoted with its file and line, and the condition it
+      reacts to, shown to be a runtime failure rather than a programming error.
+      Not this defect: a panic reporting misuse of the API, marking
+      unreachable code, in an `init` function or a `Must` function, or
+      recovered and returned as an error by the package's exported
+      function before it reaches a caller.
+    severity: medium
+    rationale: >-
+      A caller cannot handle the failure, so one bad request or missing
+      file takes down the whole program, along with every other piece of
+      work it was doing.
+    references:
+      - https://go.dev/wiki/CodeReviewComments#dont-panic
+      - https://go.dev/doc/effective_go#panic
+      - https://google.github.io/styleguide/go/best-practices#when-to-panic
+    findings: [panic-is-not-error-handling]
+  - id: go-error-handling/recover-swallows-every-panic
+    statement: >-
+      A deferred `recover` discards or converts every panic value, not only
+      the package's own, so programming errors are hidden as ordinary
+      failures or not reported at all.
+    evidence: >-
+      The deferred function quoted with its file and lines, calling
+      `recover` and, for any non-nil value, returning, logging or converting
+      it to an error without testing the value against the package's own
+      panic type and re-panicking the rest. A recover at the top of a
+      process or request that logs the value with its stack and then ends
+      the process is not this defect.
+    severity: medium
+    rationale: >-
+      A nil dereference or an index out of range is turned into an error or
+      silence, so the program keeps running in a state the panic was
+      signalling is corrupt, and the defect is never seen.
+    references:
+      - https://go.dev/doc/effective_go#recover
+      - https://google.github.io/styleguide/go/best-practices#checks-and-panics
+    findings: [recover-keeps-panics-inside-and-re-panics]
+  - id: go-error-handling/recover-not-called-directly
+    statement: >-
+      `recover` is called somewhere other than directly in a deferred
+      function, so it returns nil and stops no panic.
+    evidence: >-
+      The `recover()` call quoted with its file and line, in a function
+      that is not itself the deferred call: a helper the deferred function
+      calls, a function invoked without `defer`, or a nested function
+      literal inside the deferred one. `defer helper()` where `helper`
+      calls `recover` directly is the valid form and not this defect.
+    severity: high
+    rationale: >-
+      The code reads as panic recovery, but the panic propagates and
+      crashes the program the recovery was written to protect.
+    references:
+      - https://go.dev/ref/spec#Handling_panics
+      - https://go.dev/doc/effective_go#recover
+    findings: [recover-only-in-deferred-call]
+  - id: go-error-handling/error-logged-and-returned
+    statement: >-
+      A function logs an error and also returns it, so the same failure is
+      logged again by each caller that handles it.
+    evidence: >-
+      The log call quoted with its file and line, logging the error or a
+      wrap of it, and the `return` of that error or its wrap in the same
+      branch. A log at debug level or one adding context the returned
+      error does not carry is not this defect.
+    severity: low
+    rationale: >-
+      One failure appears several times in the logs, each looking like a
+      separate incident, and the caller loses the decision of whether the
+      error is worth logging at all.
+    references:
+      - https://google.github.io/styleguide/go/best-practices#error-logging
+    findings: [do-not-log-and-return]
+  - id: go-error-handling/in-band-error-value
+    statement: >-
+      A function signals failure or a missing result with an in-band value
+      such as `-1`, `""` or a nil result, rather than an `error` or `ok`
+      result.
+    evidence: >-
+      The function quoted with its file and lines, returning a special
+      value on a failure or not-found path and a normal value of the same
+      type otherwise, with no `error` or `bool` result; and its doc comment
+      or a caller showing the value means failure. A nil map, slice or
+      pointer that callers can use as empty is not this defect.
+    severity: low
+    rationale: >-
+      Nothing makes the caller check the special value, so a forgotten
+      check passes `-1` or an empty string on as real data.
+    references:
+      - https://go.dev/wiki/CodeReviewComments#in-band-errors
+    findings: [no-in-band-errors]
+  - id: go-error-handling/error-type-hides-cause
+    statement: >-
+      A custom error type holds an underlying error without an `Unwrap`
+      method, and a caller inspects the result for that cause.
+    evidence: >-
+      The type's declaration quoted with its file and lines, holding a field
+      of type `error`, with no `Unwrap() error` or `Unwrap() []error`
+      method on it; and a caller, opened and named as read, testing an
+      error that can be of this type with `errors.Is`, `errors.As` or
+      `errors.AsType` for the held error's sentinel or type.
+    severity: low
+    rationale: >-
+      `errors.Is` and `errors.As` stop at the custom type, so the caller's
+      check for the cause is always false and its handling never runs.
+    references:
+      - https://go.dev/blog/go1.13-errors
+      - https://pkg.go.dev/errors#Unwrap
+    findings: [error-types-expose-their-cause]

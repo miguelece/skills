@@ -17,6 +17,7 @@ triggers:
     - "tox.ini:[pytest]"
     - "setup.cfg:[tool:pytest]"
   design-markers: []
+  design-headings: []
 inputs: [diff, repository]
 phases: [static]
 checks:

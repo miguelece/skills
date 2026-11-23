@@ -26,11 +26,13 @@ terms. This skill writes the recommendation and stops there.
 ### 1. Read the report and select the mode
 
 1. Check the report before advising on it: run
-   `python scripts/validate_report.py <report.json>`, the validator the
-   evaluation skill runs on the report it writes. Exit `0` means the report
-   conforms; read it. Exit `1` refuses the report, naming each problem the
-   script printed; exit `2` refuses it as unreadable or not JSON. Advice on a
-   malformed report would cite what is not there. Do not fix the report: this
+   `python ${CLAUDE_SKILL_DIR}/scripts/validate_report.py <report.json>`,
+   where `${CLAUDE_SKILL_DIR}` is this skill's own directory, which a Codex
+   agent resolves itself. It is the validator the evaluation skill runs on
+   the report it writes. Exit `0` means the report conforms; read it. Exit
+   `1` refuses the report, naming each problem the script printed; exit `2`
+   refuses it as unreadable or not JSON. Advice on a malformed report would
+   cite what is not there. Do not fix the report: this
    skill did not write it, so hand it back to whoever produced it.
 2. Read `input.kind`. It alone selects the mode:
 
@@ -44,8 +46,14 @@ terms. This skill writes the recommendation and stops there.
 3. The refactoring mode is steps 2 and 3; the implementation mode is step 4.
    Do not run one mode's steps on the other's input: the refactoring mode's
    rule about behaviour does not fit a design with no code behind it.
-4. An empty `findings` list is a clean run: say there is nothing to advise
-   on, and stop.
+4. Read the phases before the findings. Each entry in `phases.not-run` is a
+   requested phase that did not run: name it with its `reason`, whatever
+   `findings` holds, since an unrun phase recorded nothing. Then, when
+   `findings` is empty:
+   - **`phases.run` is empty**: nothing was evaluated, so the empty list is
+     no clean run. Say there is nothing evaluated to advise on, and stop.
+   - **`phases.run` is not empty**: it is a clean run of the phases it names.
+     Name them, say there is nothing to advise on, and stop.
 
 ### 2. Refactoring mode: group findings into changes
 
@@ -131,17 +139,19 @@ by `findings.location.section`; a design read from code, by
 
 Write the advisories in the reply, in rank order, or for the implementation
 mode in the order step 4 fixed, each with a number the owner can answer by.
-Open with the report's `input.kind` and `input.scope` and the count of
-findings read, and end with any finding no advisory answers, with why: a
-finding is never dropped silently.
+Open with the report's `input.kind` and `input.scope`, the phases in
+`phases.run`, each `phases.not-run` entry with its `reason`, and the count of
+findings read, so advice resting on one phase does not read as complete.
+End with any finding no advisory answers, with why: a finding is never
+dropped silently.
 
 ## Hand-off
 
-An advisory, in either mode, is a recommendation, not work. The owner accepts, rejects or
-amends each one by its number. **An advisory the owner accepts is filed
-through `to-task`**, by the session that took the acceptance, with the
-advisory and the findings it cites as the task's input. This skill files
-nothing itself, before or after the owner answers.
+An advisory, in either mode, is a recommendation, not work. The owner
+accepts, rejects or amends each one by its number. **An advisory the owner
+accepts is filed through `to-task`**, by the session that took the
+acceptance, with the advisory and the findings it cites as the task's input.
+This skill files nothing itself, before or after the owner answers.
 
 ## Guardrails
 

@@ -16,6 +16,7 @@ triggers:
     - Consequences
     - Quality attributes
     - Architecture
+  design-headings: []
 inputs: [design-document]
 phases: [static]
 checks:

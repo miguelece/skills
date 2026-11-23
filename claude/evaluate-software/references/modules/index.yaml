@@ -5,5 +5,8 @@ modules:
   - application-runtime
   - architecture-design-document
   - architecture-design-from-code
+  - go-concurrency
+  - go-error-handling
+  - go-testing
   - python-testing
   - typescript-type-safety

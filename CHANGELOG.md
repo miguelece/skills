@@ -16,6 +16,22 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-23 — software-evaluation (Go modules)
+
+- **Behaviour change.** Three Go modules ship: `go-testing`,
+  `go-error-handling` and `go-concurrency`, bringing the library to eight.
+  None has yet been read against real Go code.
+- **Behaviour change.** A module header must write all four trigger kinds,
+  as `[]` where empty, and a header that omits one is refused.
+- **Behaviour change.** A declined dynamic launch keeps its module in
+  `modules.loaded` and records the reason in `phases.not-run`, which is
+  what says whether the module's checks ran.
+- **Behaviour change.** `advise-from-evaluation` runs the bundled report
+  validator by its skill-directory path, and reads the unrun phases, each
+  with its reason, before the findings.
+- The prior-art reference records how a SARIF writer would carry an unrun
+  phase's reason without a schema change. Other changes are rewraps.
+
 ### 2026-11-23 — task-board-management
 
 - **Behaviour change.** `supervise-implementation` closes a tranche at

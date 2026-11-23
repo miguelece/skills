@@ -1,0 +1,411 @@
+# Concurrency in Go production code, read from its `.go` files and the
+# module's go.mod, not by running the race detector, `go vet` or
+# Staticcheck. Each check rests on a finding in research.md beside this
+# file. The checks read files not ending in `_test.go`; concurrency inside
+# tests is the Go testing module's, and an error discarded inside a
+# goroutine as a statement or to `_` is the Go error handling module's.
+# What a check reads for a diff follows the module contract's `diff` input
+# kind: go.mod, the other side of a race, a callee that locks or the
+# goroutine that closes a channel is read where it lives, inside or outside
+# the diff.
+id: go-concurrency
+languages: [go]
+concept: concurrency
+triggers:
+  files:
+    - "**/*.go"
+  manifests:
+    - go.mod
+  design-markers: []
+  design-headings: []
+inputs: [diff, repository]
+phases: [static]
+checks:
+  - id: go-concurrency/shared-variable-unsynchronized
+    statement: >-
+      A variable or map is written by one goroutine and read or written by
+      another with no synchronization between the accesses, a data race.
+    evidence: >-
+      The `go` statement quoted with its file and line, and both accesses
+      quoted with theirs: a write in one goroutine and a read or write of
+      the same variable, field or map in another that can run at the same
+      time; and the absence, between them, of a mutex held at both, a
+      channel operation ordering them, a `WaitGroup.Wait` or `errgroup`
+      `Wait` after the goroutine's last access, or `sync/atomic` at every
+      access. A loop variable captured by a goroutine is the loop variable
+      check's, and a variable updated through `sync/atomic` at some
+      accesses is the atomic check's, not this one.
+    severity: high
+    rationale: >-
+      The memory model calls a program with a race incorrect: a race on a
+      map, slice, string or interface can produce a value no single write
+      made and lead to arbitrary memory corruption, and concurrent reads
+      and writes of the same map are not safe.
+    references:
+      - https://go.dev/ref/mem
+      - https://go.dev/doc/articles/race_detector#Typical_Data_Races
+    findings: [data-race-definition, races-the-detector-documents]
+  - id: go-concurrency/goroutine-captures-loop-variable
+    statement: >-
+      A goroutine started inside a loop refers to the loop's iteration
+      variable, in a package whose Go version shares that variable across
+      iterations, so it races with the loop and sees a later value.
+    evidence: >-
+      The loop and the `go` statement, or the `Go` call of an
+      `errgroup.Group`, quoted with their file and lines, the function
+      literal referring to an iteration variable the loop declares rather
+      than to a parameter or a per-iteration copy. The `go` line of the
+      package's `go.mod` is read: at 1.22 or later this is not reported,
+      and when it cannot be read the finding says so. A `t.Run` subtest in
+      a `_test.go` file is the Go testing module's.
+    severity: high
+    rationale: >-
+      Before Go 1.22 every iteration shares one variable, so the goroutine
+      reads it while the loop updates it, a data race, and typically sees
+      a later iteration's value instead of its own.
+    references:
+      - https://go.dev/ref/spec#For_statements
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/loopclosure
+      - https://go.dev/doc/articles/race_detector#Race_on_loop_counter
+    findings: [loop-variable-per-iteration]
+  - id: go-concurrency/busy-wait-on-plain-variable
+    statement: >-
+      A loop waits for another goroutine to change an ordinary variable,
+      with no channel, lock or atomic synchronizing the wait.
+    evidence: >-
+      The loop quoted with its file and lines, its condition or body
+      reading a variable, such as a `done` flag, that another goroutine
+      writes, quoted with its file and line; neither access is through
+      `sync/atomic`, under a common lock or a channel operation.
+    severity: high
+    rationale: >-
+      Nothing guarantees the loop ever observes the write, so it may never
+      finish, and when it does, nothing guarantees it sees the data the
+      other goroutine wrote before setting the flag.
+    references:
+      - https://go.dev/ref/mem#badsync
+      - https://staticcheck.dev/docs/checks/#SA5002
+    findings: [no-busy-wait-on-plain-variable]
+  - id: go-concurrency/unsynchronized-fast-path
+    statement: >-
+      Initialization is guarded by a plain flag tested outside the `Once`
+      or lock that sets it, so a reader that sees the flag skips the
+      synchronization.
+    evidence: >-
+      The test of the flag quoted with its file and line, outside any lock
+      and not through `sync/atomic`, deciding whether to call `once.Do` or
+      take the lock that performs the setup; and the setup, quoted, that
+      writes the guarded data and then the flag.
+    severity: high
+    rationale: >-
+      Observing the flag does not imply observing the setup's writes, so a
+      reader can use the guarded data uninitialized, as the memory model's
+      double-checked locking example prints an empty string.
+    references:
+      - https://go.dev/ref/mem#badsync
+    findings: [double-checked-locking-is-a-race]
+  - id: go-concurrency/atomic-access-mixed
+    statement: >-
+      A variable updated through `sync/atomic` is also read or written
+      without it, or assigned the result of an atomic call on itself.
+    evidence: >-
+      The atomic call quoted with its file and line, such as
+      `atomic.AddInt64(&n, 1)`, and a plain access of the same variable,
+      quoted with its file and line, that can run concurrently with it; or
+      an assignment of the form `x = atomic.AddUint64(&x, 1)`. A plain
+      access before any goroutine sharing the variable is started is not
+      this defect.
+    severity: high
+    rationale: >-
+      An access escapes being a race only when every access to the
+      location is atomic, so the plain access races with the atomic ones,
+      and the assignment form is not atomic as a whole.
+    references:
+      - https://go.dev/ref/mem
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/atomic
+    findings: [atomic-access-is-all-or-nothing]
+  - id: go-concurrency/lock-copied
+    statement: >-
+      A value holding a `sync.Mutex`, `RWMutex`, `WaitGroup`, `Once`,
+      `Cond` or `Map` is copied after first use, through a value receiver,
+      a by-value parameter or result, an assignment or a `range` copy.
+    evidence: >-
+      The copy quoted with its file and line, and the type's declaration
+      showing the `sync` field held by value, not through a pointer; for a
+      value receiver, a method on the same type that locks or otherwise
+      uses the field. A copy made before the value's first use, such as
+      returning a freshly built zero value from a constructor, is not this
+      defect.
+    severity: high
+    rationale: >-
+      The `sync` types must not be copied after first use: a copy carries
+      its own state, so code locking the copy does not exclude code locking
+      the original, and the data the lock guards is raced.
+    references:
+      - https://pkg.go.dev/sync#Mutex
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/copylock
+      - https://go.dev/wiki/CodeReviewComments#receiver-type
+    findings: [sync-values-not-copied]
+  - id: go-concurrency/waitgroup-add-inside-goroutine
+    statement: >-
+      `WaitGroup.Add` is called inside the goroutine it counts, rather than
+      before the statement that starts it.
+    evidence: >-
+      The `go` statement quoted with its file and line, the `wg.Add` call
+      inside its function literal, and the `wg.Wait` on the same
+      `WaitGroup` in the code that started it.
+    severity: high
+    rationale: >-
+      `Add` races with `Wait`, so `Wait` can return before the goroutine
+      has counted itself, and the caller goes on while the work is still
+      running.
+    references:
+      - https://pkg.go.dev/sync#WaitGroup.Add
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/waitgroup
+      - https://staticcheck.dev/docs/checks/#SA2000
+    findings: [waitgroup-add-before-go]
+  - id: go-concurrency/cancel-func-not-called
+    statement: >-
+      The cancel function returned by `context.WithCancel`, `WithTimeout`,
+      `WithDeadline` or a variant is discarded, or not called on some path
+      out of the function.
+    evidence: >-
+      The call quoted with its file and line, and either its cancel result
+      assigned to `_`, or a return path, quoted, on which the cancel
+      function is neither called, deferred, returned nor handed to code
+      that calls it.
+    severity: medium
+    rationale: >-
+      Failing to call the cancel function leaks the child context and its
+      children until the parent is canceled, and with a background parent
+      that is never.
+    references:
+      - https://pkg.go.dev/context#WithCancel
+      - https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/lostcancel
+    findings: [cancel-func-must-be-called]
+  - id: go-concurrency/context-key-of-builtin-type
+    statement: >-
+      `context.WithValue` is called with a key of type `string` or another
+      built-in type.
+    evidence: >-
+      The `context.WithValue` call quoted with its file and line, and the
+      key's type, from its declaration or literal, a built-in type rather
+      than a type the package defines.
+    severity: low
+    rationale: >-
+      Keys of built-in types can collide between packages using context,
+      so one package's value can be read or replaced by another's equal
+      key; a key type the package defines avoids the collision.
+    references:
+      - https://staticcheck.dev/docs/checks/#SA1029
+      - https://pkg.go.dev/context#WithValue
+    findings: [context-key-own-type]
+  - id: go-concurrency/goroutine-has-no-exit
+    statement: >-
+      A goroutine is started with no way to stop it: it loops or blocks
+      with no cancellation, done channel or closed channel ending it, and
+      nothing waits for it to exit.
+    evidence: >-
+      The `go` statement quoted with its file and line, including one in an
+      `init` function, and its body: an unconditional loop, or a `for range`
+      over a channel no code closes, or a blocking send or receive, with no
+      `case` on `ctx.Done()`, a done channel or another signal that ends
+      it; and no `Close`, `Stop` or `Shutdown`, `WaitGroup` or channel by
+      which a caller ends it or waits for it. A goroutine documented to run
+      for the life of the process is not this defect.
+    severity: medium
+    rationale: >-
+      Goroutines are not garbage collected and must exit on their own, so
+      each one started this way keeps consuming memory and runtime
+      resources, and nothing can stop it or wait for it to exit.
+    references:
+      - https://go.dev/wiki/CodeReviewComments#goroutine-lifetimes
+      - https://google.github.io/styleguide/go/decisions#goroutine-lifetimes
+      - https://github.com/uber-go/guide/blob/master/style.md#dont-fire-and-forget-goroutines
+    findings: [goroutines-must-exit]
+  - id: go-concurrency/send-blocks-after-receiver-returns
+    statement: >-
+      A goroutine sends on a channel whose only receiver can stop receiving
+      early, on a timeout, an error or a first result, so the send blocks
+      forever.
+    evidence: >-
+      The send quoted with its file and line, on a channel with no buffer
+      or a buffer smaller than the sends that can remain, and the receiver,
+      quoted, with a path that returns, or leaves its loop, before receiving
+      every value, while the sender has no `select` on a done channel or
+      `ctx.Done()` to give up.
+    severity: medium
+    rationale: >-
+      The blocked sender never exits and is never collected, so each call
+      that takes the early path leaks a goroutine.
+    references:
+      - https://go.dev/blog/pipelines
+      - https://go.dev/wiki/CodeReviewComments#goroutine-lifetimes
+    findings: [blocked-sender-leaks]
+  - id: go-concurrency/goroutine-error-lost
+    statement: >-
+      An error produced in a goroutine never reaches the code that started
+      it, so that code carries on as if the work succeeded.
+    evidence: >-
+      The `go` statement quoted with its file and line, and either a
+      function started directly by it whose signature, opened and named as
+      read, returns an `error`, or a body that only logs the error or
+      stores it where nothing reads it after the goroutine ends; and the
+      starting function, quoted, returning or continuing with no channel,
+      `errgroup.Group` or synchronized variable carrying the error back. A
+      call inside the goroutine whose error is discarded as a statement or
+      assigned to `_` is the Go error handling module's discard check, not
+      this one.
+    severity: medium
+    rationale: >-
+      The caller has no way to learn of the failure, so it reports success
+      for work that failed; `errgroup` exists to carry the first error back
+      through `Wait`.
+    references:
+      - https://pkg.go.dev/golang.org/x/sync/errgroup#Group.Wait
+    findings: [errgroup-propagates-first-error]
+  - id: go-concurrency/errgroup-context-not-passed
+    statement: >-
+      Goroutines of an `errgroup.Group` made with `WithContext` use the
+      parent context rather than the derived one, so the first error does
+      not cancel the others.
+    evidence: >-
+      The `errgroup.WithContext` call quoted with its file and line, and a
+      function passed to that group's `Go`, quoted, that passes or selects
+      on the parent context, or none, where the derived context would end
+      its work.
+    severity: low
+    rationale: >-
+      Only the derived context is canceled when a function returns an
+      error, so the other goroutines run to completion after the group has
+      already failed, and `Wait` waits for them.
+    references:
+      - https://pkg.go.dev/golang.org/x/sync/errgroup#WithContext
+    findings: [errgroup-context-cancels-on-first-error]
+  - id: go-concurrency/channel-closed-while-sends-possible
+    statement: >-
+      A channel is closed while a send on it can still happen, or closed on
+      more than one path, which panics at run time.
+    evidence: >-
+      The `close` quoted with its file and line, and either a send on the
+      same channel, quoted, in a goroutine not ordered before the close, such
+      as a receiver closing a channel its senders still write to, or one of
+      several senders closing it without waiting for the rest; or a second
+      `close` of it reachable after the first.
+    severity: high
+    rationale: >-
+      Sending on or closing a closed channel causes a run-time panic, on
+      whichever path loses the race, and an unsynchronized send and close
+      is a data race.
+    references:
+      - https://go.dev/ref/spec#Close
+      - https://go.dev/blog/pipelines
+      - https://go.dev/doc/articles/race_detector#Unsynchronized_send_and_close_operations
+    findings: [close-belongs-to-the-sender]
+  - id: go-concurrency/deferred-lock-after-lock
+    statement: >-
+      A mutex is locked and `Lock` is deferred on it right after, where
+      `Unlock` was meant.
+    evidence: >-
+      The `Lock` or `RLock` call and the `defer` of `Lock` or `RLock` on
+      the same mutex in the next statement, quoted with their file and
+      lines.
+    severity: high
+    rationale: >-
+      The deferred call locks the mutex again instead of releasing it; this
+      does not strictly guarantee a deadlock, but it is almost always a
+      typo and is highly likely a mistake.
+    references:
+      - https://staticcheck.dev/docs/checks/#SA2003
+    findings: [deferred-lock-is-a-typo]
+  - id: go-concurrency/empty-critical-section
+    statement: >-
+      A mutex is locked and unlocked with nothing between, where a deferred
+      `Unlock` was meant.
+    evidence: >-
+      The `Lock` and the `Unlock` on the same mutex in consecutive
+      statements, quoted with their file and lines, with no comment saying
+      the empty section is a deliberate wait on another goroutine.
+    severity: low
+    rationale: >-
+      The code after it, meant to run under the lock, runs unguarded; an
+      empty critical section is very often a typo for `defer mu.Unlock()`.
+    references:
+      - https://staticcheck.dev/docs/checks/#SA2001
+    findings: [empty-critical-section-is-usually-a-typo]
+  - id: go-concurrency/recursive-read-lock
+    statement: >-
+      A goroutine holding an `RWMutex` read lock takes the read lock again,
+      directly or through a call, before releasing the first.
+    evidence: >-
+      The first `RLock` quoted with its file and line, and the second
+      `RLock` on the same mutex reached before the matching `RUnlock`,
+      quoted with its file and line, with the call chain between, each
+      callee opened and named as read.
+    severity: high
+    rationale: >-
+      A blocked `Lock` call excludes new readers, so once a writer waits
+      between the two, the second `RLock` waits for the writer, which waits
+      for the first read lock, and both goroutines deadlock.
+    references:
+      - https://pkg.go.dev/sync#RWMutex.RLock
+    findings: [no-recursive-read-lock]
+  - id: go-concurrency/once-do-reentered
+    statement: >-
+      The function passed to `Once.Do` calls `Do` on the same `Once`,
+      directly or through a call.
+    evidence: >-
+      The `Do` call quoted with its file and line, and the call of `Do` on
+      the same `Once` reached from the function it was passed, quoted with
+      the call chain between, each callee opened and named as read.
+    severity: high
+    rationale: >-
+      No call to `Do` returns until the one call to its function returns,
+      so the inner `Do` waits on the outer one and the goroutine deadlocks.
+    references:
+      - https://pkg.go.dev/sync#Once.Do
+    findings: [once-do-reentry-deadlocks]
+  - id: go-concurrency/signal-channel-unbuffered
+    statement: >-
+      `signal.Notify` is given an unbuffered channel.
+    evidence: >-
+      The `signal.Notify` call quoted with its file and line, and the
+      channel's `make`, quoted, with no buffer size or a size of zero.
+    severity: medium
+    rationale: >-
+      `signal.Notify` will not block sending to the channel, so a signal
+      that arrives while no receiver is ready is not delivered, and the
+      program can miss the signal it waits for.
+    references:
+      - https://pkg.go.dev/os/signal#Notify
+      - https://staticcheck.dev/docs/checks/#SA1017
+    findings: [signal-channel-needs-buffer]
+  - id: go-concurrency/select-default-spins
+    statement: >-
+      An unconditional loop holds a `select` with an empty `default`
+      branch, so it spins instead of waiting.
+    evidence: >-
+      The `for` loop and its `select` quoted with their file and lines, the
+      `default` case with no statements, or none that block or sleep.
+    severity: low
+    rationale: >-
+      The `select` never blocks, so the loop consumes CPU while waiting for
+      work instead of letting the goroutine sleep until a channel is ready.
+    references:
+      - https://staticcheck.dev/docs/checks/#SA5004
+    findings: [select-default-spins]
+  - id: go-concurrency/guarded-state-escapes-lock
+    statement: >-
+      A method returns a map or slice that its type guards with a mutex,
+      rather than a copy, so callers use it outside the lock.
+    evidence: >-
+      The method quoted with its file and lines, taking the type's lock and
+      returning a map or slice field, or a slice of it, that other methods
+      read or write under the same lock, quoted.
+    severity: medium
+    rationale: >-
+      The returned reference is no longer protected by the mutex, so any
+      access to it is subject to data races with the type's own methods.
+    references:
+      - https://github.com/uber-go/guide/blob/master/style.md#copy-slices-and-maps-at-boundaries
+    findings: [guarded-state-copied-at-boundary]
