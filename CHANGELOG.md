@@ -16,6 +16,19 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-24 — task-board-management (precedent use, side-called models)
+
+- **Behaviour change.** `focused-implementation`'s *Closing out*, and the
+  supervisor's integrator brief, log each precedent applied: its use is
+  appended to the register entry's *Applied*, and to the central register's
+  copy when the entry is transferable.
+- **Behaviour change.** `account_attempt.py --match-rate` sets apart a
+  called model whose transcripts price under a tenth of its bill, as
+  `side_called`, so it no longer flags the price table; the
+  `supervise-implementation` and `tranche-gate` text says so. Its docstring
+  notes that the harness record can miss a span of a long or resumed
+  session.
+
 ### 2026-11-24 — software-evaluation (worked examples, ticker source)
 
 - **Behaviour change.** The module contract describes an optional

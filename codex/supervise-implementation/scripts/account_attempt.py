@@ -54,6 +54,15 @@ correct table prices a session a few percent under its record, and an
 attempt's priced cost reads about 4% under what it was billed. Costs are
 reported beside the record, never scaled to it.
 
+The record can also miss a span of a long or resumed session. Spend after the
+last `cost-state` entry a harness process wrote, in a process that then wrote
+no other, never reaches it: a resumed session's record carries on from that
+entry, and a session whose process wrote its one entry late lacks what came
+before. Such a session reads far above 1, near 2 in the worst measured, with
+the table and the counting both right, and the medians absorb it. This was
+measured on the lab's own sessions, not documented; why the harness writes no
+closing entry is not known.
+
 **One session's ratio is not evidence of a stale table**, so nothing is
 warned here. A stale price instead shifts every session that used it by one
 factor, so the signal is each called model's *median* ratio across sessions,
@@ -66,6 +75,10 @@ the lab's 17 sessions with a recorded Opus cost (median 0.960, 16 of them
 between 0.916 and 0.985); a change in what the harness bills outside
 transcripts would move it. A billed model no transcript called is listed
 under `uncalled`, by name and recorded cost, and never flags the table. A
+called model priced under a tenth of what the harness billed for it is listed
+under `side_called`, with its priced and recorded cost, and never flags the
+table either: its transcripts hold a few of the harness's side calls, not the
+model's use. A model at half its bill still enters the medians. A
 session with an unpriced call reports `incomplete` and one with no
 `cost-state` `absent`; both are left out of the medians. The entry is
 undocumented and may disappear.
@@ -101,6 +114,14 @@ PRICES = Path(__file__).with_name("prices.json")
 # between 0.916 and 0.985, because the harness bills calls no transcript holds.
 # A change in what it bills that way would move the band.
 BAND = (0.90, 1.02)
+
+# A called model priced under this share of what the harness billed for it is
+# set apart from the medians: the transcript holds a few of the harness's own
+# side calls, not the model's real use. Fitted, not derived: on 2026-11-24 the
+# two side-call rows read 0.020 and 0.054, and no other called row of the lab's
+# 69 compared sessions read under 0.264. A price would have to be wrong by a
+# factor of ten to hide behind it, and a set-apart row is still listed.
+SIDE_CALLED_BELOW = 0.10
 
 TOKEN_CLASSES = ("input", "cache_write_5m", "cache_write_1h", "cache_read", "output")
 SHELL_TOOLS = {"Bash", "PowerShell"}
@@ -461,7 +482,8 @@ def match_rate(project: Path, last: int, table: dict) -> dict:
     A session without a cost record is still running, or never wrote one, and
     one with an unpriced call understates its priced cost; both are counted
     apart and left out of the medians. A billed model no transcript called is
-    reported apart and never flags the table.
+    reported apart under `uncalled`, and a called one priced under
+    `SIDE_CALLED_BELOW` of its bill under `side_called`; neither flags the table.
     """
     mains = sorted(
         project.glob("*.jsonl"), key=lambda p: (-p.stat().st_mtime, p.name)
@@ -470,10 +492,18 @@ def match_rate(project: Path, last: int, table: dict) -> dict:
     compared = [r for r in results if r["status"] == "compared"]
     ratios: dict[str, list[float]] = {}
     uncalled: dict[str, dict] = {}
+    side_called: dict[str, dict] = {}
     for result in compared:
         for model, row in result["models"].items():
             if row["called"]:
-                if row["ratio"] is not None:
+                if row["ratio"] is not None and row["ratio"] < SIDE_CALLED_BELOW:
+                    seen = side_called.setdefault(
+                        model, {"sessions": 0, "priced_usd": 0.0, "recorded_usd": 0.0}
+                    )
+                    seen["sessions"] += 1
+                    seen["priced_usd"] += row["priced_usd"]
+                    seen["recorded_usd"] += row["recorded_usd"]
+                elif row["ratio"] is not None:
                     ratios.setdefault(model, []).append(row["ratio"])
             elif row["recorded_usd"]:
                 seen = uncalled.setdefault(model, {"sessions": 0, "recorded_usd": 0.0})
@@ -490,6 +520,9 @@ def match_rate(project: Path, last: int, table: dict) -> dict:
         }
     for seen in uncalled.values():
         seen["recorded_usd"] = round(seen["recorded_usd"], 6)
+    for seen in side_called.values():
+        seen["priced_usd"] = round(seen["priced_usd"], 6)
+        seen["recorded_usd"] = round(seen["recorded_usd"], 6)
     return {
         "sessions_read": len(mains),
         "compared": len(compared),
@@ -498,6 +531,7 @@ def match_rate(project: Path, last: int, table: dict) -> dict:
         "band": list(BAND),
         "models": medians,
         "uncalled": dict(sorted(uncalled.items())),
+        "side_called": dict(sorted(side_called.items())),
         "table_flagged": (
             any(not row["in_band"] for row in medians.values()) if medians else None
         ),

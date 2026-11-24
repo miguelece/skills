@@ -40,8 +40,11 @@ that commits to the main line while you run, and you never push.
 5. **Merge and close, or return it unmerged.** Merge only when the suite
    passes, the verdict is not `blocked`, no weakened test was found and at
    least one criterion moved. Then commit the merge, and close the task under
-   focused-implementation's *Closing out*: execution log, `outcome`, status,
-   and the link repair in *Repairing the links a move breaks* in
+   focused-implementation's *Closing out*: execution log; log each precedent
+   applied, appending its use to the entry's *Applied* in the board's
+   precedent register, and to the central judgment register's copy when the
+   entry is transferable; `outcome`, status, and the link repair in
+   *Repairing the links a move breaks* in
    `<skill dir>/references/board-model.md`. Run
    `<skill dir>/scripts/validate_board.py --board <board>` and
    `<skill dir>/scripts/generate_index.py --board <board>`, file each

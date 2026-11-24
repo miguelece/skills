@@ -35,7 +35,8 @@ block the next tranche; the rest is reviewed at leisure.
 from `account_attempt.py --match-rate`>: each called model's median ratio of
 priced over billed cost. A median outside 0.90 to 1.02 means the price table
 is stale; a billed model no transcript called is listed apart and flags
-nothing. "Not applicable: no supervisor ran" for any other batch.
+nothing, and so is one whose transcripts priced under a tenth of its billed
+cost, the harness's own side calls. "Not applicable: no supervisor ran" for any other batch.
 
 ### Session costs
 

@@ -262,7 +262,9 @@ Delete the heartbeat. Write
 sessions into the record's `Match rate:` line: each called model's median
 ratio of priced over billed cost. A median outside 0.90 to 1.02 flags the
 price table as stale; a billed model no transcript called is listed apart
-and flags nothing. Fill the allocation log's session table from
+and flags nothing, and so is one whose transcripts priced under a tenth of
+its billed cost, the harness's own side calls. Fill the allocation log's
+session table from
 `scripts/account_attempt.py --sessions <run-dir>/leases.md --project
 <project-dir>`, which prints one row per session, beside the
 transcript-priced costs and never scaling them. A session row that reads

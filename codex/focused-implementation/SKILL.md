@@ -82,26 +82,33 @@ Set `status: in-progress` and update `updated` before starting.
 1. Write the `## Execution log`: what shipped, on which branch and commits, and
    how it was verified. Record defects that verification caught which no test
    would have — that is the part of the log worth reading a year later.
-2. Write the one-line `outcome:` in frontmatter — what changed and how it was
+2. **Log each precedent applied.** For every entry of the board's precedent
+   register that the task applied, named in its *Plan* or its report, append
+   the use to the entry's *Applied*, with the date and this task's record. A
+   transferable entry exists twice, so append it to the central judgment
+   register's copy too, in the same pass. The rule is in *The precedent
+   register* in [references/board-model.md](references/board-model.md); the
+   close is the one point every task passes, so it is applied here.
+3. Write the one-line `outcome:` in frontmatter — what changed and how it was
    confirmed. This is what the archive index shows, so write it for someone
    scanning a hundred finished tasks who will not open the file. "Done" is not
    an outcome and is rejected.
-3. Set `status: done`, `updated`, and — if the work is finished and correct but
+4. Set `status: done`, `updated`, and — if the work is finished and correct but
    a better-but-costlier tier was evaluated and declined — `revisit: true` plus
    an `## Upgrade paths` section giving each declined option and the condition
    that would justify revisiting it. **Setting `status: done` moves the file**
    into `completed/` or `revisit/`, which breaks every relative link into and
    out of it; repair them per *Repairing the links a move breaks* in
    [references/board-model.md](references/board-model.md).
-4. **Fold-back is automatic — just regenerate.** If the task is `part-of` a
+5. **Fold-back is automatic — just regenerate.** If the task is `part-of` a
    spec, its one-line `outcome` rolls up into the spec's `## Slices` block when
-   you run `generate_index.py` (step 6). Do not hand-copy it. Do **not** flip
+   you run `generate_index.py` (step 7). Do not hand-copy it. Do **not** flip
    the spec's own status; a spec's status is its own (its other slices or
    residual work may remain).
-5. If the remaining step is gated on a human, it is **not done**: keep
+6. If the remaining step is gated on a human, it is **not done**: keep
    `status: in-progress`, set the gate, and put the exact outstanding action
    under `Owner`.
-6. Verify:
+7. Verify:
 
    ```text
    scripts/validate_board.py --board <board>
