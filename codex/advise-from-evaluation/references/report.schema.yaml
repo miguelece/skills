@@ -108,8 +108,10 @@ report:
                 type: string
                 required: true
                 note: >-
-                  why the phase did not run: that it is not yet available, or
-                  that no module matched
+                  why the phase did not run: that no module matched, that the
+                  input is a design with nothing to start, that a `diff`'s head
+                  is not the checked-out working tree, or that the user
+                  declined the launch
     modules:
       type: mapping
       required: true
@@ -174,7 +176,9 @@ report:
     findings:
       type: list
       required: true
-      note: one record per finding; an empty list is a clean run
+      note: >-
+        One record per finding. An empty list is a clean run of the phases in
+        `phases.run` only; with `phases.run` empty, nothing was evaluated.
       items:
         type: mapping
         fields:

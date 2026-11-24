@@ -16,6 +16,21 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-24 — software-evaluation (ticker check, manifest trigger)
+
+- **Behaviour change.** `evaluate-software`'s `go-concurrency` module adds
+  the check `ticker-never-stopped`: a `time.Tick` or `time.NewTicker` ticker
+  created per call or iteration and never stopped, reported only when the
+  `go.mod` `go` line is below 1.23 or `asynctimerchan=1` is set.
+- **Behaviour change.** *Select modules* states that, for a diff, a
+  `manifests` trigger matches a file present at the diff's head whether or
+  not the diff changes it.
+- The *Status* section points at `references/modules/index.yaml` for the
+  module list instead of naming each module.
+- The report schema lists every reason a phase can be skipped, and says an
+  empty findings list is a clean run only of the phases in `phases.run`.
+- Every other change is a line rewrap, with no change in meaning.
+
 ### 2026-11-23 — quality-of-life (two working conventions)
 
 - **Behaviour change.** `working-conventions` adds two conventions: search

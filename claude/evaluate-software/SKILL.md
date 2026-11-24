@@ -77,11 +77,13 @@ Decide the input kind and the phases before reading any module.
    - a phase of this run is in its `phases`, as `phases.requested` holds
      it after step 1;
    - a trigger matches the scope: a `files` glob matches a path in it (for a
-     diff, a changed path); a `manifests` entry names a file present in it,
-     with its marker inside that file when one is written; or, for the two
-     design kinds, a `design-markers` entry appears anywhere in the design
-     read, as a word or a heading, or a `design-headings` entry appears
-     there only as a heading, never as a word in the prose.
+     diff, a changed path); a `manifests` entry names a file present in it
+     (for a diff, a file present in the repository at the diff's head,
+     whether or not the diff changes it), with its marker inside that file
+     when one is written; or, for the two design kinds, a `design-markers`
+     entry appears anywhere in the design read, as a word or a heading, or a
+     `design-headings` entry appears there only as a heading, never as a word
+     in the prose.
 4. Record each chosen module in `modules.loaded`, its reason the trigger that
    matched, quoted. Record every other listed module in `modules.skipped`,
    its reason the header field that ruled it out: the input kind, the phase,
@@ -185,20 +187,17 @@ with their reasons, and repeat why any requested phase did not run.
 
 ## Status
 
-The library holds eight modules. Two are on architecture: one for a design
-document and one for the design read from a codebase. Five read code in a
-`diff` or a `repository`: `python-testing` reads the quality of a Python
-test suite, `typescript-type-safety` the type safety of TypeScript code and
-its `tsconfig.json`, `go-testing` the quality of a Go test suite,
-`go-error-handling` the error handling of Go production code, and
-`go-concurrency` the concurrency of Go production code. A `diff` or a
-`repository` with no Python tests or pytest configuration, no TypeScript
-and no Go code or `go.mod` in scope matches no static module, so a static
-run over it ends at step 5's no-match case. The eighth,
-`application-runtime`, is the only
-dynamic module: it starts an application whose manifest declares a start
-or serve command, in any language, and checks that it reports ready,
-answers a smoke check and shuts down cleanly.
+The library holds eight modules, listed in `references/modules/index.yaml`;
+each module's `module.yaml` header says which input kinds and phases it
+supports and what triggers it. Two are on architecture: one for a design
+document and one for the design read from a codebase. The static code
+modules read a test suite, the type safety, the error handling or the
+concurrency of Python, TypeScript or Go code in a `diff` or a
+`repository`. A `diff` or a `repository` whose contents trigger no static
+module ends at step 5's no-match case. One module is dynamic: it starts an
+application whose manifest declares a start or serve command, in any
+language, and checks that it reports ready, answers a smoke check and
+shuts down cleanly.
 
 ## Guardrails
 

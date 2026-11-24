@@ -223,6 +223,32 @@ checks:
       - https://google.github.io/styleguide/go/decisions#goroutine-lifetimes
       - https://github.com/uber-go/guide/blob/master/style.md#dont-fire-and-forget-goroutines
     findings: [goroutines-must-exit]
+  - id: go-concurrency/ticker-never-stopped
+    statement: >-
+      A ticker from `time.Tick` or `time.NewTicker` is created in a function
+      that returns, or on each call or iteration, and never stopped, in a
+      module whose Go version does not recover unstopped tickers.
+    evidence: >-
+      The `time.Tick` or `time.NewTicker` call quoted with its file and
+      line, and no `Stop` of the ticker on any path out of the function; a
+      `time.Tick` ticker has no `Stop` to call. The `go` line of the
+      repository's `go.mod` is read: at 1.23 or later this is not reported,
+      unless a `godebug` line of `go.mod` or `go.work`, or a `//go:debug`
+      line of a main package, sets `asynctimerchan=1`; when the line cannot
+      be read the finding says so. A ticker in a function documented to run
+      for the life of the process is not this defect. The finding says that
+      a library's consumers build it under their own `go` line, which
+      decides whether its tickers are recovered.
+    severity: medium
+    rationale: >-
+      Before Go 1.23 an unstopped ticker is never garbage collected, so
+      each call or iteration that creates one keeps its memory and its
+      runtime timer for the life of the process.
+    references:
+      - https://staticcheck.dev/docs/checks/#SA1015
+      - https://pkg.go.dev/time#Tick
+      - https://go.dev/doc/go1.23
+    findings: [tickers-recovered-from-go-1-23]
   - id: go-concurrency/send-blocks-after-receiver-returns
     statement: >-
       A goroutine sends on a channel whose only receiver can stop receiving

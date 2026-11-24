@@ -72,6 +72,22 @@ sources:
     title: "golang.org/x/sync package errgroup, v0.25.0"
     url: https://pkg.go.dev/golang.org/x/sync/errgroup
     date: 2026-11-23
+  - id: go-1-23-release-notes
+    title: "Go 1.23 Release Notes, Timer changes"
+    url: https://go.dev/doc/go1.23
+    date: 2026-11-24
+  - id: go-godebug
+    title: "Go, Backwards Compatibility, and GODEBUG"
+    url: https://go.dev/doc/godebug
+    date: 2026-11-24
+  - id: go-1-27-release-notes
+    title: "Go 1.27 Release Notes, Runtime and GODEBUG"
+    url: https://go.dev/doc/go1.27
+    date: 2026-11-24
+  - id: go-time
+    title: "Go standard library: package time, go1.27.4"
+    url: https://pkg.go.dev/time
+    date: 2026-11-24
 findings:
   - id: data-race-definition
     claim: >-
@@ -173,6 +189,22 @@ findings:
       background one exposes an object whose `Close` or `Stop` ends it.
     confidence: strong
     sources: [go-wiki-code-review, google-go-decisions, uber-go-guide, go-blog-pipelines]
+  - id: tickers-recovered-from-go-1-23
+    claim: >-
+      Before Go 1.23 an unstopped `Ticker` was never garbage collected and
+      an unstopped `Timer` only after it fired, so a `time.Tick` used
+      repeatedly leaks; from Go 1.23 both are collected once unreferenced,
+      stopped or not. The new behaviour is enabled only when the main
+      program's module has a `go.mod` `go` line of 1.23.0 or later, and Go
+      1.23 building an older program keeps the old one. GODEBUG
+      defaults follow the work module's `go` line, overridden by `godebug`
+      lines in `go.mod` or `go.work` and by `//go:debug` lines in a main
+      package, and `asynctimerchan=1` reverts to the asynchronous timers;
+      Go 1.27 removed that setting and fails a build that sets it to its
+      old value. Staticcheck SA1015 reports `time.Tick` used in a way that
+      leaks.
+    confidence: strong
+    sources: [go-1-23-release-notes, go-time, go-godebug, go-1-27-release-notes, staticcheck]
   - id: blocked-sender-leaks
     claim: >-
       When a receiver stops reading early, the goroutines still sending to
@@ -265,7 +297,9 @@ analyzers at golang.org/x/tools v0.53.0 and the `cmd/vet` analyzer list,
 from Staticcheck's check list, from the Code Review Comments wiki, the
 Google Go style guide's decisions, the Uber Go style guide and the `errgroup`
 package at golang.org/x/sync v0.25.0. Every page was read on 2026-11-23
-against Go 1.27.4. A finding is `strong` where the language's documentation
+against Go 1.27.4, except the Go 1.23 and Go 1.27 release notes, the
+GODEBUG page and the `time` package, read on 2026-11-24 for the ticker
+finding. A finding is `strong` where the language's documentation
 and an independent source agree, or a specification states it, and
 `evidenced` where one source states it directly.
 
@@ -292,7 +326,7 @@ errors lost from goroutines to this module; the check on them excludes a
 call whose error is discarded as a statement or assigned to `_` inside the
 goroutine, which that module's discard check already reports.
 
-## Four consequences derived, not quoted
+## Six consequences derived, not quoted
 
 The `sync` package says its types must not be copied after first use, and
 the copy check's rationale adds why: a copied `Mutex` is a separate value
@@ -311,23 +345,40 @@ section's "runs unguarded" follows from the lock being released before the
 code that follows it; Staticcheck says only that such a section is very
 often a typo for a deferred `Unlock`.
 
+Two more shape the ticker check's gate. The Go 1.23 release notes give
+`asynctimerchan=1` for reverting to the asynchronous channel behaviour, and
+the GODEBUG page ties the setting to the unbuffered channels; neither says
+in words that it also restores the old collection. The check reports a
+ticker under that setting all the same, because the release notes enable
+both behaviours together and offer the setting as the way back. Go 1.27
+fails a build that sets it to its old value, so such a module builds only
+with an older toolchain. And no page read says whether a Go 1.27 or later
+toolchain still keeps unstopped tickers uncollected for a `go` line before
+1.23: its release notes remove `asynctimerchan` and make timer channels
+always unbuffered, but say nothing of collection, and the `time` package
+describes the Go 1.23 behaviour with no condition on the `go` line. So the
+toolchain is left out of the gate, which reads only the `go` line, rather
+than inferring that a newer toolchain recovers the ticker.
+
 ## Version
 
-One check rests on the Go version a package is built with, read from the
+Two checks rest on the Go version a package is built with, read from the
 `go` line of its `go.mod`: a goroutine capturing a loop variable is a race
-only before Go 1.22. `WaitGroup.Go`, from Go 1.25, is named as the
-preferred form and decides nothing.
+only before Go 1.22, and an unstopped ticker leaks only before Go 1.23, or
+where a `godebug` or `//go:debug` line sets `asynctimerchan=1`. A library's
+own `go.mod` is read, though its consumers' `go` lines decide how it is
+built, so the ticker finding names that caveat. `WaitGroup.Go`, from Go
+1.25, is named as the preferred form and decides nothing.
 
 ## What this does not cover
 
 Each of these was considered and left out, for the reason given.
 
-- **`time.Tick` and unstopped timers leaking.** Staticcheck SA1015 and the
-  `time` package ([package time](https://pkg.go.dev/time#Tick)) record that
-  since Go 1.23 the garbage collector recovers unreferenced tickers and
-  timers, stopped or not; how the toolchain and the `go.mod` line together
-  select the old behaviour was not confirmed from a primary page, so no
-  check could state when it applies.
+- **Unstopped timers.** Even before Go 1.23 an unstopped `Timer` was
+  recovered once it had fired, so its retention is bounded by its
+  duration, not a leak; only a ticker, which never stops firing, was held
+  for the life of the process, and Staticcheck SA1015 likewise covers
+  `time.Tick` alone.
 - **A context stored in a struct, or not passed first.** The `context`
   package and both style guides advise against it, but none names a
   failure a finding could be verified against.
