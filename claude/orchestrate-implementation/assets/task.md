@@ -41,25 +41,27 @@ its own deliverable. Where a phase produces evidence rather than code, say so --
 ## Open questions
 
 <Every unresolved decision, one list item each. A draft must have at least one.
-Resolve them in place rather than deleting them: append the answer, the date, and
-the marker RESOLVED to the item, so the record shows what was decided and when.>
+Resolve them in place rather than deleting them: append the answer, the date,
+and the marker RESOLVED to the item, so the record shows what was decided and
+when.>
 
 1. <Question — what has to be decided, and who can decide it.>
 2. <Question.>
 
 ## Dependencies / cross-refs
 
-<Sibling tasks that must not be conflated with this one, and any prior task whose
-findings this one should start from rather than re-derive. Relative Markdown links.
+<Sibling tasks that must not be conflated with this one, and any prior task
+whose findings this one should start from rather than re-derive. Relative
+Markdown links.
 
 A task that literally cannot start until another lands belongs in `blocked-by`
 frontmatter, not only in prose here — that is what files it and what clears it.
 
-Set `kind: spec` if this task is the architecture/vision a set of tickets realizes;
-leave it `ticket` (the default) otherwise. A ticket that is one slice of a spec
-— or a subticket that is one slice of a larger ticket — sets `part-of:` to that parent.
-`part-of` is composition (a piece of), distinct from `parent`, which is lineage
-(split from).>
+Set `kind: spec` if this task is the architecture/vision a set of tickets
+realizes; leave it `ticket` (the default) otherwise. A ticket that is one slice
+of a spec — or a subticket that is one slice of a larger ticket — sets
+`part-of:` to that parent. `part-of` is composition (a piece of), distinct from
+`parent`, which is lineage (split from).>
 
 ## Owner
 
@@ -92,9 +94,10 @@ condition, an entry here is just a wish and will be re-litigated.>
 
 -->
 
-<!-- Add when this task has slices under it (a spec, or a ticket with subtickets):
-a "## Slices" heading followed by an empty BEGIN SLICES / END SLICES comment pair.
-The exact marker text is in references/board-model.md — it cannot be shown inside
-this comment because its closing token would end the comment early. Leave the block
-empty; generate_index.py fills it from the children's frontmatter, so a finished
-slice's outcome appears here with no manual copying. -->
+<!-- Add when this task has slices under it (a spec, or a ticket with
+subtickets): a "## Slices" heading followed by an empty BEGIN SLICES / END
+SLICES comment pair. The exact marker text is in references/board-model.md — it
+cannot be shown inside this comment because its closing token would end the
+comment early. Leave the block empty; generate_index.py fills it from the
+children's frontmatter, so a finished slice's outcome appears here with no
+manual copying. -->

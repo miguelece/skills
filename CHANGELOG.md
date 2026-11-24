@@ -31,6 +31,15 @@ a dated record in the git history and are left as they are.
   empty findings list is a clean run only of the phases in `phases.run`.
 - Every other change is a line rewrap, with no change in meaning.
 
+### 2026-11-24 — task-board-management (digest base check)
+
+- **Behaviour change.** `supervise-implementation`'s digest close checks
+  that the gate's base commit exists in the knowledge base's repository
+  before listing the records the tranche changed there; when it does not,
+  the tranche ran on another repository's board, so the audit is skipped
+  and the record says why.
+- Every other change is a line rewrap, with no change in meaning.
+
 ### 2026-11-23 — quality-of-life (two working conventions)
 
 - **Behaviour change.** `working-conventions` adds two conventions: search

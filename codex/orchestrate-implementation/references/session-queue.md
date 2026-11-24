@@ -22,8 +22,9 @@ mentioned.
   who was not there.
 - **Its gate.** Ungated, waiting on a named person, or waiting on a named task.
   An item nobody can start is not a queue position, it is a note.
-- **What finishing it makes possible**, when anything depends on it. This is what
-  stops a downstream item being scheduled before the thing it consumes exists.
+- **What finishing it makes possible**, when anything depends on it. This is
+  what stops a downstream item being scheduled before the thing it consumes
+  exists.
 
 And one thing for the queue as a whole: **the date it was built**, because every
 ordering reason above is a claim about the board on that day.
@@ -33,13 +34,13 @@ ordering reason above is a claim about the board on that day.
 Prefer, in this order:
 
 1. **What decays fastest if deferred.** A task whose premises were verified this
-   session is cheaper now than next week. A task whose blocker just cleared is at
-   its most re-verifiable while the reason it cleared is still on hand.
+   session is cheaper now than next week. A task whose blocker just cleared is
+   at its most re-verifiable while the reason it cleared is still on hand.
 2. **What unblocks the most.** An item several others consume earns its place
    ahead of an item nothing waits on, even a more interesting one.
-3. **What is cheapest to close while its reasoning is fresh.** A task interviewed
-   an hour ago implements faster than one interviewed in March, and the gap is
-   the re-reading.
+3. **What is cheapest to close while its reasoning is fresh.** A task
+   interviewed an hour ago implements faster than one interviewed in March, and
+   the gap is the re-reading.
 
 **Where one item defines something another consumes, the definer goes first**,
 regardless of the three above. That is a dependency, not a preference, and
@@ -92,9 +93,9 @@ it.
 
 An agent cannot reliably observe its own context-window occupancy. Where a
 running session surfaces a figure at all, it is typically a session-wide token
-budget, which is a different quantity — a budget can be ample while the window is
-nearly full, and the reverse. A rule written against the available number would
-be measuring the wrong thing confidently.
+budget, which is a different quantity — a budget can be ample while the window
+is nearly full, and the reverse. A rule written against the available number
+would be measuring the wrong thing confidently.
 
 So the signals above are **observable proxies**: whether a deliverable is
 mid-edit, whether the next item needs a document that is already committed,
@@ -129,4 +130,5 @@ well, so nothing here is measured. These are arguments from the failure modes
 this lab has already paid for, not results — and the distinction is the same one
 the confidence markings on research findings exist to preserve.
 
-Read this file as a rule to disagree against, which is what it was written to be.
+Read this file as a rule to disagree against, which is what it was written to
+be.

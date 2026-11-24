@@ -36,8 +36,8 @@ making it.
 ## Each commit
 
 1. **Hold one kind of change per commit**: consolidation, removal, leftover
-   cleanup or convention fix, never two. Label it with its kind and its finding ids,
-   within the repository's commit convention. The gate's commits sit after
+   cleanup or convention fix, never two. Label it with its kind and its finding
+   ids, within the repository's commit convention. The gate's commits sit after
    the tranche tip as their own range.
 2. **Re-verify it**: run the owning suite, then
 

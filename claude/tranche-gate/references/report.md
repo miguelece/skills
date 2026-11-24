@@ -107,8 +107,9 @@ not happen as declared.
 A finding cites `path:name`, or the bare file where no single name encloses
 it, and never a line number: the report lands in a board task, which
 `validate_board.py` checks under
-[*Citations name things, never line ranges*](board-model.md#citations-name-things-never-line-ranges),
-because a line number rots as soon as the gate's own commits move the code.
+[*Citations name things, never line
+ranges*](board-model.md#citations-name-things-never-line-ranges), because a line
+number rots as soon as the gate's own commits move the code.
 
 Write "None" under a heading with nothing in it rather than dropping the
 heading: the owner, and anything that later collects gate reports, reads the
