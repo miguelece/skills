@@ -50,9 +50,9 @@ will re-propose it, which is the cost this list exists to stop paying.>
 
 ## Orientation
 
-<Where the work lives. Repository, branch, whether the tree is clean. A directory
-tree if the layout is not self-evident. Say explicitly which directories are
-repositories and which are plain folders.>
+<Where the work lives. Repository, branch, whether the tree is clean. A
+directory tree if the layout is not self-evident. Say explicitly which
+directories are repositories and which are plain folders.>
 
 ```text
 <tree>
@@ -80,16 +80,16 @@ repositories and which are plain folders.>
 
 ## Open questions — must be resolved before proceeding
 
-<Anything genuinely undecided. Mark it unmistakably. If the next session must ask
-the user something, write the question here in the form it should be asked. If
-there are none, write "None." — do not delete the section.>
+<Anything genuinely undecided. Mark it unmistakably. If the next session must
+ask the user something, write the question here in the form it should be asked.
+If there are none, write "None." — do not delete the section.>
 
 ---
 
 ## Non-negotiable conventions
 
-<Numbered. Each with the reason it exists, and what enforces it. A rule without a
-reason gets "improved" by the next session.>
+<Numbered. Each with the reason it exists, and what enforces it. A rule without
+a reason gets "improved" by the next session.>
 
 **Cite these by name, never by number. The numbering is local to this document
 and dies when it is replaced.** An ordinal reads exactly like a stable
@@ -116,9 +116,9 @@ tracked, name the rule.
 
 ## Traps found the hard way
 
-<The highest-value section. Every dead end and wrong assumption this session hit.
-For each: what looked true, what was actually true, and how the difference was
-found. Do not omit these because the work eventually succeeded.>
+<The highest-value section. Every dead end and wrong assumption this session
+hit. For each: what looked true, what was actually true, and how the difference
+was found. Do not omit these because the work eventually succeeded.>
 
 - **<What looked true>.** <What was actually true, and how it surfaced.>
 
@@ -134,7 +134,8 @@ found. Do not omit these because the work eventually succeeded.>
 
 ## Verified state
 
-<Facts checked against the repository just before writing this — not from memory.>
+<Facts checked against the repository just before writing this — not from
+memory.>
 
 ```text
 <git log --oneline -N output>

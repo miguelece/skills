@@ -32,9 +32,9 @@ also says where the next session starts.
   verbatim, which `handoff` already resolves to its *What is pending* list. A
   typed clause replaces both the proposal and that default; it is never
   appended to either.
-- **`into` keeps the meaning it has on `handoff`.** It records the next session's
-  agenda and is never a work order for this one. The clause is passed through
-  unchanged.
+- **`into` keeps the meaning it has on `handoff`.** It records the next
+  session's agenda and is never a work order for this one. The clause is passed
+  through unchanged.
 - **A bare argument is refused.** `/close-out ticket 4` names no agenda. Ask
   whether `into ticket 4` was meant, rather than guessing.
 - **A `+` flag is refused, not passed through.** The audit always receives
@@ -98,11 +98,11 @@ verified fresh.
 
 ## Reporting
 
-The audit reports first, shaped by its own rules. After it, say where the handoff
-was written and list what did not land, if anything. The instruction to clear,
-with the copyable phrase that resumes from that path, comes last, and only once
-the handoff is written and verified — if it is not, say so and do not tell the
-user to clear.
+The audit reports first, shaped by its own rules. After it, say where the
+handoff was written and list what did not land, if anything. The instruction to
+clear, with the copyable phrase that resumes from that path, comes last, and
+only once the handoff is written and verified — if it is not, say so and do not
+tell the user to clear.
 
 ## Guardrails
 

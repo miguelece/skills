@@ -21,8 +21,8 @@ chore(docs): update environment variable reference
 
 ## Type — a deliberately small vocabulary
 
-Primarily four values. Keeping this list short is the point: a type that can mean
-anything sorts nothing.
+Primarily four values. Keeping this list short is the point: a type that can
+mean anything sorts nothing.
 
 | Type | Use for |
 | --- | --- |
@@ -41,7 +41,8 @@ used before. Read `git log` before inventing a new topic.
 
 ## Summary
 
-- Lead with a **present-tense verb**: fix, add, develop, secure, correct, remove.
+- Lead with a **present-tense verb**: fix, add, develop, secure, correct,
+  remove.
 - Say what changed, specifically. `fix(auth): fix bug` carries no information.
 - No trailing period.
 - Far freer than the type — but the freedom is for precision, not for length.
@@ -51,8 +52,8 @@ used before. Read `git log` before inventing a new topic.
 Add a body **only** when the change is too complex to summarize honestly *and*
 cannot be split into cleaner commits.
 
-Reach for the split first. A commit that needs three paragraphs to explain itself
-is usually three commits that each need one line.
+Reach for the split first. A commit that needs three paragraphs to explain
+itself is usually three commits that each need one line.
 
 ## Authorship
 
@@ -72,10 +73,11 @@ than incidental: do not let a tool's default decide your history for you.
 ## Splitting a session into commits
 
 - One coherent change per commit. A commit should be revertible on its own.
-- Do not mix a refactor with a behavior change. Land the refactor first, prove it
-  is inert, then change behavior on top.
+- Do not mix a refactor with a behavior change. Land the refactor first, prove
+  it is inert, then change behavior on top.
 - Tests belong with the change they cover, unless they are a standalone
   test-coverage effort — then they are their own `test(...)` commit.
-- Mechanical sweeps (formatting, renames, lint fixes) go in their own commit so the
-  substantive diff stays readable.
-- Order commits so the tree builds and tests pass at each one, not just at the end.
+- Mechanical sweeps (formatting, renames, lint fixes) go in their own commit so
+  the substantive diff stays readable.
+- Order commits so the tree builds and tests pass at each one, not just at the
+  end.

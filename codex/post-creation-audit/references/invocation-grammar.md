@@ -1,7 +1,7 @@
 # Invocation grammar
 
-How a skill takes a parameter on the invocation line. Two families exist here and
-they are not interchangeable: one names a thing, the other selects a mode.
+How a skill takes a parameter on the invocation line. Two families exist here
+and they are not interchangeable: one names a thing, the other selects a mode.
 
 Cite this file from a skill that takes a parameter. A skill that takes none does
 not carry it, and that is the point of the holder list below.

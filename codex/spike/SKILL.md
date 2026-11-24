@@ -14,23 +14,24 @@ moment it has to be production-quality, it stops being a spike.
 
 ## Boundaries
 
-- **Name the question first**, in one sentence, with what would count as an answer.
-  A spike without a question is just unplanned work.
-- **Everything lives in scratch space** — a gitignored scratch directory, a throwaway
-  branch, or a temp dir. Never in the production tree, not even briefly.
+- **Name the question first**, in one sentence, with what would count as an
+  answer. A spike without a question is just unplanned work.
+- **Everything lives in scratch space** — a gitignored scratch directory, a
+  throwaway branch, or a temp dir. Never in the production tree, not even
+  briefly.
 - **Box it.** State up front how far you will go before stopping and reporting,
   whether the answer arrived or not. Report a spike that ran out of box as
   inconclusive; that is a real result.
 - Skip what production needs and a spike does not: error handling, edge cases,
-  tests for the throwaway code, naming, abstraction, configurability. Deliberately
-  cutting these is the technique, not sloppiness.
+  tests for the throwaway code, naming, abstraction, configurability.
+  Deliberately cutting these is the technique, not sloppiness.
 - Do **not** modify production code to make the spike work. If the spike needs a
   production change to run, that is itself a finding — record it and stop.
 
 ## Steps
 
-1. **Write the question and the answer criteria.** "Can X do Y under constraint Z?"
-   plus what evidence would settle it either way.
+1. **Write the question and the answer criteria.** "Can X do Y under constraint
+   Z?" plus what evidence would settle it either way.
 2. **Choose the scratch location** and confirm it is gitignored or throwaway.
 3. **Build the smallest thing that could answer it.** Hardcode freely. Use real
    inputs where the answer depends on them — a spike on synthetic data answers a
@@ -38,22 +39,22 @@ moment it has to be production-quality, it stops being a spike.
 4. **Get the evidence.** Measure rather than infer. Record the actual numbers,
    errors, and outputs.
 5. **Write down what you learned**, including anything that contradicted the
-   premise. A spike that overturns its own question is the most valuable kind, and
-   that result evaporates unless it is written down.
+   premise. A spike that overturns its own question is the most valuable kind,
+   and that result evaporates unless it is written down.
 6. **Decide the disposition explicitly** — see below. Say which, and do it.
 
 ## Disposition — choose one, out loud
 
-- **Discard.** The answer is recorded; the code is deleted. This is the default and
-  the most common correct outcome.
-- **Promote by rewriting.** The approach is validated, so it gets built properly,
-  from scratch, with tests. The spike is still deleted — it was the instrument, not
-  a draft.
-- **Keep as a tool.** It turned out to be a useful harness. Then it graduates: it
-  gets a real home, a real name, and tests, in its own commit.
+- **Discard.** The answer is recorded; the code is deleted. This is the default
+  and the most common correct outcome.
+- **Promote by rewriting.** The approach is validated, so it gets built
+  properly, from scratch, with tests. The spike is still deleted — it was the
+  instrument, not a draft.
+- **Keep as a tool.** It turned out to be a useful harness. Then it graduates:
+  it gets a real home, a real name, and tests, in its own commit.
 
-Never a fourth option where the spike quietly stays where it is and slowly becomes
-load-bearing.
+Never a fourth option where the spike quietly stays where it is and slowly
+becomes load-bearing.
 
 ## Guardrails
 

@@ -16,6 +16,10 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-24 — quality-of-life (rewrap)
+
+- Every change is a line rewrap to 80 columns, with no word changed.
+
 ### 2026-11-24 — task-board-management (precedent use, side-called models)
 
 - **Behaviour change.** `focused-implementation`'s *Closing out*, and the

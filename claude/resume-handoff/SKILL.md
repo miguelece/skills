@@ -5,8 +5,8 @@ description: Read the handoff document a previous session left on disk and resum
 
 # Resume from a handoff
 
-Pick up work a previous session left in a handoff document: verify what it claims
-is still true, report what moved, then check in before acting.
+Pick up work a previous session left in a handoff document: verify what it
+claims is still true, report what moved, then check in before acting.
 
 `handoff` writes the document; this skill reads it. The two halves fire in
 different sessions and share nothing but the file on disk.

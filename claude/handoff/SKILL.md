@@ -5,14 +5,14 @@ description: Write a self-contained handoff document to disk so a fresh session 
 
 # Write a handoff
 
-Write a document that lets a fresh session pick up this work with no memory of the
-conversation — then, when asked, clear and resume from it.
+Write a document that lets a fresh session pick up this work with no memory of
+the conversation — then, when asked, clear and resume from it.
 
-A written handoff beats automatic summarization because you choose what survives.
-Summarization keeps what was *said*; a handoff keeps what is *load-bearing*, and
-those are different sets. The parts that get dropped first — the dead ends, the
-reasons behind a convention, the thing that is not yet decided — are the parts a
-fresh session most needs.
+A written handoff beats automatic summarization because you choose what
+survives. Summarization keeps what was *said*; a handoff keeps what is
+*load-bearing*, and those are different sets. The parts that get dropped first —
+the dead ends, the reasons behind a convention, the thing that is not yet
+decided — are the parts a fresh session most needs.
 
 Start from [assets/handoff.md](assets/handoff.md).
 
@@ -37,11 +37,13 @@ Start from [assets/handoff.md](assets/handoff.md).
   compaction that drops the path, it helps only if the document is re-read.
 - Write for a reader with **zero** context. No pronouns pointing at the
   conversation, no "as discussed", no "the file we were editing".
-- **Absolute paths or repo-relative paths, always.** "the config file" is useless.
+- **Absolute paths or repo-relative paths, always.** "the config file" is
+  useless.
 - State what is **not** known or **not** decided as explicitly as what is. An
-  unresolved question papered over becomes a wrong assumption in the next session.
-- Do not write a chronology. Nobody needs the order things happened in; they need
-  the current state and the next action.
+  unresolved question papered over becomes a wrong assumption in the next
+  session.
+- Do not write a chronology. Nobody needs the order things happened in; they
+  need the current state and the next action.
 
 ## What must be in it
 
@@ -61,29 +63,30 @@ Start from [assets/handoff.md](assets/handoff.md).
    obvious. Which repository, which branch, whether anything is uncommitted.
 3. **The task.** What is being done and how far it got. Split cleanly into done,
    in progress, and not started.
-4. **Open questions — must be resolved before proceeding.** What the next session
-   must decide, or ask the user, before it starts. Mark these unmistakably — a
-   placeholder that reads as a decision is worse than an empty section. This
-   section outranks the agenda, so it sits near the top where it will be read.
-5. **Non-negotiable conventions.** Each with the reason it exists. A rule without
-   its reason gets "improved" by the next session. If a test or a hook enforces
-   it, say which. **Number them, and say in the section that the numbering is
-   local to the document and must never be cited from a tracked file** — an
-   ordinal reads like a stable identifier, so work written during the session
-   cites it, and the next handoff renumbers and strands every one.
+4. **Open questions — must be resolved before proceeding.** What the next
+   session must decide, or ask the user, before it starts. Mark these
+   unmistakably — a placeholder that reads as a decision is worse than an empty
+   section. This section outranks the agenda, so it sits near the top where it
+   will be read.
+5. **Non-negotiable conventions.** Each with the reason it exists. A rule
+   without its reason gets "improved" by the next session. If a test or a hook
+   enforces it, say which. **Number them, and say in the section that the
+   numbering is local to the document and must never be cited from a tracked
+   file** — an ordinal reads like a stable identifier, so work written during
+   the session cites it, and the next handoff renumbers and strands every one.
 6. **Commands.** The exact invocations, with the directory to run each from.
    Copy-pasteable. Not "run the tests" — the actual command line.
 7. **Traps found the hard way.** Every dead end, wrong assumption, and
-   non-obvious failure this session hit. **This is the highest-value section** and
-   the one a summary always loses. Each entry: what looked true, what was actually
-   true, and how it was found.
-8. **Loose ends.** Everything deliberately left undone, with its current state and
-   why it was left. A table works well.
-9. **Verified state.** The facts checked against the repository immediately before
-   writing, not recalled: commits, the test suite's real result, build and lint
-   status, anything uncommitted. Being explicitly a dated snapshot is what makes
-   this the one section where exact counts belong — stated anywhere else they go
-   stale without anything noticing.
+   non-obvious failure this session hit. **This is the highest-value section**
+   and the one a summary always loses. Each entry: what looked true, what was
+   actually true, and how it was found.
+8. **Loose ends.** Everything deliberately left undone, with its current state
+   and why it was left. A table works well.
+9. **Verified state.** The facts checked against the repository immediately
+   before writing, not recalled: commits, the test suite's real result, build
+   and lint status, anything uncommitted. Being explicitly a dated snapshot is
+   what makes this the one section where exact counts belong — stated anywhere
+   else they go stale without anything noticing.
 
 ## The `into` grammar
 
@@ -120,8 +123,8 @@ conversation — act on them normally.
 1. Establish the true current state from the repository, not from memory:
    `git status`, `git log --oneline -10`, and the test suite's actual result.
 2. Draft the document from the template.
-3. **Re-read it as a stranger.** For each paragraph ask: could someone act on this
-   with no other context? Every "it", "that file", or "the usual way" is a
+3. **Re-read it as a stranger.** For each paragraph ask: could someone act on
+   this with no other context? Every "it", "that file", or "the usual way" is a
    defect — replace it with the specific thing.
 4. Verify every path, command, and claim you wrote. A handoff's authority is the
    reason it is trusted; one wrong path undermines all of it.
@@ -162,8 +165,8 @@ and clear", or `close-out`, which runs this after `post-creation-audit`):
   not be checked.
 - Do not let an agenda override an unresolved open question.
 - Do not write a handoff that assumes the reader saw the conversation.
-- Do not omit the traps because the work eventually succeeded. They are the reason
-  it succeeded.
+- Do not omit the traps because the work eventually succeeded. They are the
+  reason it succeeded.
 - Do not record an open question as though it were settled.
 - Do not claim a state you did not verify — especially "tests pass". Run them.
 - Do not summarize the conversation. Describe the state of the work.
