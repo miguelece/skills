@@ -17,9 +17,13 @@ sources:
     url: https://docs.pytest.org/en/stable/explanation/goodpractices.html
     date: 2026-11-21
   - id: pytest-reference
-    title: "pytest API reference, 9.0.2 (pytest.approx, the xfail marker)"
+    title: "pytest API reference, 9.0.2 (pytest.approx, the xfail marker, the strict and strict_xfail options)"
     url: https://docs.pytest.org/en/stable/reference/reference.html
-    date: 2026-11-21
+    date: 2026-11-24
+  - id: pytest-changelog-9-0-0
+    title: "pytest changelog, 9.0.0 (strict mode and the strict_xfail rename)"
+    url: https://docs.pytest.org/en/stable/changelog.html
+    date: 2026-11-24
   - id: pytest-tmp-path
     title: "pytest: How to use temporary directories and files in tests"
     url: https://docs.pytest.org/en/stable/how-to/tmp_path.html
@@ -119,10 +123,16 @@ findings:
       pytest's skip and xfail markers take a reason, and a conditional xfail
       requires one; by default neither an xfail nor an unexpected pass fails
       the suite, and `strict=True` or the strict-xfail option makes an
-      unexpected pass fail it. pytest calls a permanent non-strict xfail
-      dangerous.
+      unexpected pass fail it. From pytest 9.0 the umbrella `strict` option,
+      or the `--strict` flag, also turns strict xfail on, and an explicitly
+      set `strict_xfail`, or its alias `xfail_strict`, overrides it. pytest
+      calls a permanent non-strict xfail dangerous.
     confidence: evidenced
-    sources: [pytest-skipping, pytest-reference, pytest-flaky]
+    sources:
+      - pytest-skipping
+      - pytest-reference
+      - pytest-changelog-9-0-0
+      - pytest-flaky
   - id: floats-compare-with-tolerance
     claim: >-
       Exact equality on computed floats fails on rounding, so pytest

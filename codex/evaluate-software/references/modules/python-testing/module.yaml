@@ -186,9 +186,16 @@ checks:
       changed.
     evidence: >-
       The `pytest.mark.xfail` marker quoted with its file and line, with no
-      `strict=True`, and the test configuration read, showing the
-      strict-xfail option (`xfail_strict` or `strict_xfail`) not set to
-      true.
+      `strict=True`, and the test configuration read in pytest's own order,
+      showing strict xfail off. A marker's `strict=` decides first;
+      otherwise an explicit `strict_xfail`, or its alias `xfail_strict`,
+      decides, whatever `strict` says; only when neither is set does the
+      umbrella apply, as `strict = true` in the configuration or `--strict`
+      in `addopts`, and then only on pytest 9.0 or later. The pytest version
+      is read from a pin or lockfile entry for pytest, or a `minversion` of
+      9.0 or later in the configuration; when `strict` or `--strict` is set
+      and the version cannot be read, the marker is named as unresolved and
+      not reported.
     severity: low
     rationale: >-
       Without strict mode an unexpected pass does not fail the suite, so a

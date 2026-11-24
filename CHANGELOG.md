@@ -16,6 +16,25 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-24 — software-evaluation (examples required, four checks sharpened)
+
+- **Behaviour change.** The module contract requires an `examples.md` of
+  every module, reported as missing otherwise, and states the order of an
+  example's sections. The two architecture modules,
+  `architecture-design-document` and `architecture-design-from-code`, ship
+  their worked examples.
+- **Behaviour change.** `evaluate-software`'s dynamic phase starts the
+  declared command as the root of its own process group and stops the
+  application by signalling that group, so a wrapper such as `npm start`
+  no longer leaves it running. `application-runtime`'s checks ask for a
+  clean stop and read a typical documented wait as no limit.
+- **Behaviour change.** `go-error-handling`'s in-band check exempts a
+  documented `-1` position; `go-concurrency`'s shared-variable check states
+  a `Wait` against both accesses, so one `Wait` no longer excuses two
+  sibling goroutines; and `python-testing`'s strict-xfail check reads
+  pytest's configuration in order, including 9.0's umbrella `strict`
+  option.
+
 ### 2026-11-24 — task-board-management (the close acts on its findings)
 
 - **Behaviour change.** `focused-implementation`'s *Closing out* gains a

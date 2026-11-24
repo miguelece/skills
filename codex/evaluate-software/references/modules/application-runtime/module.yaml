@@ -33,8 +33,12 @@ checks:
       readiness signal waited for (a health endpoint, a log line, a listening
       port), with where it is documented or configured; and the observed
       outcome: the exit code and the last lines of output, or the time waited
-      with no signal. Where nothing documents a readiness signal or a wait,
-      the wait used is stated, and only an exit or a crash is reported.
+      with no signal. A wait given as a limit (within a time, a timeout, a
+      probe's threshold) is the limit. A wait given as typical (usually,
+      about, in most cases) is not a limit and reads as no documented wait:
+      where nothing documents a readiness signal or a limit, the wait used
+      is stated, no shorter than any typical time quoted, and only an exit
+      or a crash is reported.
     severity: high
     rationale: >-
       An application that does not start by its own declared command fails
@@ -43,7 +47,10 @@ checks:
     references:
       - https://docs.npmjs.com/cli/v10/commands/npm-start
       - https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
-    findings: [start-commands-are-declared, readiness-is-its-own-signal]
+    findings:
+      - start-commands-are-declared
+      - readiness-is-its-own-signal
+      - startup-limits-cover-the-worst-case
   - id: application-runtime/smoke-check-fails
     statement: >-
       A behaviour the repository documents for its running application is
@@ -68,11 +75,19 @@ checks:
     statement: >-
       The application does not exit promptly and cleanly when asked to stop.
     evidence: >-
-      The stop signal sent (SIGTERM, SIGINT or the platform's equivalent, or
-      the declared stop command); the time waited, at least 10 seconds; and
-      what was observed: the process still running, the port still open, a
-      non-zero exit, or an error logged during shutdown. A process stopped by
-      force after the wait is named as such.
+      The stop sent to the started command's process group, not to a
+      wrapper's process id alone (SIGTERM or SIGINT on POSIX,
+      CTRL_BREAK_EVENT on Windows, or the declared stop command), naming the
+      group and the processes in it; the time waited, at least 10 seconds;
+      and what was observed: a process still running, the port still bound,
+      a non-zero exit code other than an end by the signal sent, or an error
+      logged during shutdown. A process ended by the stop signal's own
+      default action (on POSIX, terminated by that signal, 128 plus its
+      number through a shell; on Windows, STATUS_CONTROL_C_EXIT) has stopped
+      cleanly, and the record names its status as such. A forced termination
+      (SIGKILL, or a signal sent through a runtime's Windows kill emulation,
+      which ends the process unconditionally) is never the stop this check
+      judges, only the stop after the wait, named as such.
     severity: medium
     rationale: >-
       A process that ignores the stop signal is killed mid-request, so work
@@ -80,4 +95,7 @@ checks:
       start on the same machine.
     references:
       - https://12factor.net/disposability
-    findings: [processes-stop-gracefully-on-a-signal]
+    findings:
+      - processes-stop-gracefully-on-a-signal
+      - wrappers-do-not-reliably-forward-a-stop
+      - a-group-stop-reaches-every-process

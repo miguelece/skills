@@ -28,6 +28,26 @@ sources:
     title: "The Twelve-Factor App, IX: Disposability"
     url: https://12factor.net/disposability
     date: 2026-11-22
+  - id: npm-run-script-signals
+    title: "npm/run-script: lib/signal-manager.js"
+    url: https://github.com/npm/run-script/blob/main/lib/signal-manager.js
+    date: 2026-11-24
+  - id: heroku-dyno-shutdown
+    title: "Heroku Dev Center: Dyno Shutdown Behavior"
+    url: https://devcenter.heroku.com/articles/dyno-shutdown-behavior
+    date: 2026-11-24
+  - id: posix-kill
+    title: "kill(2), Linux manual page"
+    url: https://man7.org/linux/man-pages/man2/kill.2.html
+    date: 2026-11-24
+  - id: windows-process-creation-flags
+    title: "Microsoft Learn: Process Creation Flags"
+    url: https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+    date: 2026-11-24
+  - id: node-signal-events
+    title: "Node.js documentation: process, Signal events"
+    url: https://nodejs.org/api/process.html#signal-events
+    date: 2026-11-24
 findings:
   - id: running-the-application-finds-what-reading-misses
     claim: >-
@@ -53,6 +73,13 @@ findings:
       no traffic until it reports ready.
     confidence: evidenced
     sources: [k8s-probes]
+  - id: startup-limits-cover-the-worst-case
+    claim: >-
+      A startup limit is set long enough to cover the worst-case startup
+      time, so a time documented as typical is not a limit: a slower start
+      than usual is not a failure to start.
+    confidence: evidenced
+    sources: [k8s-probes]
   - id: smoke-checks-are-shallow-gates
     claim: >-
       A smoke test is a quick, shallow check of an application's most basic
@@ -67,6 +94,31 @@ findings:
       flight and exits.
     confidence: evidenced
     sources: [twelve-factor-disposability]
+  - id: wrappers-do-not-reliably-forward-a-stop
+    claim: >-
+      A wrapper does not reliably pass a stop signal on to the application
+      beneath it: npm runs a script through a shell and forwards SIGINT and
+      SIGTERM only to that shell, whether the shell passes them on depends
+      on the shell, and a Procfile runner signals each process it tracks by
+      its own process id. A signal sent to the wrapper alone can report the
+      wrapper's exit as the application's.
+    confidence: evidenced
+    sources: [npm-run-script-signals, heroku-dyno-shutdown]
+  - id: a-group-stop-reaches-every-process
+    claim: >-
+      A stop sent to a process group reaches every process in it. On POSIX,
+      a signal sent to the negated group id goes to each member; on Windows,
+      a process created with CREATE_NEW_PROCESS_GROUP roots a group of all
+      its descendants, to which CTRL_BREAK_EVENT is sent, since SIGTERM,
+      SIGINT and SIGKILL sent through Node's kill emulation end the target
+      unconditionally. A platform sends the stop the same way: Heroku
+      signals every process in a dyno, then SIGKILL after 30 seconds.
+    confidence: evidenced
+    sources:
+      - posix-kill
+      - windows-process-creation-flags
+      - node-signal-events
+      - heroku-dyno-shutdown
 ---
 
 # Application runtime: research
@@ -95,6 +147,21 @@ adds no container to any other command.
 Readiness, the smoke check and shutdown follow the lifecycle an
 orchestrator imposes on a process: wait for a readiness signal before
 traffic, then stop it with a signal and expect a prompt, clean exit.
+
+Two readings were settled on 2026-11-24, when the worked run records were
+written, because each check's evidence otherwise let two evaluators report
+the same run differently. The stop goes to the started command's process
+group, not the wrapper's process id: npm's signal forwarding was removed in
+May 2023 (npm/run-script pull 142) and restored in January 2024 (pull 188),
+so it cannot be relied on, and a group stop is what a terminal's Ctrl+C
+and a dyno's shutdown both send. An end by the stop signal's own default
+action is a clean stop, by the owner's ruling: the check's rationale names
+a process killed mid-request and a port left bound, and with no request in
+flight neither shows from outside, so an application that would drop
+in-flight work is not caught, as no check sends a request during the stop.
+A documented typical time is read as no documented wait rather than as a
+limit with a margin, since no source fixes a margin and the module would
+otherwise invent a limit the repository never set.
 
 ## What this does not cover
 

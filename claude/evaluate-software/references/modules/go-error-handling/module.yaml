@@ -308,7 +308,10 @@ checks:
       value on a failure or not-found path and a normal value of the same
       type otherwise, with no `error` or `bool` result; and its doc comment
       or a caller showing the value means failure. A nil map, slice or
-      pointer that callers can use as empty is not this defect.
+      pointer that callers can use as empty is not this defect. A function
+      returning a position in a string, slice or array it searches,
+      documented to return `-1` when nothing is found as the standard
+      library's `Index` functions do, is not this defect either.
     severity: low
     rationale: >-
       Nothing makes the caller check the special value, so a forgotten

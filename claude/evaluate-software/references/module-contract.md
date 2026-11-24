@@ -14,7 +14,7 @@ references/modules/
 └── <module-id>/
     ├── module.yaml         # the header and the checks
     ├── research.md         # the module's own findings file
-    ├── examples.md         # a bad and a good example per check, on demand
+    ├── examples.md         # a bad and a good example per check, read on demand
     └── ...                 # any guidance the checks need, loaded on demand
 ```
 
@@ -144,7 +144,9 @@ checks.
   heading holding the check's full id, `<module-id>/<name>`, and nothing
   else. Every
   check in `module.yaml` has a section, and every section names a check: the
-  two agree in both directions, as checks and findings do.
+  two agree in both directions, as checks and findings do. The sections
+  follow the checks' order in `module.yaml`, so a reader who knows where a
+  check sits finds its example in the same place.
 - **A bad and a good example in each section.** The bad example shows the
   defect the check's `statement` names and satisfies its `evidence`. The
   good example is the nearest correct version, and does not trigger the
@@ -154,9 +156,9 @@ checks.
   no private material, and they follow the module's link rule: no link out
   of the module and no home path.
 
-A heading inside a fenced code block is code, not a section. The file is
-optional for now: a module without it is not refused, and a module that has
-it is checked as above.
+A heading inside a fenced code block is code, not a section. Every module
+carries the file: a module without it is refused, as one without
+`research.md` is.
 
 ## How the contract is checked
 
@@ -165,7 +167,7 @@ against this document: each header field present with an allowed value, each
 check with a rationale and an external reference, a findings file citing at
 least one dated source, checks and findings linked both ways (each check's
 `findings` naming only ids its `research.md` records, and each finding there
-cited by some check), an examples file, where a module has one, with a
-section for each check and none for anything else, no link out of the module
-and no home path, unique module and check ids, and an index that matches the
+cited by some check), an examples file with a section for each check, in
+the checks' order, and none for anything else, no link out of the module and
+no home path, unique module and check ids, and an index that matches the
 directories both ways.

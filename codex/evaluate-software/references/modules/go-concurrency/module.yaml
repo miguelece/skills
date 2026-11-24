@@ -31,10 +31,13 @@ checks:
       the same variable, field or map in another that can run at the same
       time; and the absence, between them, of a mutex held at both, a
       channel operation ordering them, a `WaitGroup.Wait` or `errgroup`
-      `Wait` after the goroutine's last access, or `sync/atomic` at every
-      access. A loop variable captured by a goroutine is the loop variable
-      check's, and a variable updated through `sync/atomic` at some
-      accesses is the atomic check's, not this one.
+      `Wait`, in one access's goroutine before that access, for the other's
+      goroutine after its last access, or `sync/atomic` at every access.
+      Two goroutines that each access the variable before one `Wait` are
+      not ordered with each other by it. A loop variable captured by a
+      goroutine is the loop variable check's, and a variable updated
+      through `sync/atomic` at some accesses is the atomic check's, not
+      this one.
     severity: high
     rationale: >-
       The memory model calls a program with a race incorrect: a race on a

@@ -222,7 +222,7 @@ the configuration does not set the strict-xfail option, so when the rounding
 bug is fixed the test passes as XPASS and the suite stays green:
 
 ```python
-# pyproject.toml: [tool.pytest.ini_options] sets no xfail_strict or strict_xfail
+# pyproject.toml: [tool.pytest.ini_options] sets none of strict, xfail_strict or strict_xfail
 @pytest.mark.xfail(reason="rounding bug in invoice totals")
 def test_invoice_total():
     assert invoice_total(["19.99", "5.01"]) == Decimal("25.00")

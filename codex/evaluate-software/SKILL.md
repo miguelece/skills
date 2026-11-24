@@ -143,7 +143,11 @@ before it runs.
    installed first, that install is a launch of its own, asked as above,
    and it runs only after its runtime and its packages are checked against
    current security advisories, from the lockfile, never an unpinned fetch.
-5. **Start it and confirm readiness.** Wait for the signal the repository
+5. **Start it and confirm readiness.** Start the declared command as the
+   root of its own process group (a new session on POSIX,
+   `CREATE_NEW_PROCESS_GROUP` on Windows), so a stop reaches the
+   application beneath a wrapper such as `npm start`, which does not
+   reliably pass a signal on. Wait for the signal the repository
    documents (a health endpoint, a log line, a listening port) before any
    check runs, and record the process in `dynamic.started`: its `target`,
    its exact `command`, and in `ready` how readiness was confirmed.
@@ -152,9 +156,11 @@ before it runs.
    before recording, as in step 3, then record each finding with
    `findings.phase`: `dynamic`, and in `findings.dynamic` the `command` or
    request that exercised it, what was `observed` and what was `expected`.
-7. **Tear down every process** the phase started, and confirm each has
-   stopped and released its port. A process that will not stop is reported
-   to the user at once, by its command and process id, not as a finding.
+7. **Tear down every process** the phase started: stop each by signalling
+   its process group, not the wrapper's process id alone, then confirm
+   every process in the group has exited and the port is released. A
+   process that will not stop is reported to the user at once, by its
+   command and process id, not as a finding.
 
 ### 5. Report
 

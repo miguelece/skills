@@ -176,7 +176,10 @@ findings:
     claim: >-
       A function should not signal an error or a missing result with an
       in-band value such as `-1`, `""` or `nil`, which callers forget to
-      check, but return an extra `error` or `ok` result.
+      check, but return an extra `error` or `ok` result. The source names
+      the standard library's `strings` package, whose in-band values
+      simplify string code, as an accepted trade-off against that general
+      rule.
     confidence: evidenced
     sources: [go-wiki-code-review]
   - id: error-types-expose-their-cause
