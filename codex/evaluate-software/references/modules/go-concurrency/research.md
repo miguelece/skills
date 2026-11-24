@@ -88,6 +88,14 @@ sources:
     title: "Go standard library: package time, go1.27.4"
     url: https://pkg.go.dev/time
     date: 2026-11-24
+  - id: go-1-23-time-source
+    title: "Go source, release-branch.go1.23: src/time/sleep.go and src/time/tick.go"
+    url: https://github.com/golang/go/tree/release-branch.go1.23/src/time
+    date: 2026-11-24
+  - id: go-1-23-runtime-source
+    title: "Go source, release-branch.go1.23: src/runtime/time.go"
+    url: https://github.com/golang/go/blob/release-branch.go1.23/src/runtime/time.go
+    date: 2026-11-24
 findings:
   - id: data-race-definition
     claim: >-
@@ -199,12 +207,15 @@ findings:
       1.23 building an older program keeps the old one. GODEBUG
       defaults follow the work module's `go` line, overridden by `godebug`
       lines in `go.mod` or `go.work` and by `//go:debug` lines in a main
-      package, and `asynctimerchan=1` reverts to the asynchronous timers;
-      Go 1.27 removed that setting and fails a build that sets it to its
-      old value. Staticcheck SA1015 reports `time.Tick` used in a way that
-      leaks.
+      package. `asynctimerchan=1` restores both pre-1.23 behaviours, the
+      buffered channel and the uncollected unstopped timer, and a ticker
+      with them, since `NewTicker` builds its timer through the same
+      `syncTimer` path that withholds the channel from the runtime under
+      that setting; Go 1.27 removed the setting and fails a build that
+      sets it to its old value. Staticcheck SA1015 reports `time.Tick`
+      used in a way that leaks.
     confidence: strong
-    sources: [go-1-23-release-notes, go-time, go-godebug, go-1-27-release-notes, staticcheck]
+    sources: [go-1-23-release-notes, go-time, go-godebug, go-1-27-release-notes, go-1-23-time-source, go-1-23-runtime-source, staticcheck]
   - id: blocked-sender-leaks
     claim: >-
       When a receiver stops reading early, the goroutines still sending to
@@ -298,10 +309,11 @@ from Staticcheck's check list, from the Code Review Comments wiki, the
 Google Go style guide's decisions, the Uber Go style guide and the `errgroup`
 package at golang.org/x/sync v0.25.0. Every page was read on 2026-11-23
 against Go 1.27.4, except the Go 1.23 and Go 1.27 release notes, the
-GODEBUG page and the `time` package, read on 2026-11-24 for the ticker
-finding. A finding is `strong` where the language's documentation
-and an independent source agree, or a specification states it, and
-`evidenced` where one source states it directly.
+GODEBUG page, the `time` package and the Go 1.23 `time` and `runtime`
+sources, read on 2026-11-24 for the ticker finding. A finding is `strong`
+where the language's documentation and an independent source agree, or a
+specification states it, and `evidenced` where one source states it
+directly.
 
 ## Reading, not running
 
@@ -326,7 +338,7 @@ errors lost from goroutines to this module; the check on them excludes a
 call whose error is discarded as a statement or assigned to `_` inside the
 goroutine, which that module's discard check already reports.
 
-## Six consequences derived, not quoted
+## Five consequences derived, not quoted
 
 The `sync` package says its types must not be copied after first use, and
 the copy check's rationale adds why: a copied `Mutex` is a separate value
@@ -345,27 +357,29 @@ section's "runs unguarded" follows from the lock being released before the
 code that follows it; Staticcheck says only that such a section is very
 often a typo for a deferred `Unlock`.
 
-Two more shape the ticker check's gate. The Go 1.23 release notes give
-`asynctimerchan=1` for reverting to the asynchronous channel behaviour, and
-the GODEBUG page ties the setting to the unbuffered channels; neither says
-in words that it also restores the old collection. The check reports a
-ticker under that setting all the same, because the release notes enable
-both behaviours together and offer the setting as the way back. Go 1.27
-fails a build that sets it to its old value, so such a module builds only
-with an older toolchain. And no page read says whether a Go 1.27 or later
-toolchain still keeps unstopped tickers uncollected for a `go` line before
-1.23: its release notes remove `asynctimerchan` and make timer channels
-always unbuffered, but say nothing of collection, and the `time` package
-describes the Go 1.23 behaviour with no condition on the `go` line. So the
-toolchain is left out of the gate, which reads only the `go` line, rather
-than inferring that a newer toolchain recovers the ticker.
+One more shapes the ticker check's gate. No page read says whether a Go
+1.27 or later toolchain still keeps unstopped tickers uncollected for a
+`go` line before 1.23: its release notes remove `asynctimerchan` and make
+timer channels always unbuffered, but say nothing of collection, and the
+`time` package describes the Go 1.23 behaviour with no condition on the
+`go` line. So the toolchain is left out of the gate, which reads only the
+`go` line, rather than inferring that a newer toolchain recovers the
+ticker.
 
 ## Version
 
 Two checks rest on the Go version a package is built with, read from the
 `go` line of its `go.mod`: a goroutine capturing a loop variable is a race
 only before Go 1.22, and an unstopped ticker leaks only before Go 1.23, or
-where a `godebug` or `//go:debug` line sets `asynctimerchan=1`. A library's
+where a `godebug` or `//go:debug` line sets `asynctimerchan=1`. The Go 1.23
+source states what that setting does: `NewTimer`'s doc comment says it
+restores both pre-1.23 behaviours, `syncTimer` returns nil under it so the
+runtime is never told the timer has a channel, and the runtime lets a
+timer wait outside its heap for a blocked receiver, which is what lets an
+unreferenced one be collected, only when it has a channel. `NewTicker`
+builds its timer through the same `newTimer` and `syncTimer` call, so a
+ticker follows the same rule. Go 1.27 fails a build that sets it, so such a
+module builds only with an older toolchain. A library's
 own `go.mod` is read, though its consumers' `go` lines decide how it is
 built, so the ticker finding names that caveat. `WaitGroup.Go`, from Go
 1.25, is named as the preferred form and decides nothing.

@@ -16,6 +16,16 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-24 — software-evaluation (worked examples, ticker source)
+
+- **Behaviour change.** The module contract describes an optional
+  `examples.md` beside a module's `module.yaml`: one section per check id,
+  each with a bad and a good example, and none for an id that is not a
+  check.
+- The `go-concurrency` module's research cites the Go 1.23 `time` and
+  `runtime` sources for the ticker check's `asynctimerchan=1` exception,
+  replacing a reading recorded as derived. The check is unchanged.
+
 ### 2026-11-24 — software-evaluation (ticker check, manifest trigger)
 
 - **Behaviour change.** `evaluate-software`'s `go-concurrency` module adds

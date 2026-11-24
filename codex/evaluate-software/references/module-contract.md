@@ -14,6 +14,7 @@ references/modules/
 └── <module-id>/
     ├── module.yaml         # the header and the checks
     ├── research.md         # the module's own findings file
+    ├── examples.md         # a bad and a good example per check, on demand
     └── ...                 # any guidance the checks need, loaded on demand
 ```
 
@@ -131,6 +132,32 @@ belongs in the prose body instead.
 The body below the frontmatter is free prose: how the findings were reached,
 and what they do not cover.
 
+## The examples file
+
+`examples.md` holds worked examples of the module's checks: one section per
+check, so a reader can see each defect before judging a finding of it. It is
+read on demand, like any other guidance file, when a check's `statement` or
+`evidence` leaves a case unclear; the router does not load it with the
+checks.
+
+- **One section per check id.** Each section's heading is a level-two
+  heading holding the check's full id, `<module-id>/<name>`, and nothing
+  else. Every
+  check in `module.yaml` has a section, and every section names a check: the
+  two agree in both directions, as checks and findings do.
+- **A bad and a good example in each section.** The bad example shows the
+  defect the check's `statement` names and satisfies its `evidence`. The
+  good example is the nearest correct version, and does not trigger the
+  check. Each is introduced by a line reading `**Bad.**` or `**Good.**`, so
+  no heading repeats between sections, and is short, usually one code block.
+- **Examples are invented for the purpose.** They quote no real codebase and
+  no private material, and they follow the module's link rule: no link out
+  of the module and no home path.
+
+A heading inside a fenced code block is code, not a section. The file is
+optional for now: a module without it is not refused, and a module that has
+it is checked as above.
+
 ## How the contract is checked
 
 A static contract suite in the authoring repository checks every module
@@ -138,5 +165,7 @@ against this document: each header field present with an allowed value, each
 check with a rationale and an external reference, a findings file citing at
 least one dated source, checks and findings linked both ways (each check's
 `findings` naming only ids its `research.md` records, and each finding there
-cited by some check), no link out of the module and no home path, unique
-module and check ids, and an index that matches the directories both ways.
+cited by some check), an examples file, where a module has one, with a
+section for each check and none for anything else, no link out of the module
+and no home path, unique module and check ids, and an index that matches the
+directories both ways.
