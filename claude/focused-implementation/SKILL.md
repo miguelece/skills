@@ -44,7 +44,9 @@ Set `status: in-progress` and update `updated` before starting.
    by this task's tests in its own test files, are the task's own. Anything
    meant to outlive the task — a shared fixture library, a test runner, a
    harness, a new measurement script, a validator or lint rule — is new
-   verification tooling, and is out of this task's scope (step 8).
+   verification tooling, and is out of this task's scope (step 8). Before a
+   helper, a fixture step or a test is added, load the `working-conventions`
+   skill and apply its reference for that moment.
 3. **Work in vertical slices.** One end-to-end behavior at a time, each
    independently verifiable. A slice that cannot be verified on its own is too
    big.

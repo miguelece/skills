@@ -26,8 +26,10 @@ checkout instead; first create your branch with
 
 ## How to work
 
-Run focused-implementation on the task, up to and not including its
-*Closing out*. Its entry gate, test-first rule and scope rule apply. When
+Load the `focused-implementation` skill and run it on the task, up to and
+not including its *Closing out*. Its entry gate, test-first rule and scope
+rule apply. Before you write a helper or a fixture step, or add a test, load
+the `working-conventions` skill and apply its reference for that moment. When
 every criterion's check passes, stop and report. Your budget is about
 <n> calls (<grant>); if you will need more, stop and report why.
 

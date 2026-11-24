@@ -16,6 +16,14 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-24 — task-board-management (worker brief loads its skills)
+
+- **Behaviour change.** The supervisor's worker brief tells a worker to load
+  the `focused-implementation` skill, and to load `working-conventions`
+  before it writes a helper or a fixture step or adds a test, applying that
+  skill's reference for the moment. `focused-implementation`'s step 2 points
+  at `working-conventions` the same way.
+
 ### 2026-11-24 — quality-of-life (rewrap)
 
 - Every change is a line rewrap to 80 columns, with no word changed.
