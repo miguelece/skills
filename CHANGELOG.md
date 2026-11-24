@@ -16,6 +16,15 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-24 — software-evaluation (worked examples for six modules)
+
+- **Behaviour change.** `evaluate-software` ships an `examples.md` for six
+  modules: `go-concurrency`, `go-error-handling`, `go-testing`,
+  `python-testing`, `typescript-type-safety` and `application-runtime`. Each
+  holds one section per check, with a bad example that meets the check's
+  evidence and the nearest good one, and names the language or tool version
+  an example assumes; `application-runtime`'s are short run records.
+
 ### 2026-11-24 — task-board-management (worker brief loads its skills)
 
 - **Behaviour change.** The supervisor's worker brief tells a worker to load
