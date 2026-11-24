@@ -48,7 +48,10 @@ that commits to the main line while you run, and you never push.
    `<skill dir>/references/board-model.md`. Run
    `<skill dir>/scripts/validate_board.py --board <board>` and
    `<skill dir>/scripts/generate_index.py --board <board>`, file each
-   follow-on the worker reported with to-follow-on, and commit the close. A
+   follow-on the worker reported with to-follow-on, act on the findings
+   this close caused as *Closing out* says, and commit the close. An error
+   the close caused that you could not fix goes on the verdict's `result`
+   line as `close left:`, not to triage. A
    task whose criteria moved only in part stays `in-progress`, merged, for
    the supervisor's next lease. Otherwise run `git merge --abort` and leave
    the main line as step 2 left it.
@@ -57,7 +60,8 @@ that commits to the main line while you run, and you never push.
    - criteria moved: <numbers, or none>
    - tests: <clean | judge | blocked>, <flags, one line each>
    - suite: <passed | failed: summary>
-   - result: <merged <sha> | unmerged: reason>
+   - result: <merged <sha> | merged <sha>; close left: <finding> |
+     unmerged: reason>
 
 Follow the repository's commit convention. Do not push, publish, set or
 clear an `owner` or `manual` gate, or edit another stream's files.

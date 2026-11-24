@@ -16,6 +16,17 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-24 — task-board-management (the close acts on its findings)
+
+- **Behaviour change.** `focused-implementation`'s *Closing out* gains a
+  step: read the board validator's output, refile a task the close
+  unblocked and repair its links, and fix every other error on the closed
+  task, a task it unblocked or a follow-on it filed before committing the
+  close. An error on any other task stays with `task-board-triage`.
+- **Behaviour change.** The supervisor's integrator brief closes under that
+  step, and an error the close caused that the integrator could not fix
+  goes on the verdict's `result` line as `close left:`.
+
 ### 2026-11-24 — software-evaluation (worked examples for six modules)
 
 - **Behaviour change.** `evaluate-software` ships an `examples.md` for six

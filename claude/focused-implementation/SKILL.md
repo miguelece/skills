@@ -117,6 +117,18 @@ Set `status: in-progress` and update `updated` before starting.
    scripts/generate_index.py --board <board>
    ```
 
+8. **Act on the findings this close caused.** Read the validator's output,
+   not only its exit code. A task it reports unblocked by this close — a
+   folder mismatch naming the cleared blocker, which is the unblock
+   notification in [references/board-model.md](references/board-model.md) —
+   is refiled now to the folder its frontmatter derives, and its links are
+   repaired per *Repairing the links a move breaks*, the scan of the whole
+   repository for its id included. Fix every other error on the closed task,
+   on a task it unblocked or on a follow-on the close filed, then re-run both
+   scripts until they report none of these, before the close is committed.
+   An error on any other task was not this close's: it stays with
+   `task-board-triage`, so the close never becomes a triage pass.
+
 ## Guardrails
 
 - Do not implement a `draft` task, one with a gate, or one whose blockers are
