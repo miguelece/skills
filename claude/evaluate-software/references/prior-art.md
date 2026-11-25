@@ -80,7 +80,8 @@ GitHub's account of the subset its code scanning reads,
 and the OASIS JSON schema,
 <https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json>,
 read for `reportingConfiguration` and `configurationOverride` because the
-standard's page reached the fetcher truncated after section 3.38.
+standard's page reached the fetcher truncated after section 3.38, and again
+on 2026-11-25 for the notification object (3.58), for the same reason.
 
 - **A run** names its tool in `tool.driver`, with the tool's rules as
   `reportingDescriptor` objects in `rules[]`: an `id`, a `name`, a
@@ -157,11 +158,28 @@ values above:
   `toolConfigurationNotifications` (3.20.22) does not fit: its examples are
   faults in how the tool was configured, and a declined launch or an input
   with nothing to start is not one.
-- **`pass` is implied** by a loaded module with no finding, since every check
-  of a loaded module runs.
-- **`open` and `review` are what the evidence rule keeps out of the report**:
-  a finding that cannot show its evidence is not reported, and a finding's
-  low `confidence` carries the doubt that survives verification.
+- **A check the run could not judge is never `notApplicable`**, which
+  3.27.9 keeps for a rule that does not apply to the analysis target: a
+  loaded module applies by definition, since its trigger matched. BinSkim,
+  a SARIF-native analyser, uses `notApplicable` the same way, for a check
+  not relevant to the target's observed metadata,
+  <https://learn.microsoft.com/en-us/windows-hardware/drivers/driversecurity/binskim-check-binaries>.
+  Read 2026-11-25, as are the two forms below. A SARIF writer emits each
+  `unresolved` entry once, in one of them, without a schema change:
+  - **An entry without a `location`**, a check no evidence ran for, is a
+    `notification` in the invocation's `toolExecutionNotifications`
+    (3.20.21), a condition of the tool rather than of the target: its
+    `associatedRule` the check, its `message` the `reason`, and its `level`
+    `warning`, never `error`, which 3.20.21 says means the run failed.
+  - **An entry with a `location`**, one candidate the check found and could
+    not decide, is a result of `kind` `open` (3.27.9: evaluated, with too
+    little information to decide) at that location, its `level` `none`.
+- **`pass` is implied** for a check of a loaded module with no finding and
+  no `unresolved` entry.
+- **`review`, and an `open` its check's `evidence` does not name as
+  unresolved, are what the evidence rule keeps out of `findings`**: a
+  finding that cannot show its evidence is not reported, and a finding's low
+  `confidence` carries the doubt that survives verification.
 - **`informational` has no use**, since every check states a defect.
 
 ## What the survey settled

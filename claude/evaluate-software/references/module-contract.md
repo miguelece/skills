@@ -102,8 +102,13 @@ The `evidence` field is the check's verification rule: a finding that cannot
 show it is not reported. The severity scale is the report schema's, mapped to
 SARIF levels there.
 
+A case a check's `evidence` names as unresolved is recorded in the report's
+`unresolved` list, with the reason it could not be decided: it is never
+reported as a finding, and never read as a pass.
+
 A check whose verdict depends on a tool's version names, in its `evidence`,
-where that version is read and what is reported when it cannot be read.
+where that version is read and what is reported when it cannot be read; a
+case it cannot decide is named as unresolved, and goes in `unresolved`.
 
 ## The findings file
 

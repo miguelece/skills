@@ -46,10 +46,17 @@ _MODULE_ENTRY = {
     "fields": {"id": _string(True), "reason": _string(True)},
 }
 
+_LOCATION_FIELDS = {
+    "file": _string(False),
+    "symbol": _string(False),
+    "line": {"type": "integer", "required": False},
+    "section": _string(False),
+}
+
 REPORT: dict = {
     "type": "mapping",
     "fields": {
-        "schema-version": {"type": "integer", "required": True, "values": [1]},
+        "schema-version": {"type": "integer", "required": True, "values": [2]},
         "input": {
             "type": "mapping",
             "required": True,
@@ -120,12 +127,7 @@ REPORT: dict = {
                     "location": {
                         "type": "mapping",
                         "required": True,
-                        "fields": {
-                            "file": _string(False),
-                            "symbol": _string(False),
-                            "line": {"type": "integer", "required": False},
-                            "section": _string(False),
-                        },
+                        "fields": _LOCATION_FIELDS,
                     },
                     "evidence": _string(True),
                     "severity": _string(True, enum="severity"),
@@ -138,6 +140,24 @@ REPORT: dict = {
                             "observed": _string(True),
                             "expected": _string(True),
                         },
+                    },
+                },
+            },
+        },
+        "unresolved": {
+            "type": "list",
+            "required": True,
+            "items": {
+                "type": "mapping",
+                "fields": {
+                    "module": _string(True),
+                    "check": _string(True),
+                    "phase": _string(True, enum="phase"),
+                    "reason": _string(True),
+                    "location": {
+                        "type": "mapping",
+                        "required": False,
+                        "fields": _LOCATION_FIELDS,
                     },
                 },
             },
@@ -220,12 +240,17 @@ def _list(value: Any) -> list:
     return value if isinstance(value, list) else []
 
 
-def _findings(report: dict) -> list[tuple[int, dict]]:
+def _entries(report: dict, key: str) -> list[tuple[int, dict]]:
+    """The numbered mappings of a top-level list, `findings` or `unresolved`."""
     return [
-        (number, finding)
-        for number, finding in enumerate(_list(report.get("findings")))
-        if isinstance(finding, dict)
+        (number, entry)
+        for number, entry in enumerate(_list(report.get(key)))
+        if isinstance(entry, dict)
     ]
+
+
+def _findings(report: dict) -> list[tuple[int, dict]]:
+    return _entries(report, "findings")
 
 
 def _phases_run(report: dict) -> list:
@@ -289,50 +314,89 @@ def module_accounted_once(report: dict) -> list[str]:
     return problems
 
 
-def finding_phase_was_run(report: dict) -> list[str]:
+# A finding and an `unresolved` entry are both records at check grain, so
+# each of these three rules holds for either list, named by `key`.
+
+
+def _phase_was_run(report: dict, key: str) -> list[str]:
     run = _phases_run(report)
     return [
-        f"report.findings[{number}].phase: {finding.get('phase')!r} is not in phases.run {run}"
-        for number, finding in _findings(report)
-        if finding.get("phase") not in run
+        f"report.{key}[{number}].phase: {entry.get('phase')!r} is not in phases.run {run}"
+        for number, entry in _entries(report, key)
+        if entry.get("phase") not in run
     ]
 
 
-def finding_module_was_loaded(report: dict) -> list[str]:
+def _module_was_loaded(report: dict, key: str) -> list[str]:
     loaded = {
         entry.get("id")
         for entry in _list(_mapping(report.get("modules")).get("loaded"))
         if isinstance(entry, dict)
     }
     return [
-        f"report.findings[{number}].module: {finding.get('module')!r} is not in modules.loaded"
-        for number, finding in _findings(report)
-        if finding.get("module") not in loaded
+        f"report.{key}[{number}].module: {entry.get('module')!r} is not in modules.loaded"
+        for number, entry in _entries(report, key)
+        if entry.get("module") not in loaded
     ]
 
 
-def finding_check_belongs_to_its_module(report: dict) -> list[str]:
+def _check_belongs_to_its_module(report: dict, key: str) -> list[str]:
     return [
-        f"report.findings[{number}].check: {finding.get('check')!r} does not start with "
-        f"{str(finding.get('module')) + '/'!r}"
-        for number, finding in _findings(report)
-        if not str(finding.get("check", "")).startswith(f"{finding.get('module')}/")
+        f"report.{key}[{number}].check: {entry.get('check')!r} does not start with "
+        f"{str(entry.get('module')) + '/'!r}"
+        for number, entry in _entries(report, key)
+        if not str(entry.get("check", "")).startswith(f"{entry.get('module')}/")
+    ]
+
+
+def finding_phase_was_run(report: dict) -> list[str]:
+    return _phase_was_run(report, "findings")
+
+
+def finding_module_was_loaded(report: dict) -> list[str]:
+    return _module_was_loaded(report, "findings")
+
+
+def finding_check_belongs_to_its_module(report: dict) -> list[str]:
+    return _check_belongs_to_its_module(report, "findings")
+
+
+def unresolved_module_was_loaded(report: dict) -> list[str]:
+    return _module_was_loaded(report, "unresolved")
+
+
+def unresolved_check_belongs_to_its_module(report: dict) -> list[str]:
+    return _check_belongs_to_its_module(report, "unresolved")
+
+
+def unresolved_phase_was_run(report: dict) -> list[str]:
+    return _phase_was_run(report, "unresolved")
+
+
+def unresolved_whole_check_has_no_finding(report: dict) -> list[str]:
+    reported = {finding.get("check") for _, finding in _findings(report)}
+    return [
+        f"report.unresolved[{number}].check: {entry.get('check')!r} has no location, "
+        "so no finding may report it"
+        for number, entry in _entries(report, "unresolved")
+        if entry.get("location") is None and entry.get("check") in reported
     ]
 
 
 def location_names_a_file_or_a_section(report: dict) -> list[str]:
     problems = []
-    for number, finding in _findings(report):
-        location = finding.get("location")
-        if not isinstance(location, dict):
-            continue
-        has_file = bool(location.get("file"))
-        has_section = bool(location.get("section"))
-        if has_file == has_section:
-            problems.append(
-                f"report.findings[{number}].location: {_shown(location)} must name a "
-                "file or a section, not both"
-            )
+    for key in ("findings", "unresolved"):
+        for number, entry in _entries(report, key):
+            location = entry.get("location")
+            if not isinstance(location, dict):
+                continue
+            has_file = bool(location.get("file"))
+            has_section = bool(location.get("section"))
+            if has_file == has_section:
+                problems.append(
+                    f"report.{key}[{number}].location: {_shown(location)} must name a "
+                    "file or a section, not both"
+                )
     return problems
 
 
@@ -362,6 +426,10 @@ CROSS_FIELD_RULES: dict[str, Callable[[dict], list[str]]] = {
     "finding-phase-was-run": finding_phase_was_run,
     "finding-module-was-loaded": finding_module_was_loaded,
     "finding-check-belongs-to-its-module": finding_check_belongs_to_its_module,
+    "unresolved-module-was-loaded": unresolved_module_was_loaded,
+    "unresolved-check-belongs-to-its-module": unresolved_check_belongs_to_its_module,
+    "unresolved-phase-was-run": unresolved_phase_was_run,
+    "unresolved-whole-check-has-no-finding": unresolved_whole_check_has_no_finding,
     "location-names-a-file-or-a-section": location_names_a_file_or_a_section,
     "dynamic-fields-empty-in-a-static-run": dynamic_fields_empty_in_a_static_run,
 }

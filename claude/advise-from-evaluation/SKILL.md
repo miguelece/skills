@@ -34,7 +34,11 @@ terms. This skill writes the recommendation and stops there.
    `1` refuses the report, naming each problem the script printed; exit `2`
    refuses it as unreadable or not JSON. Advice on a malformed report would
    cite what is not there. Do not fix the report: this
-   skill did not write it, so hand it back to whoever produced it.
+   skill did not write it, so hand it back to whoever produced it. A report
+   refused for its `schema-version` predates the current schema: do not edit
+   it to pass, since an `unresolved` list added by hand would claim every
+   check was judged. Say it predates the schema, and ask for the evaluation
+   to be re-run.
 2. Read `input.kind`. It alone selects the mode:
 
    | `input.kind`       | Mode                 |
@@ -49,12 +53,15 @@ terms. This skill writes the recommendation and stops there.
    rule about behaviour does not fit a design with no code behind it.
 4. Read the phases before the findings. Each entry in `phases.not-run` is a
    requested phase that did not run: name it with its `reason`, whatever
-   `findings` holds, since an unrun phase recorded nothing. Then, when
-   `findings` is empty:
+   `findings` holds, since an unrun phase recorded nothing. Name each
+   `unresolved` entry too, by its `check`, its location where it has one,
+   and its `reason`, whatever `findings` holds: a check it names was neither
+   failed nor passed. Then, when `findings` is empty:
    - **`phases.run` is empty**: nothing was evaluated, so the empty list is
      no clean run. Say there is nothing evaluated to advise on, and stop.
-   - **`phases.run` is not empty**: it is a clean run of the phases it names.
-     Name them, say there is nothing to advise on, and stop.
+   - **`phases.run` is not empty**: it is a clean run of the phases it names,
+     and only of the checks no `unresolved` entry names. Name them, say
+     there is nothing to advise on, and stop.
 
 ### 2. Refactoring mode: group findings into changes
 
@@ -141,8 +148,9 @@ by `findings.location.section`; a design read from code, by
 Write the advisories in the reply, in rank order, or for the implementation
 mode in the order step 4 fixed, each with a number the owner can answer by.
 Open with the report's `input.kind` and `input.scope`, the phases in
-`phases.run`, each `phases.not-run` entry with its `reason`, and the count of
-findings read, so advice resting on one phase does not read as complete.
+`phases.run`, each `phases.not-run` entry with its `reason`, the count of
+findings read and the count of `unresolved` entries, so advice resting on
+one phase, or on the checks that were judged, does not read as complete.
 End with any finding no advisory answers, with why: a finding is never
 dropped silently.
 

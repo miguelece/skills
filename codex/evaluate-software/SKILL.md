@@ -113,6 +113,11 @@ the module only when a check needs it.
    - `findings.confidence`: how sure this run is of this one detection,
      after verifying it, as `high`, `medium` or `low`;
    - `findings.dynamic`: null.
+4. **Record what a check could not decide in `unresolved`, never in
+   `findings`.** A candidate that a check's `evidence` names as unresolved,
+   such as one whose verdict rests on a version that cannot be read, goes in
+   `unresolved` with its `module`, its `check`, its `location`, `phase`
+   `static`, and in `reason` what could not be read to decide it.
 
 ### 4. Run the dynamic phase
 
@@ -156,6 +161,12 @@ before it runs.
    before recording, as in step 3, then record each finding with
    `findings.phase`: `dynamic`, and in `findings.dynamic` the `command` or
    request that exercised it, what was `observed` and what was `expected`.
+   A check that cannot run its evidence is recorded in `unresolved` without
+   a `location`, `phase` `dynamic`, and in `reason` what was missing: a
+   running application, when the start failed or never reported ready;
+   behaviour the repository documents, for a check that sends only that; or
+   a graceful stop the process group can be sent, for a check that judges
+   only that stop.
 7. **Tear down every process** the phase started: stop each by signalling
    its process group, not the wrapper's process id alone, then confirm
    every process in the group has exited and the port is released. A
@@ -171,7 +182,7 @@ phase.
 
 - **Static ran** when at least one module was loaded and its checks were
   read against the scope: `static` is in `phases.run`, and an empty
-  `findings` list is a clean run.
+  `findings` list is a clean run of every check `unresolved` does not name.
 - **No module matched**, because the index lists none or every listed module
   was skipped: say so, and evaluate nothing. Do not evaluate from general
   knowledge in a module's place, because a finding with no check behind it
@@ -181,14 +192,23 @@ phase.
   `static` out of `phases.run`, so the empty `findings` list cannot read as
   a clean run. It records each requested phase in `phases.not-run`, its
   `reason` that no module matched.
-- **Dynamic ran** when its application started, reported ready and its
-  checks were run against it: `dynamic` is in `phases.run`.
+- **Dynamic ran** when its declared command was launched: `dynamic` is in
+  `phases.run`. A start that fails or never reports ready is a finding of
+  the check that judges the start, its process is recorded in
+  `dynamic.started` without `ready`, and the checks it leaves without a
+  running application are recorded in `unresolved`.
 
 `phases.not-run` holds every requested phase that is not in `phases.run`,
 each with its reason, and is an empty list when every requested phase ran.
 
+Every check of a loaded module, in a phase that ran, is either judged or in
+`unresolved`: judged, its evidence ran and either found nothing or gave a
+finding. An `unresolved` entry is neither failed nor passed, and one without
+a `location` shares its check with no finding.
+
 In the reply, name where the report is, list the modules loaded and skipped
-with their reasons, and repeat why any requested phase did not run.
+with their reasons, repeat why any requested phase did not run, and list
+each `unresolved` entry with its reason.
 
 ## Status
 

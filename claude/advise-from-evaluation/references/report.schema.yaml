@@ -23,10 +23,15 @@
 # Mapped onto SARIF 2.1.0, a finding is a `result`, its `check` the `ruleId`,
 # its `location.file` a `physicalLocation.artifactLocation.uri`, its
 # `location.symbol` a `logicalLocation.fullyQualifiedName`, and the run's
-# `modules` the tool's `rules`; references/prior-art.md records the mapping and
-# what this schema adds that SARIF has no field for.
+# `modules` the tool's `rules`. An `unresolved` entry without a `location` is
+# a `notification` in the invocation's `toolExecutionNotifications`, its
+# `associatedRule` the check and its `level` `warning`; one with a `location`
+# is a `result` of `kind` `open` at that location. Neither is `notApplicable`,
+# which SARIF keeps for a rule that does not apply to the target.
+# references/prior-art.md records the mapping and what this schema adds that
+# SARIF has no field for.
 
-schema-version: 1
+schema-version: 2
 
 enums:
   # What the run evaluated. A diff and a repository are code; the two design
@@ -48,7 +53,7 @@ report:
     schema-version:
       type: integer
       required: true
-      values: [1]
+      values: [2]
     input:
       type: mapping
       required: true
@@ -245,6 +250,58 @@ report:
                 type: string
                 required: true
                 note: the behaviour the check expected
+    unresolved:
+      type: list
+      required: true
+      note: >-
+        Every check of a loaded module, in a phase that ran, that this run
+        could not judge, whole or at one location; an empty list when every
+        such check was judged. A check named here is neither failed nor
+        passed, and an empty `findings` list is a clean run only of the
+        checks this list does not name.
+      items:
+        type: mapping
+        fields:
+          module:
+            type: string
+            required: true
+          check:
+            type: string
+            required: true
+            note: the check id, `<module-id>/<name>`
+          phase:
+            type: string
+            required: true
+            enum: phase
+          reason:
+            type: string
+            required: true
+            note: >-
+              why the check could not be judged: what its `evidence` needed
+              that this run did not have
+          location:
+            type: mapping
+            required: false
+            note: >-
+              absent when no evidence of the check ran at all; present when
+              one candidate the check found could not be decided, with the
+              same fields as a finding's location
+            fields:
+              file:
+                type: string
+                required: false
+                note: path relative to the scope's root
+              symbol:
+                type: string
+                required: false
+                note: the fully qualified function, class or module
+              line:
+                type: integer
+                required: false
+              section:
+                type: string
+                required: false
+                note: a design document's heading path, for a design-document input
 
 rules:
   - id: run-within-requested
@@ -261,8 +318,20 @@ rules:
     statement: every finding's `module` is in `modules.loaded`
   - id: finding-check-belongs-to-its-module
     statement: every finding's `check` starts with its `module` and a slash
+  - id: unresolved-module-was-loaded
+    statement: every `unresolved` entry's `module` is in `modules.loaded`
+  - id: unresolved-check-belongs-to-its-module
+    statement: every `unresolved` entry's `check` starts with its `module` and a slash
+  - id: unresolved-phase-was-run
+    statement: every `unresolved` entry's `phase` is in `phases.run`
+  - id: unresolved-whole-check-has-no-finding
+    statement: >-
+      an `unresolved` entry without a `location` shares its `check` with no
+      finding, since a check no evidence ran for cannot also have failed
   - id: location-names-a-file-or-a-section
-    statement: a location names a `file` or a design-document `section`, not both
+    statement: >-
+      a location, of a finding or of an `unresolved` entry, names a `file` or
+      a design-document `section`, not both
   - id: dynamic-fields-empty-in-a-static-run
     statement: >-
       when `dynamic` is not in `phases.run`, every field under `dynamic` is

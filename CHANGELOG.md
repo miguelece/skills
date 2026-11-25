@@ -16,6 +16,21 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-25 — software-evaluation (unjudged checks, report schema version 2)
+
+- **Behaviour change.** The evaluation report is at `schema-version` 2, with
+  a required `unresolved` list beside `findings`: each check of a loaded
+  module, in a phase that ran, that the run could not judge, with its
+  reason and, for a single undecided candidate, its location. The bundled
+  validator refuses a version-1 report, and `advise-from-evaluation` asks
+  for a re-run instead of editing one.
+- **Behaviour change.** `evaluate-software` records an unresolved static
+  candidate and an unrunnable dynamic check there, never as a finding or a
+  pass; the dynamic phase counts as run once its declared command was
+  launched, so a failed start is a valid report. The SARIF mapping sends a
+  whole unjudged check to a `warning` tool notification and a located one
+  to a result of kind `open`, never `notApplicable`.
+
 ### 2026-11-24 — software-evaluation (examples required, four checks sharpened)
 
 - **Behaviour change.** The module contract requires an `examples.md` of
