@@ -70,6 +70,8 @@ these, in this order:
 - Window: <threshold read, or "not readable">; worktree.baseRef: <value>.
 - Match rate: <`account_attempt.py --match-rate`'s figure, written at the
   close, for the gate's report>.
+- Cost per closed ticket: <`<task>` $<sum of its allocation-log `Cost`
+  rows>, one entry per task the tranche closed, written at the close>.
 
 ## Scope
 

@@ -16,6 +16,22 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-26 — task-board-management (reuse, variants, read-back, effort)
+
+- **Behaviour change.** `focused-implementation` and the supervisor's worker
+  brief load `working-conventions` before writing any new code, and every
+  defect fix guards the sink and records a search for the pattern's
+  variants.
+- **Behaviour change.** `task-interview` reads back the resolved decisions
+  as one confirm-or-correct question before promoting a task, and asks each
+  remaining question with its evidence and a recommendation.
+- **Behaviour change.** `supervise-implementation` re-grants a first stuck
+  attempt one effort level higher, and a second, after the owner's ruling,
+  one level higher again and never above `xhigh`; it records a cost per
+  closed ticket at the close. Worker briefs in a worktree name each ignored
+  input by its main-checkout path, as `orchestrate-implementation`'s
+  streams now do.
+
 ### 2026-11-26 — quality-of-life (agent tooling advisories, the reuse ladder)
 
 - **Behaviour change.** `working-conventions`' advisory check covers skills,

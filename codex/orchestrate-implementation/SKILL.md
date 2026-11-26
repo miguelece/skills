@@ -125,6 +125,11 @@ stream never touches the board.
   task file included, by the main checkout's absolute path, and says the
   worktree's own copies of those files are stale. A worktree is cut from
   committed state, so it lacks the board changes made before launch;
+- for a stream in its own worktree, says the worktree holds no gitignored
+  file: no `refs/`, `_private/` or `research/sources/`, no installed
+  dependencies, no `.env`. It names every ignored input the task needs by the
+  main checkout's absolute path, to be read there and never written to or
+  copied into the worktree, so private material keeps one copy;
 - states the contract below.
 
 **What a delegated stream may do.** It touches only its own task's code and

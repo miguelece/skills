@@ -57,11 +57,13 @@ current value of a constant.
    defines it. When a `standing` entry's *When* fits the question, record it
    `RESOLVED` with the entry's id and its *Ruling*, append the use to the
    entry's *Applied*, and report it for the user to overturn instead of
-   asking. A partial fit is not a fit: ask. Then one branch at a time, to a real
-   decision — not a preference gesture. Push back when an answer is ambiguous or
-   when it contradicts something already settled. Follow each answer to the
-   questions it opens; a resolved decision that reveals a new question is the
-   interview working.
+   asking. A partial fit is not a fit: ask. Before each question that is
+   left, load the `working-conventions` skill and apply its rule for asking,
+   so the question carries its evidence and a recommended answer. Then one
+   branch at a time, to a real decision — not a preference gesture. Push back
+   when an answer is ambiguous or when it contradicts something already
+   settled. Follow each answer to the questions it opens; a resolved decision
+   that reveals a new question is the interview working.
 5. **Record each decision** in place, with the date and the reasoning that
    decided it. Where an option was considered and rejected, say why — that is
    what stops it being re-proposed next month.
@@ -80,8 +82,14 @@ current value of a constant.
 
    Setting a gate or a `blocked-by` moves no file: an unfinished task stays at
    the board root, and the index groups it by what it waits on.
-7. **Promote and verify.** When no blocking question is left, set
-   `status: scoped`, update `updated`, and run:
+7. **Read back, then promote.** When no blocking question is left, show the
+   user one line per resolved question, naming the decision and repeating no
+   evidence, with each one you resolved yourself marked as the owner's to
+   overturn. Ask it as one confirm-or-correct question through the structured
+   question prompt; it is an approval, so it carries the facts and no survey.
+   Promote only on confirmation. A correction reopens the question it
+   touches: record the new answer, follow it to anything it changes, and read
+   back again. Then set `status: scoped`, update `updated`, and run:
 
    ```text
    scripts/validate_board.py --board <board>
@@ -94,7 +102,10 @@ current value of a constant.
 - Do not accept "whatever you think" on a question that genuinely needs their
   call. Narrow it to a concrete choice with stated trade-offs and ask again.
 - Do not batch every question into one message. Dependencies get resolved out of
-  order and answers contradict each other.
+  order and answers contradict each other. Keep to one branch at a time, but
+  questions that do not depend on each other may share one structured prompt,
+  since they have no order to get wrong. A dependent question waits for the
+  answer it hangs on.
 - Do not write implementation code during the interview. The deliverable is a
   scoped spec. Investigation to answer a question is in scope; building the
   feature is not.

@@ -15,6 +15,11 @@ checkout instead; first create your branch with
 
 - Task file, in the main checkout (your worktree's copy is stale):
   <absolute path to the task file>
+- Ignored inputs, in the main checkout: your worktree holds no gitignored
+  file, so it has no `refs/`, `_private/` or `research/sources/`, no
+  installed dependencies and no `.env`. Read each input the task needs at
+  <absolute path in the main checkout of each ignored input the task file
+  names, or "none">; never write them or copy them into your worktree.
 - Authoritative files for its rules, preferred wherever this brief disagrees:
   <paths>
 - Other streams in flight, and their files, so a change there is expected:
@@ -28,10 +33,11 @@ checkout instead; first create your branch with
 
 Load the `focused-implementation` skill and run it on the task, up to and
 not including its *Closing out*. Its entry gate, test-first rule and scope
-rule apply. Before you write a helper or a fixture step, or add a test, load
-the `working-conventions` skill and apply its reference for that moment. When
-every criterion's check passes, stop and report. Your budget is about
-<n> calls (<grant>); if you will need more, stop and report why.
+rule apply. Before you write new code, a helper or a fixture step included,
+or add a test, load the `working-conventions` skill and apply its reference
+for that moment. When every criterion's check passes, stop and report. Your
+budget is about <n> calls (<grant>); if you will need more, stop and report
+why.
 
 Commit your work in your worktree, following the repository's commit
 convention. Do not edit the board, the task file or agent instruction

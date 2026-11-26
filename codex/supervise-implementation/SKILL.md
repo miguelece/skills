@@ -181,7 +181,8 @@ worktree; a failed attempt's worktree is kept while an entry about it is open.
 - **Stuck is read from the transcript**: a check repeated without its result
   changing (the patterns are in [references/cycle.md](references/cycle.md)).
   Re-grant the first stuck attempt on a task without asking, with its
-  episodes in the brief; a second one on the same task escalates.
+  episodes in the brief, at one effort level higher; a second one on the
+  same task escalates.
 - **Not a stall**: an attempt that never started, or that a harness limit cut
   off before it did any work.
 - The limits that decide top-ups and escalations are in
@@ -268,7 +269,11 @@ session table from
 `scripts/account_attempt.py --sessions <run-dir>/leases.md --project
 <project-dir>`, which prints one row per session, beside the
 transcript-priced costs and never scaling them. A session row that reads
-`absent` is filled by the next opening's true-up, not estimated. Commit the
+`absent` is filled by the next opening's true-up, not estimated. Write a
+cost per closed ticket into the record's `Cost per closed ticket:` line, one
+entry for each task the tranche closed, summed from the allocation log's rows
+for that task, attempts and integrations together and transcript-priced: it
+is the baseline a later model or effort change is judged against. Commit the
 record, then launch a fresh agent at `high` that runs `tranche-gate` with the
 tranche's base and tip commits, the record, each task's acceptance criteria and
 every integrator verdict. Its report, appended to the record, lists the open

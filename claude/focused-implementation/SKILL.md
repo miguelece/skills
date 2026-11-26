@@ -44,15 +44,20 @@ Set `status: in-progress` and update `updated` before starting.
    by this task's tests in its own test files, are the task's own. Anything
    meant to outlive the task — a shared fixture library, a test runner, a
    harness, a new measurement script, a validator or lint rule — is new
-   verification tooling, and is out of this task's scope (step 8). Before a
-   helper, a fixture step or a test is added, load the `working-conventions`
-   skill and apply its reference for that moment.
+   verification tooling, and is out of this task's scope (step 8). Before
+   writing new code, a helper, a fixture step and a test included, load the
+   `working-conventions` skill and apply its reference for that moment.
 3. **Work in vertical slices.** One end-to-end behavior at a time, each
    independently verifiable. A slice that cannot be verified on its own is too
    big.
 4. **Test first where a test can fail.** Write the failing test, watch it fail
    for the expected reason, then make it pass. A test that has never failed has
-   proved nothing.
+   proved nothing. **In every defect fix, guard the sink and hunt its
+   variants**, whatever the class of bug. Put the guard on the operation that
+   does the harm, not only on the route the report named, because another
+   route can reach the same operation. Then grep the repository for the same
+   pattern, and record in the execution log what was searched and what turned
+   up; a variant outside the task goes to `to-follow-on` (step 8).
 5. **Anti-fix validation for anything a test cannot catch.** When the evidence
    is a measurement rather than an assertion — a request count, a render count,
    a load count, a timing — prove the probe detects the bug: revert or stash the

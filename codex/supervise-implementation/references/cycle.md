@@ -72,6 +72,12 @@ Progress stays the integrator's confirmed criteria, and the per-task cap
 stays the backstop. A stuck attempt can still have moved a criterion; the
 integrator's verdict decides that, not the episodes.
 
+The first stuck attempt's re-grant runs at one effort level above the
+attempt it replaces (`medium` to `high`), and the allocation log records
+that effort on its row, as for any attempt. A stuck attempt re-run at the
+same effort tends to hit the same wall. First attempts stay at `medium`, and
+a second stuck attempt still escalates.
+
 ## Responses
 
 | What happened | Response |
@@ -80,7 +86,7 @@ integrator's verdict decides that, not the episodes.
 | No criterion confirmed, cause named, fix inside the task | Re-size: a fresh grant from a clean worktree, no ask |
 | No criterion confirmed, the same failure again, no new diagnosis | Escalate (judgement: analyst) |
 | The fix changes the criteria or scope, or another stream's files | Escalate (judgement: analyst) |
-| The first stuck attempt on a task | Re-grant from a clean worktree with the stuck episodes in the brief, no ask |
+| The first stuck attempt on a task | Re-grant from a clean worktree with the stuck episodes in the brief, at one effort level above the attempt it replaces (`medium` to `high`), logged in the allocation log, no ask |
 | The second stuck attempt on the same task | Escalate (mechanical) |
 | The next grant would take the task past $20 | Escalate before granting (mechanical) |
 | Never started, or cut off by a harness limit before any work | Not a stall: re-launch |
@@ -113,7 +119,8 @@ Their options are fixed:
 - **over the cap**: raise this task's cap to a stated figure, re-scope it, or
   release it;
 - **stuck twice**: re-grant once more with both attempts' episodes in the
-  brief, re-scope, or release.
+  brief, at one effort level above the attempt it replaces and never above
+  `xhigh` (`high` to `xhigh`), re-scope, or release.
 
 ## Each cycle, in order
 
