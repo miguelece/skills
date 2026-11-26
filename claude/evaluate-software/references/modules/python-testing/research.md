@@ -64,6 +64,26 @@ sources:
     title: "Software Engineering at Google, chapter 12: Unit Testing (Erik Kuefler)"
     url: https://abseil.io/resources/swe-book/html/ch12.html
     date: 2026-11-21
+  - id: swe-book-test-doubles
+    title: "Software Engineering at Google, chapter 13: Test Doubles (Andrew Trenk and Dillon Bly)"
+    url: https://abseil.io/resources/swe-book/html/ch13.html
+    date: 2026-11-26
+  - id: sqlite-quirks
+    title: "SQLite: Quirks, Caveats, and Gotchas In SQLite"
+    url: https://www.sqlite.org/quirks.html
+    date: 2026-11-26
+  - id: django-testing-overview
+    title: "Django 6.1 documentation: Writing and running tests, the test database"
+    url: https://docs.djangoproject.com/en/stable/topics/testing/overview/
+    date: 2026-11-26
+  - id: hypothesis-api
+    title: "Hypothesis API reference (assume, settings, HealthCheck, Unsatisfiable)"
+    url: https://hypothesis.readthedocs.io/en/latest/reference/api.html
+    date: 2026-11-26
+  - id: hypothesis-adapting-strategies
+    title: "Hypothesis tutorial: Adapting strategies (filter and assume)"
+    url: https://hypothesis.readthedocs.io/en/latest/tutorial/adapting-strategies.html
+    date: 2026-11-26
 findings:
   - id: coverage-is-not-verification
     claim: >-
@@ -167,6 +187,28 @@ findings:
       should be correct by inspection.
     confidence: evidenced
     sources: [swe-book-unit-testing]
+  - id: stand-in-engines-lack-behaviour
+    claim: >-
+      A real implementation is preferred over a test double, and a fake such
+      as an in-memory database has fidelity only for what the test relies
+      on. SQLite, the usual stand-in, differs from client-server engines in
+      ways a test can reach: advisory column types, foreign keys unenforced
+      by default, and dubious SQL accepted, so an application relying on
+      them fails when moved to a stricter engine. Django runs tests on the
+      engine its settings name, so a different test engine is a deliberate
+      override.
+    confidence: evidenced
+    sources: [swe-book-test-doubles, sqlite-quirks, django-testing-overview]
+  - id: hypothesis-guards-discarding
+    claim: >-
+      Inputs rejected by `assume` or `.filter` do not count toward
+      Hypothesis's `max_examples`, so a test may run fewer times than that
+      setting says; the `filter_too_much` health check fails a test that
+      filters out too many cases, `Unsatisfiable` is raised when too few
+      satisfy its assumptions, and `suppress_health_check` turns a health
+      check off.
+    confidence: evidenced
+    sources: [hypothesis-api, hypothesis-adapting-strategies]
 ---
 
 # Research: Python test quality
@@ -187,6 +229,33 @@ test, because the configuration can change the default they rest on:
 collection patterns, the strict-xfail option, and the flags a helper passes.
 For a diff, the finding is in the changed lines, but the configuration is
 read where it lives, inside or outside the diff.
+
+## Stand-ins and property generators
+
+Read on 2026-11-26. The two checks added that day, on a stand-in database
+engine and on a Hypothesis strategy that discards most of its inputs, each
+had to clear the bar the mocking exclusion below sets: a defect a reading can
+quote, not a preference.
+
+- **The stand-in engine.** A preference for the real engine is the mocking
+  preference this module excludes, and it is not reported. What a reading
+  can quote is a mismatch: the test configuration names one engine, the
+  application's configuration or migrations name another, and a test
+  reaches a behaviour the SQLite page lists as differing. All three are
+  required, so a portable query on SQLite is not reported. The finding is
+  `evidenced` rather than `strong`: the SQLite page demonstrates the
+  differences directly, and the book states the preference, but neither
+  measures how often such a test hides a production failure.
+- **The discarding strategy.** Hypothesis already fails a test that filters
+  too much, through its `filter_too_much` health check, so a static check on
+  the filter alone would repeat what the run reports. The check therefore
+  needs the health check suppressed as well. The fraction of a domain a
+  filter keeps is not reported on its own, because a reading cannot measure
+  it and the run does. Hypothesis's tutorial prefers `.filter` to `assume`,
+  since it retries a filter and can rewrite simple ones, and both are read
+  here as discarding. The health check was confirmed current, not
+  deprecated, on the API reference read that day; the deprecated health
+  checks there are `return_value` and `not_a_test_method`.
 
 ## What this does not cover
 

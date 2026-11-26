@@ -32,6 +32,7 @@ ENUMS: dict[str, list[str]] = {
     "phase": ["static", "dynamic"],
     "severity": ["critical", "high", "medium", "low", "info"],
     "confidence": ["high", "medium", "low"],
+    "churn-window": ["release-tag", "twelve-months"],
 }
 
 
@@ -51,6 +52,16 @@ _LOCATION_FIELDS = {
     "symbol": _string(False),
     "line": {"type": "integer", "required": False},
     "section": _string(False),
+    "churn": {
+        "type": "mapping",
+        "required": False,
+        "fields": {
+            "churned": {"type": "integer", "required": True},
+            "lines": {"type": "integer", "required": True},
+            "window": _string(True, enum="churn-window"),
+            "since": _string(True),
+        },
+    },
 }
 
 REPORT: dict = {
@@ -141,6 +152,18 @@ REPORT: dict = {
                             "expected": _string(True),
                         },
                     },
+                    "suggested-owner": {
+                        "type": "list",
+                        "required": False,
+                        "items": {
+                            "type": "mapping",
+                            "fields": {
+                                "file": _string(True),
+                                "author": _string(True),
+                                "commit": _string(True),
+                            },
+                        },
+                    },
                 },
             },
         },
@@ -158,6 +181,23 @@ REPORT: dict = {
                         "type": "mapping",
                         "required": False,
                         "fields": _LOCATION_FIELDS,
+                    },
+                },
+            },
+        },
+        "coverage": {
+            "type": "list",
+            "required": False,
+            "items": {
+                "type": "mapping",
+                "fields": {
+                    "module": _string(True),
+                    "check": _string(True),
+                    "phase": _string(True, enum="phase"),
+                    "examined": {
+                        "type": "list",
+                        "required": True,
+                        "items": {"type": "string"},
                     },
                 },
             },
@@ -314,8 +354,9 @@ def module_accounted_once(report: dict) -> list[str]:
     return problems
 
 
-# A finding and an `unresolved` entry are both records at check grain, so
-# each of these three rules holds for either list, named by `key`.
+# A finding, an `unresolved` entry and a `coverage` entry are all records at
+# check grain, so each of these three rules holds for any of the lists, named
+# by `key`.
 
 
 def _phase_was_run(report: dict, key: str) -> list[str]:
@@ -419,6 +460,66 @@ def dynamic_fields_empty_in_a_static_run(report: dict) -> list[str]:
     return problems
 
 
+def coverage_module_was_loaded(report: dict) -> list[str]:
+    return _module_was_loaded(report, "coverage")
+
+
+def coverage_check_belongs_to_its_module(report: dict) -> list[str]:
+    return _check_belongs_to_its_module(report, "coverage")
+
+
+def coverage_phase_was_run(report: dict) -> list[str]:
+    return _phase_was_run(report, "coverage")
+
+
+def _churns(report: dict) -> list[tuple[str, dict, dict]]:
+    """Each location carrying `churn`, of a finding or of an `unresolved`
+    entry, with the path that names it, the location and its churn."""
+    churns = []
+    for key in ("findings", "unresolved"):
+        for number, entry in _entries(report, key):
+            location = entry.get("location")
+            if isinstance(location, dict) and isinstance(location.get("churn"), dict):
+                where = f"report.{key}[{number}].location.churn"
+                churns.append((where, location, location["churn"]))
+    return churns
+
+
+def churn_on_a_code_file(report: dict) -> list[str]:
+    kind = _mapping(report.get("input")).get("kind")
+    return [
+        f"{where}: churn is recorded only on a file of a diff or a repository, "
+        f"found input.kind {kind!r} and location "
+        f"{_shown({k: v for k, v in location.items() if k != 'churn'})}"
+        for where, location, _ in _churns(report)
+        if kind not in ("diff", "repository") or not location.get("file")
+    ]
+
+
+def churn_counts_a_file_that_has_lines(report: dict) -> list[str]:
+    problems = []
+    for where, _, churn in _churns(report):
+        for name, least in (("lines", 1), ("churned", 0)):
+            value = churn.get(name)
+            if isinstance(value, int) and value < least:
+                problems.append(f"{where}.{name}: {value} is not at least {least}")
+    return problems
+
+
+def churn_window_is_one_per_run(report: dict) -> list[str]:
+    churns = _churns(report)
+    if not churns:
+        return []
+    first_where, _, first = churns[0]
+    window = (first.get("window"), first.get("since"))
+    return [
+        f"{where}: window {churn.get('window')!r} since {churn.get('since')!r} "
+        f"differs from {first_where}'s {window[0]!r} since {window[1]!r}"
+        for where, _, churn in churns[1:]
+        if (churn.get("window"), churn.get("since")) != window
+    ]
+
+
 CROSS_FIELD_RULES: dict[str, Callable[[dict], list[str]]] = {
     "run-within-requested": run_within_requested,
     "not-run-is-requested-minus-run": not_run_is_requested_minus_run,
@@ -432,6 +533,12 @@ CROSS_FIELD_RULES: dict[str, Callable[[dict], list[str]]] = {
     "unresolved-whole-check-has-no-finding": unresolved_whole_check_has_no_finding,
     "location-names-a-file-or-a-section": location_names_a_file_or_a_section,
     "dynamic-fields-empty-in-a-static-run": dynamic_fields_empty_in_a_static_run,
+    "coverage-module-was-loaded": coverage_module_was_loaded,
+    "coverage-check-belongs-to-its-module": coverage_check_belongs_to_its_module,
+    "coverage-phase-was-run": coverage_phase_was_run,
+    "churn-on-a-code-file": churn_on_a_code_file,
+    "churn-counts-a-file-that-has-lines": churn_counts_a_file_that_has_lines,
+    "churn-window-is-one-per-run": churn_window_is_one_per_run,
 }
 
 

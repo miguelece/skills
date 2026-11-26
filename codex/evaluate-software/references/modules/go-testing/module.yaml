@@ -319,3 +319,32 @@ checks:
       - https://pkg.go.dev/gotest.tools/v3/golden
       - https://pkg.go.dev/cmd/go#hdr-Test_packages
     findings: [golden-files-update-behind-a-flag]
+  - id: go-testing/test-database-driver-differs
+    statement: >-
+      A test opens a different database engine from the one the application
+      uses, and exercises a behaviour the two engines do not share.
+    evidence: >-
+      Three things, each quoted with its file and line: the test's
+      connection, in a `_test.go` file or a helper it calls, naming the test
+      engine, such as `sql.Open("sqlite3", ":memory:")` or a `sqlite` driver
+      import; the application's own code, configuration or migrations naming
+      another engine, such as `sql.Open("pgx", ...)`, a `postgres://` URL or
+      a migration using that engine's dialect; and a test that reaches the
+      database through a feature the test engine lacks or treats
+      differently, such as a dialect-only type, function or upsert, row
+      locking, a foreign key or type the test engine does not enforce by
+      default, or transaction isolation. A test that uses only portable SQL
+      is not this defect, and neither is a package that also runs the same
+      tests against the application's engine. When the application's engine
+      cannot be read, such as a driver name taken from an environment
+      variable with no default, the test is named as unresolved and not
+      reported.
+    severity: medium
+    rationale: >-
+      The stand-in accepts or rejects what the real engine would not, so the
+      test passes on code that fails in production, at exactly the behaviour
+      the test was written to check.
+    references:
+      - https://www.sqlite.org/quirks.html
+      - https://abseil.io/resources/swe-book/html/ch13.html
+    findings: [stand-in-engines-lack-behaviour]

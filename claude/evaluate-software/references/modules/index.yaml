@@ -7,6 +7,10 @@ modules:
   - architecture-design-from-code
   - go-concurrency
   - go-error-handling
+  - go-security-defaults
   - go-testing
+  - python-security-defaults
   - python-testing
+  - test-rerun
+  - typescript-security-defaults
   - typescript-type-safety

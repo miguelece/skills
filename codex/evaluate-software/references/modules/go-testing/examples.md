@@ -511,3 +511,58 @@ func TestRender(t *testing.T) {
     }
 }
 ```
+
+## go-testing/test-database-driver-differs
+
+**Bad.** The application opens Postgres through `pgx`, the test opens an
+in-memory SQLite, and the test saves an order for a customer that was never
+created. SQLite leaves foreign keys unenforced by default, so the test
+passes, while the same `PlaceOrder` fails on Postgres with a foreign-key
+violation:
+
+```go
+// store/store.go
+db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
+
+// store/store_test.go
+func TestPlaceOrderSavesIt(t *testing.T) {
+    db, err := sql.Open("sqlite3", ":memory:")
+    if err != nil {
+        t.Fatal(err)
+    }
+    migrate(t, db)
+    id, err := PlaceOrder(db, 99, "lamp")
+    if err != nil {
+        t.Fatalf("PlaceOrder() error = %v", err)
+    }
+    if got := itemOf(t, db, id); got != "lamp" {
+        t.Errorf("item = %q, want %q", got, "lamp")
+    }
+}
+```
+
+**Good.** The test opens the engine the application uses, a disposable
+Postgres the test run provides, so the missing customer fails the test as it
+would fail production. This is one acceptable form among several, such as a
+container the test starts:
+
+```go
+func TestPlaceOrderSavesIt(t *testing.T) {
+    url := os.Getenv("TEST_DATABASE_URL")
+    if url == "" {
+        t.Skip("TEST_DATABASE_URL not set; needs a Postgres to run")
+    }
+    db, err := sql.Open("pgx", url)
+    if err != nil {
+        t.Fatal(err)
+    }
+    migrate(t, db)
+    id, err := PlaceOrder(db, 99, "lamp")
+    if err != nil {
+        t.Fatalf("PlaceOrder() error = %v", err)
+    }
+    if got := itemOf(t, db, id); got != "lamp" {
+        t.Errorf("item = %q, want %q", got, "lamp")
+    }
+}
+```

@@ -1,0 +1,145 @@
+# Security mistakes in Go code that behave like the secure version until
+# someone attacks them, so a functional test passes on both. Each is read from
+# the source and go.mod, never by running the code, `gosec` or `govulncheck`.
+# Every check rests on a finding in research.md beside this file. What a
+# check reads for a diff follows the module contract's `diff` input kind:
+# go.mod, a helper's body or the success path of a verifier is read where it
+# lives, inside or outside the diff. Any Go file can mint a token or compare a
+# secret, so the triggers are the source glob and the module's manifest, and a
+# library a check names is read from the code in scope, not used to decide
+# whether the module loads.
+id: go-security-defaults
+languages: [go]
+concept: security
+triggers:
+  files:
+    - "**/*.go"
+  manifests:
+    - go.mod
+  design-markers: []
+  design-headings: []
+inputs: [diff, repository]
+phases: [static]
+checks:
+  - id: go-security-defaults/predictable-random-secret
+    statement: >-
+      A token, session id, reset code, one-time code or other secret is
+      drawn from `math/rand` or `math/rand/v2` rather than `crypto/rand`, by
+      a generator whose output can be predicted.
+    evidence: >-
+      The call quoted with its file and line, and the value followed, in the
+      code read, to a use as a secret: stored or compared as a credential,
+      set as a session or authentication cookie, sent in a reset or
+      verification link or message, or returned as an API key or one-time
+      code. A name alone, such as `token`, is not the use. The call shows
+      one of three forms: a method of a generator the code builds from a
+      seed, in any Go version, as `rand.New(rand.NewSource(seed))` in
+      `math/rand`, `rand.New(rand.NewPCG(a, b))` in `math/rand/v2`, or
+      `rand.NewChaCha8(seed)` with a seed not read from `crypto/rand`; a
+      top-level `math/rand` function, such as `rand.Intn`, `rand.Int63` or
+      `rand.Read`, while the `go` line of `go.mod` is below 1.22; or a
+      top-level `math/rand` function in a program that calls `rand.Seed`,
+      while that `go` line is below 1.24 or a `randseednop=0` setting is
+      read in a `godebug` block or a `//go:debug` directive. The `go` line
+      is quoted from `go.mod`; when it cannot be read, a top-level call is
+      named as unresolved. A top-level `math/rand/v2` function, and a
+      top-level `math/rand` function on a `go` line of 1.22 or later with
+      no such `rand.Seed`, draw from the runtime's ChaCha8 generator and are
+      not this defect. A helper whose source cannot be read is named as
+      unresolved, and a value used only for display, sampling, jitter, test
+      data or a non-secret identifier is not this defect.
+    severity: high
+    rationale: >-
+      A seeded `math/rand` generator is deterministic, and before Go 1.20
+      the top-level one started from the same seed in every process, so
+      whoever knows or guesses the seed, or sees enough output, can compute
+      the other tokens, and the forged session or reset link works as the
+      real one does.
+    references:
+      - https://pkg.go.dev/math/rand
+      - https://pkg.go.dev/math/rand/v2
+      - https://pkg.go.dev/crypto/rand
+      - https://go.dev/blog/chacha8rand
+      - https://go.dev/doc/toolchain
+      - https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+    findings: [math-rand-is-not-for-secrets, seeded-generators-are-predictable, top-level-math-rand-is-chacha8-from-1-22, go-line-is-the-minimum-toolchain, secrets-need-a-csprng]
+  - id: go-security-defaults/bcrypt-input-past-72-bytes
+    statement: >-
+      A password is joined after another value before `x/crypto/bcrypt`
+      hashes it, on a version that silently drops every byte past the 72nd,
+      so the end of the input, the password, can stop counting.
+    evidence: >-
+      The `bcrypt.GenerateFromPassword` call quoted with its file and line,
+      its password argument traced to a join, by `+`, `fmt.Sprintf`,
+      `append`, `strings.Join` or `bytes.Join`, in which a value the code
+      does not bound, such as an email, a user name or a pepper, comes
+      before the password, so the password's bytes can fall past the 72nd;
+      and the `golang.org/x/crypto` version `go.mod` requires quoted and
+      below v0.5.0. When the version cannot be read, as behind a `replace`
+      to a local path, the call is named as unresolved. From v0.5.0 the
+      call returns `ErrPasswordTooLong` for such input instead, which is
+      not this defect. A password hashed alone, or a value joined only
+      after it, is not this defect.
+    severity: high
+    rationale: >-
+      When the value before the password fills or nearly fills the 72 bytes
+      bcrypt reads, the hash no longer depends on all of the password, so
+      any password sharing the bytes that remain, or every password for an
+      account with a long enough prefix, logs in as the real one does.
+    references:
+      - https://pkg.go.dev/golang.org/x/crypto/bcrypt
+      - https://go.googlesource.com/crypto/+/bc7d1d1eb54b3530da4f5ec31625c95d7df40231
+      - https://go.googlesource.com/crypto/+/refs/tags/v0.5.0
+      - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+    findings: [bcrypt-reads-only-72-bytes, x-crypto-bcrypt-rejects-long-input-from-0-5-0]
+  - id: go-security-defaults/timing-safe-compare-undone
+    statement: >-
+      A secret is compared with `subtle.ConstantTimeCompare` or
+      `hmac.Equal`, but code around the call returns early on the secret's
+      content, so the comparison still leaks timing.
+    evidence: >-
+      The `subtle.ConstantTimeCompare` or `hmac.Equal` call quoted with its
+      file and line, with the code before it in the same function, showing
+      an early return or short-circuit on the compared values' content: a
+      `==` or `!=` on them, `bytes.Equal`, `strings.HasPrefix`,
+      `bytes.HasPrefix`, a comparison of a slice of them, or a loop over
+      them, or a `||` or `&&` joining such a comparison to the call. A
+      length check before the call is not this defect: the function itself
+      returns at once on unequal lengths, so the check leaks nothing more.
+    severity: medium
+    rationale: >-
+      An early return on content makes the response time depend on how
+      much of the guess is right, so an attacker can recover the secret a
+      piece at a time while the constant-time call gives the code the look
+      of safety.
+    references:
+      - https://pkg.go.dev/crypto/subtle#ConstantTimeCompare
+      - https://pkg.go.dev/crypto/hmac#Equal
+    findings: [constant-time-compare-covers-only-the-call]
+  - id: go-security-defaults/one-time-code-accepted-twice
+    statement: >-
+      A one-time code verifier accepts a code it has already accepted, so a
+      captured code can be replayed within its validity window.
+    evidence: >-
+      The verifying function quoted with its file and line: a
+      `github.com/pquerna/otp` `totp.Validate`, `totp.ValidateCustom`,
+      `hotp.Validate` or `hotp.ValidateCustom` call or a similar TOTP or
+      HOTP verification, or the lookup of an emailed, texted or reset code;
+      and the success path read to its return, showing no write that
+      consumes the code, such as a delete, a used mark, a stored last
+      accepted time step or an advanced counter, and no check against such
+      a record before acceptance. When the success path calls code that
+      cannot be read, where the consumption may sit, the case is named as
+      unresolved.
+    severity: high
+    rationale: >-
+      A code seen once, over a shoulder, in a log or by a phishing proxy,
+      logs in again, so the second factor or the reset link stops being
+      one-time and protects nothing against the attacker who already saw
+      it.
+    references:
+      - https://www.rfc-editor.org/rfc/rfc6238.html#section-5.2
+      - https://pkg.go.dev/github.com/pquerna/otp/totp
+      - https://github.com/pquerna/otp/blob/master/totp/totp.go
+      - https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+    findings: [otp-must-be-refused-after-use, pquerna-otp-validate-is-stateless, reset-tokens-are-single-use]

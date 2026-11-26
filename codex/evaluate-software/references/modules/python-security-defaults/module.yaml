@@ -1,0 +1,168 @@
+# Security mistakes in Python code that behave like the secure version until
+# someone attacks them, so a functional test passes on both. Each is read from
+# the source, the manifest and the lockfile, never by running the code or a
+# scanner. Every check rests on a finding in research.md beside this file.
+# What a check reads for a diff follows the module contract's `diff` input
+# kind. Any Python file can mint a token or compare a secret, so the triggers
+# are the source globs alone, and a library a check names is read from the
+# code in scope, not used to decide whether the module loads.
+id: python-security-defaults
+languages: [python]
+concept: security
+triggers:
+  files:
+    - "**/*.py"
+  manifests: []
+  design-markers: []
+  design-headings: []
+inputs: [diff, repository]
+phases: [static]
+checks:
+  - id: python-security-defaults/predictable-random-secret
+    statement: >-
+      A token, session id, reset code, one-time code or other secret is
+      drawn from the `random` module rather than `secrets`, so it can be
+      predicted.
+    evidence: >-
+      The call quoted with its file and line: a function of the `random`
+      module, such as `random.choice`, `random.choices`, `random.randint`,
+      `random.getrandbits` or `random.randbytes`, or a method of a
+      `random.Random` instance, or a helper whose source shows it built on
+      one; and the value followed, in the code read, to a use as a secret:
+      stored or compared as a credential, set as a session or
+      authentication cookie, sent in a reset or verification link or
+      message, or returned as an API key or one-time code. A name alone,
+      such as `token`, is not the use. `random.SystemRandom`, which draws
+      from the operating system, is not this defect, and neither is a value
+      used only for display, sampling, jitter, test data or a non-secret
+      identifier. A helper whose source cannot be read is named as
+      unresolved.
+    severity: high
+    rationale: >-
+      The `random` module's generator is deterministic, and its state can be
+      recovered from enough observed output, so whoever sees some tokens can
+      compute others, and the forged session or reset link works as the
+      real one does.
+    references:
+      - https://docs.python.org/3/library/random.html
+      - https://docs.python.org/3/library/secrets.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+    findings: [random-is-not-for-secrets, secrets-need-a-csprng]
+  - id: python-security-defaults/jwt-algorithm-not-pinned
+    statement: >-
+      JWT verification accepts the algorithm the token's own header names
+      instead of one pinned by the verifier, so a forged token can choose a
+      weaker check.
+    evidence: >-
+      The verify call quoted with its file and line, its key argument and
+      its `algorithms`, in PyJWT's `jwt.decode` or `jwt.decode_complete`, or
+      python-jose's `jwt.decode` or `jws.verify`, with signature
+      verification left on, showing one of four forms: the `algorithms`
+      list, or the key, chosen from the token's own unverified header, as
+      from `get_unverified_header(token)["alg"]`; `none` listed in
+      `algorithms` beside a signing algorithm, or every algorithm passed,
+      as `jwt.algorithms.get_default_algorithms()`; a python-jose call with
+      no `algorithms`, in any version; or a PyJWT call with no `algorithms`
+      while the version the lockfile resolves is below 2.0.0. The PyJWT
+      version is quoted from the lockfile, or from the manifest where it
+      pins one exactly; when neither can be read, a PyJWT call with no
+      `algorithms` is named as unresolved. A PyJWT 2 call whose key is a
+      `PyJWK`, which binds the key's own algorithm, and a key chosen by the
+      header's `kid` from keys that each carry one algorithm, are not this
+      defect. A call that turns signature verification off is not read by
+      this check.
+    severity: critical
+    rationale: >-
+      An attacker who picks the algorithm can sign with `none` or verify a
+      token against a public key used as an HMAC secret, so a token they
+      wrote is accepted as one the issuer signed, with whatever identity
+      and claims they chose.
+    references:
+      - https://www.rfc-editor.org/rfc/rfc8725.html#section-3.1
+      - https://pyjwt.readthedocs.io/en/stable/api.html
+      - https://pyjwt.readthedocs.io/en/stable/changelog.html
+      - https://github.com/jpadilla/pyjwt/security/advisories/GHSA-ffqj-6fqr-9h24
+      - https://github.com/mpdavis/python-jose/blob/3.5.0/jose/jws.py
+    findings: [jwt-header-names-its-own-algorithm, pyjwt-requires-algorithms-from-2, python-jose-accepts-any-algorithm-by-default]
+  - id: python-security-defaults/timing-safe-compare-undone
+    statement: >-
+      A secret is compared with `hmac.compare_digest`, but code around the
+      call returns early on the secret's content, so the comparison still
+      leaks timing.
+    evidence: >-
+      The `hmac.compare_digest` or `secrets.compare_digest` call quoted with
+      its file and line, with the code before it in the same function,
+      showing an early return or short-circuit on the compared values'
+      content: a `==`, `!=`, `startswith`, slice comparison or loop over
+      them, or an `or` or `and` joining such a comparison to the call. A
+      length check before the call is not this defect: the function itself
+      may reveal the lengths and not the values, so the check leaks nothing
+      more.
+    severity: medium
+    rationale: >-
+      An early return on content makes the response time depend on how
+      much of the guess is right, so an attacker can recover the secret a
+      piece at a time while the constant-time call gives the code the look
+      of safety.
+    references:
+      - https://docs.python.org/3/library/hmac.html#hmac.compare_digest
+    findings: [compare-digest-covers-only-the-call]
+  - id: python-security-defaults/one-time-code-accepted-twice
+    statement: >-
+      A one-time code verifier accepts a code it has already accepted, so a
+      captured code can be replayed within its validity window.
+    evidence: >-
+      The verifying function quoted with its file and line: a `pyotp`
+      `TOTP.verify`, `TOTP.verify_and_get_timecode` or `HOTP.verify` call
+      or a similar TOTP or HOTP verification, or the lookup of an emailed,
+      texted or reset code; and the success path read to its return,
+      showing no write that consumes the code, such as a delete, a used
+      mark, a stored last accepted time code or an advanced counter, and no
+      check against such a record before acceptance. When the success path
+      calls code that cannot be read, where the consumption may sit, the
+      case is named as unresolved.
+    severity: high
+    rationale: >-
+      A code seen once, over a shoulder, in a log or by a phishing proxy,
+      logs in again, so the second factor or the reset link stops being
+      one-time and protects nothing against the attacker who already saw
+      it.
+    references:
+      - https://www.rfc-editor.org/rfc/rfc6238.html#section-5.2
+      - https://pyauth.github.io/pyotp/
+      - https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+    findings: [otp-must-be-refused-after-use, pyotp-verify-is-stateless, reset-tokens-are-single-use]
+  - id: python-security-defaults/xml-external-entities-enabled
+    statement: >-
+      XML the program did not write is parsed with external entity
+      resolution on, so the document can read files or reach the network.
+    evidence: >-
+      The parse call quoted with its file and line and the parser it uses,
+      showing one of three forms: an `lxml.etree` parser, `XMLParser`,
+      `XMLPullParser`, `ETCompatXMLParser` or `iterparse`, given
+      `resolve_entities=True`, in any version; an `lxml.etree` parse with
+      `resolve_entities` left unset, by the default parser or one built
+      without it, while the lxml version the lockfile resolves is below
+      5.0, or, for `iterparse` and `ETCompatXMLParser`, below 6.1.0; or an
+      `xml.sax` parser, used directly or through `xml.dom.pulldom` or
+      `xml.dom.minidom`, with `feature_external_ges` set true. And the input
+      traced to a request, an upload, a message or a file the program does
+      not ship. The lxml version is quoted from the lockfile, or from the
+      manifest where it pins one exactly; when neither can be read, a parse
+      with `resolve_entities` unset is named as unresolved. Input traced
+      only to a constant or a file the repository holds is not this defect,
+      input whose origin cannot be read is named as unresolved, and a parse
+      through `defusedxml` is not this defect.
+    severity: high
+    rationale: >-
+      An entity the parser resolves can name a local file or a URL, so a
+      document an attacker sends reads secrets off the server, makes
+      requests from inside its network, or exhausts it, even when the
+      parsed result is never shown to them.
+    references:
+      - https://codeql.github.com/codeql-query-help/python/py-xxe/
+      - https://lxml.de/FAQ.html
+      - https://github.com/lxml/lxml/blob/master/CHANGES.txt
+      - https://docs.python.org/3/library/xml.sax.handler.html#xml.sax.handler.feature_external_ges
+      - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+    findings: [entity-resolution-enables-xxe, lxml-resolves-only-internal-entities-from-5, stdlib-parsers-resolve-only-when-asked]

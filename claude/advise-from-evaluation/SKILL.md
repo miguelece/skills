@@ -84,6 +84,11 @@ location names a symbol or a line, `findings.location.symbol` and
    - **The order of its steps**, where the change has more than one: each
      step leaves the code working, so the change can stop after any of them.
    - **Its kind**: a refactoring, or **not a refactoring** (step 3).
+   - **Its suggested owner**, where a finding it answers carries
+     `findings.suggested-owner`: each `findings.suggested-owner.author`,
+     with the `findings.suggested-owner.file` and
+     `findings.suggested-owner.commit` beside it, as the person to ask
+     first. It is a suggestion read from the report, not an assignment.
 3. **Mark each advisory by what it does to behaviour.** A refactoring changes
    the code's structure without changing what it does: every input gives the
    same output, the same errors and the same side effects as before. A change
@@ -108,6 +113,13 @@ Order the advisories so the first is the one to do first:
    answers more findings ranks higher.
 3. **Then by confidence**: among the rest, the one whose findings carry the
    higher `findings.confidence` ranks higher.
+4. **Then by relative churn**, in the refactoring mode only, since a design
+   has no history: among the rest, the one whose findings sit in the file
+   with the highest `findings.location.churn`, its `churned` over its
+   `lines`, ranks higher, because churn relative to a file's size predicts
+   defects where absolute churn does not. A finding without the field ranks
+   below one with it. The report carries the field; read nothing else for
+   it.
 
 Where one advisory must land before another, because the second edits code
 the first restructures, say so and keep that order even against the rank.

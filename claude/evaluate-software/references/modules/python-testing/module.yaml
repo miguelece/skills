@@ -268,3 +268,61 @@ checks:
       - https://abseil.io/resources/swe-book/html/ch11.html
       - https://docs.pytest.org/en/stable/explanation/flaky.html
     findings: [sleeping-tests-are-slow-and-flaky]
+  - id: python-testing/test-database-engine-differs
+    statement: >-
+      A test runs against a different database engine from the one the
+      application uses, and exercises a behaviour the two engines do not
+      share.
+    evidence: >-
+      Three things, each quoted with its file and line: the test
+      configuration naming the test engine, such as a `sqlite://` URL in a
+      conftest fixture, a test settings module or a pytest environment
+      setting, or Django's `django.db.backends.sqlite3` in a settings module
+      the tests load; the application's own configuration or migrations
+      naming another engine, such as a `postgresql://` URL, a Postgres or
+      MySQL backend, or a migration using that engine's dialect; and a test
+      that reaches the database through a feature the test engine lacks or
+      treats differently, such as a dialect-only type, function or upsert,
+      row locking, a foreign key or type the test engine does not enforce by
+      default, or transaction isolation. A test that uses only portable SQL
+      is not this defect, and neither is a suite that also runs the same
+      tests against the application's engine. When the application's engine
+      cannot be read, such as a URL taken from an environment variable with
+      no default, the test is named as unresolved and not reported.
+    severity: medium
+    rationale: >-
+      The stand-in accepts or rejects what the real engine would not, so the
+      test passes on code that fails in production, at exactly the behaviour
+      the test was written to check.
+    references:
+      - https://www.sqlite.org/quirks.html
+      - https://abseil.io/resources/swe-book/html/ch13.html
+      - https://docs.djangoproject.com/en/stable/topics/testing/overview/
+    findings: [stand-in-engines-lack-behaviour]
+  - id: python-testing/discarding-strategy-unguarded
+    statement: >-
+      A Hypothesis test narrows its inputs by discarding them and has the
+      health check that catches heavy discarding switched off, so it can
+      pass having tried few inputs.
+    evidence: >-
+      Two things, each quoted with its file and line: a `suppress_health_check`
+      setting naming `HealthCheck.filter_too_much`, or passing
+      `list(HealthCheck)`, in a `@settings` decorator on the test or in a
+      settings profile registered and loaded for the test run; and the
+      `@given` test it applies to, drawing from a strategy narrowed by
+      `.filter(...)` or calling `assume(...)` in its body. A suppression of
+      other health checks only, such as `too_slow` or
+      `function_scoped_fixture`, is not this defect, and neither is a filter
+      on a test the suppression does not reach. Where the profile is loaded
+      by an environment variable, the variable and its default are read; when
+      neither can be read, the test is named as unresolved and not reported.
+    severity: medium
+    rationale: >-
+      Hypothesis counts only the inputs a test keeps and fails a test that
+      discards too many, so with that guard off a strategy that rejects
+      nearly everything runs the test on a handful of inputs and still
+      passes, reporting a property it barely checked.
+    references:
+      - https://hypothesis.readthedocs.io/en/latest/reference/api.html
+      - https://hypothesis.readthedocs.io/en/latest/tutorial/adapting-strategies.html
+    findings: [hypothesis-guards-discarding]

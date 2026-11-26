@@ -46,6 +46,9 @@ enums:
   # How sure this run is that the finding is true, after verifying it against
   # the code or the design -- not how good the check's research is.
   confidence: [high, medium, low]
+  # Where a location's churn was counted from: the target's latest release tag,
+  # or twelve months back where the target has no release tag.
+  churn-window: [release-tag, twelve-months]
 
 report:
   type: mapping
@@ -218,6 +221,39 @@ report:
                 type: string
                 required: false
                 note: a design document's heading path, for a design-document input
+              churn: &churn
+                type: mapping
+                required: false
+                note: >-
+                  The relative churn of the location's file, read from
+                  `git log --numstat`: `churned` over `lines`. Churn relative to a
+                  file's size predicts defect density where absolute churn
+                  does not, so the advisor breaks its last tie by it. A proxy
+                  for the first relative measure of Nagappan and Ball (ICSE
+                  2005), churned lines over total lines, which counted added
+                  and changed lines over non-comment lines; git counts a
+                  changed line as one added and one deleted. Recorded as its
+                  two counts, so it is exact. Absent where the input is a
+                  design or the file has no history.
+                fields:
+                  churned:
+                    type: integer
+                    required: true
+                    note: lines added plus lines deleted in the file over the window
+                  lines:
+                    type: integer
+                    required: true
+                    note: the file's lines at the revision evaluated
+                  window:
+                    type: string
+                    required: true
+                    enum: churn-window
+                  since:
+                    type: string
+                    required: true
+                    note: >-
+                      where the window starts: the release tag's name, or the
+                      date twelve months before the revision evaluated
           evidence:
             type: string
             required: true
@@ -250,6 +286,30 @@ report:
                 type: string
                 required: true
                 note: the behaviour the check expected
+          suggested-owner:
+            type: list
+            required: false
+            note: >-
+              Who last changed each file the finding rests on, such as a test
+              file and the code it exercises, read from `git log` at the
+              revision evaluated: one entry per file. A suggestion of whom to
+              ask first, not an assignment. Absent or null where the check
+              records none.
+            items:
+              type: mapping
+              fields:
+                file:
+                  type: string
+                  required: true
+                  note: path relative to the scope's root
+                author:
+                  type: string
+                  required: true
+                  note: the author name of the last commit that changed the file
+                commit:
+                  type: string
+                  required: true
+                  note: that commit's hash
     unresolved:
       type: list
       required: true
@@ -302,6 +362,41 @@ report:
                 type: string
                 required: false
                 note: a design document's heading path, for a design-document input
+              churn: *churn
+    coverage:
+      type: list
+      required: false
+      note: >-
+        What each check this run ran examined, one entry per check and phase:
+        the paths or globs its evidence was read against, relative to the
+        scope's root, or a design document's heading paths. One run finds
+        only part of what repeated runs find, so a later run on the same
+        target reads this record and aims first at the check and path pairs
+        it leaves out. Absent or null only in a report written before the
+        record was defined.
+      items:
+        type: mapping
+        fields:
+          module:
+            type: string
+            required: true
+          check:
+            type: string
+            required: true
+            note: the check id, `<module-id>/<name>`
+          phase:
+            type: string
+            required: true
+            enum: phase
+          examined:
+            type: list
+            required: true
+            note: >-
+              the paths or globs the check examined, each stated; a check
+              that examined nothing is an `unresolved` entry, not an empty
+              list here
+            items:
+              type: string
 
 rules:
   - id: run-within-requested
@@ -336,3 +431,20 @@ rules:
     statement: >-
       when `dynamic` is not in `phases.run`, every field under `dynamic` is
       empty and no finding carries a `dynamic` block
+  - id: coverage-module-was-loaded
+    statement: every `coverage` entry's `module` is in `modules.loaded`
+  - id: coverage-check-belongs-to-its-module
+    statement: every `coverage` entry's `check` starts with its `module` and a slash
+  - id: coverage-phase-was-run
+    statement: every `coverage` entry's `phase` is in `phases.run`
+  - id: churn-on-a-code-file
+    statement: >-
+      a location, of a finding or of an `unresolved` entry, carries `churn`
+      only when it names a `file` and
+      `input.kind` is `diff` or `repository`, since a design has no history
+  - id: churn-counts-a-file-that-has-lines
+    statement: a `churn`'s `lines` is at least 1 and its `churned` at least 0
+  - id: churn-window-is-one-per-run
+    statement: >-
+      every `churn` in a report states the same `window` and `since`, so the
+      relative churn of any two locations can be compared

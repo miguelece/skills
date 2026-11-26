@@ -1,0 +1,66 @@
+# Whether the repository's tests give the same result on unchanged code: a
+# test that failed is rerun by the repository's own declared test command,
+# in the same process where the runner allows it and later in time, and one
+# that both passed and failed is reported as flaky. It runs only in the
+# dynamic phase and reads the runner's output, not the source language, so it
+# serves every language the library covers. Each check rests on a finding in
+# research.md beside this file.
+id: test-rerun
+languages: [language-neutral]
+concept: test-stability
+triggers:
+  files: []
+  manifests:
+    - 'package.json:"test"'
+    - "Makefile:test:"
+    - tox.ini
+  design-markers: []
+  design-headings: []
+# A diff is run only when its head is the checked-out working tree. A design
+# has no tests to run, so neither design input kind is served.
+inputs: [diff, repository]
+phases: [dynamic]
+checks:
+  - id: test-rerun/test-is-flaky
+    statement: >-
+      A test both passed and failed on unchanged code, so its result does not
+      say whether the code works.
+    evidence: >-
+      The declared test command, quoted with the manifest that declares it;
+      the revision run and a working tree with no change, read before every
+      run and unchanged across them; and every run of the test, each with its
+      exact command, when it ran and its result, at least one passing and one
+      failing. A first run of the declared command that fails a test is
+      followed by reruns of that test only, at most three: in the same
+      process, where the runner's own documented repeat flag does it and the
+      declared command passes arguments through to the runner (such as `go
+      test -count` with `-run`); and in a fresh process later in time, the
+      interval stated. A rerun appends only the runner's own documented
+      selection or repeat arguments, and only where the declared command
+      passes them through (npm's `--`, tox's `{posargs}`); otherwise the
+      whole declared command is rerun and the test's result read from its
+      output. Each run is a launch of its own, asked first, its ask naming
+      the command and the isolation the run approved for its launches, none
+      where it approved none. A same-process rerun the runner cannot make is
+      named as out of reach, and a rerun on another host always is. A test
+      that failed on every run is not reported: it goes in `unresolved` at
+      its location, the reason that no local rerun passed and a rerun on
+      another host is out of reach. The finding is placed at the test, by its
+      file and its name, and carries in `findings.suggested-owner` the last
+      commit's author and hash for the test file and for each repository
+      file the test imports, from `git log -1` at the revision run.
+    severity: medium
+    rationale: >-
+      A test that passes and fails on the same code fails builds that broke
+      nothing, so its failures are retried or ignored, and a real failure of
+      the code it guards is ignored with them.
+    references:
+      - https://github.blog/engineering/infrastructure/reducing-flaky-builds-by-18x/
+      - https://pkg.go.dev/cmd/go#hdr-Testing_flags
+      - https://jestjs.io/docs/cli
+      - https://git-scm.com/docs/git-log
+    findings:
+      - a-flaky-test-passes-and-fails-on-the-same-code
+      - reruns-sort-flaky-failures-by-cause
+      - runners-select-and-repeat-one-test
+      - the-last-change-names-whom-to-ask

@@ -142,7 +142,8 @@ The triggers are the manifests that declare a start or serve command: a
 `package.json` start script, a `[project.scripts]` table in
 `pyproject.toml`, a compose file and a Procfile. A compose file is itself a
 container command, so it runs as the repository declares it; the router
-adds no container to any other command.
+adds a container to no other command unless the user approves one as the
+run's isolation.
 
 Readiness, the smoke check and shutdown follow the lifecycle an
 orchestrator imposes on a process: wait for a readiness signal before
@@ -169,10 +170,15 @@ otherwise invent a limit the repository never set.
   attacks: no check sends hostile input, and none is a scanner's rule.
 - **Analysers.** No analyser runs in this phase; analysis belongs to the
   static phase, by the split the vendor pages draw.
-- **Isolation.** Claude Code's own sandbox does not cover native Windows,
-  and its documentation recommends a container or a virtual machine for
-  untrusted code. The module's targets are the user's own repositories, so
-  it adds no isolation, and the per-launch ask carries that review.
-- **Flaky tests.** Rerunning a test suite to find unstable tests is a
-  candidate for a later dynamic module of its own; it confirms tests, not
-  the application.
+- **Isolation.** The module chooses no isolation of its own: it is
+  decided at the gate, not ruled out. Claude Code's own sandbox does not
+  cover every host, and its documentation recommends a container or a
+  virtual machine for untrusted code. The user's own repositories need
+  none, but a diff an agent wrote, or code from a third party, is the case
+  that advice names, and a container shares the host's kernel where a
+  virtual machine does not. So before the first launch the router weighs
+  the code's origin against what the host offers and what each option
+  costs, recommends one, and runs only the option the user approves; no
+  isolation stays the default for the user's own code.
+- **Flaky tests.** Rerunning a test suite to find unstable tests is the
+  `test-rerun` module's work; it confirms tests, not the application.

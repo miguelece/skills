@@ -302,3 +302,62 @@ def test_worker_processes_job(queue, worker):
         assert time.monotonic() < deadline, "job not processed in 5s"
         time.sleep(0.01)
 ```
+
+## python-testing/test-database-engine-differs
+
+**Bad.** The application's settings name Postgres, the test fixture swaps in
+SQLite, and the test saves an order for a customer that was never created.
+SQLite leaves foreign keys unenforced by default, so the test passes, while
+the same `place_order` fails on Postgres with a foreign-key violation:
+
+```python
+# app/settings.py
+DATABASE_URL = "postgresql://app@db/app"
+
+# tests/conftest.py
+@pytest.fixture
+def engine():
+    return create_engine("sqlite://")
+
+# tests/test_orders.py
+def test_place_order_saves_it(engine):
+    order_id = place_order(engine, customer_id=99, item="lamp")
+    with engine.connect() as conn:
+        row = conn.execute(select(orders).where(orders.c.id == order_id)).one()
+    assert row.item == "lamp"
+```
+
+**Good.** The fixture runs the tests on the engine the application uses, here
+a disposable Postgres the test run starts, so the missing customer fails the
+test as it would fail production. This is one acceptable form among several,
+such as a CI service container:
+
+```python
+# tests/conftest.py
+@pytest.fixture(scope="session")
+def engine():
+    with PostgresContainer("postgres:17") as pg:
+        yield create_engine(pg.get_connection_url())
+```
+
+## python-testing/discarding-strategy-unguarded
+
+**Bad.** The filter keeps about one integer in a thousand, and the test
+switches off the health check that would fail it for discarding, so the
+property passes after the few inputs that survive:
+
+```python
+@settings(suppress_health_check=[HealthCheck.filter_too_much])
+@given(st.integers().filter(lambda n: n % 1000 == 0))
+def test_round_thousands_is_identity(n):
+    assert round_thousands(n) == n
+```
+
+**Good.** The strategy builds the values it needs instead of discarding the
+rest, and the health check stays on:
+
+```python
+@given(st.integers().map(lambda n: n * 1000))
+def test_round_thousands_is_identity(n):
+    assert round_thousands(n) == n
+```

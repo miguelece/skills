@@ -16,6 +16,25 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-26 — software-evaluation (security defaults, test reruns, coverage)
+
+- **Behaviour change.** Three security-defaults modules load per language:
+  `python-security-defaults`, `typescript-security-defaults` and
+  `go-security-defaults`, the last checking predictable `math/rand`
+  secrets gated on `go.mod`'s go line, bcrypt input joined past 72 bytes,
+  undone constant-time comparisons and replayable one-time codes.
+- **Behaviour change.** A `test-rerun` dynamic module reruns a failing test
+  at most three times, each launch asked first, to tell a flaky test from a
+  failing one; `go-testing` and `python-testing` gain a check for a test
+  database engine that differs from the application's.
+- **Behaviour change.** A report may carry a `coverage` record of what each
+  check examined, and a run given a prior report for the same target aims
+  first at the check and path pairs it left unexamined. Candidates are
+  verified by a fresh subagent per run, and the dynamic phase proposes an
+  isolation once per run before its first launch. Locations may carry
+  `churn`, which `advise-from-evaluation` ranks by, alongside a finding's
+  suggested owner.
+
 ### 2026-11-26 — task-board-management (only a close moves a file)
 
 - **Behaviour change.** Every unfinished task sits at the board root,

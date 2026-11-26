@@ -52,6 +52,14 @@ sources:
     title: "gotest.tools/v3/golden, v3.5.2"
     url: https://pkg.go.dev/gotest.tools/v3/golden
     date: 2026-11-23
+  - id: swe-book-test-doubles
+    title: "Software Engineering at Google, chapter 13: Test Doubles (Andrew Trenk and Dillon Bly)"
+    url: https://abseil.io/resources/swe-book/html/ch13.html
+    date: 2026-11-26
+  - id: sqlite-quirks
+    title: "SQLite: Quirks, Caveats, and Gotchas In SQLite"
+    url: https://www.sqlite.org/quirks.html
+    date: 2026-11-26
 findings:
   - id: fatal-only-on-test-goroutine
     claim: >-
@@ -167,6 +175,16 @@ findings:
       are then compared by diff to check the update is correct.
     confidence: directional
     sources: [gotest-tools-golden, go-cmd-go]
+  - id: stand-in-engines-lack-behaviour
+    claim: >-
+      A real implementation is preferred over a test double, and a fake such
+      as an in-memory database has fidelity only for what the test relies
+      on. SQLite, the usual stand-in, differs from client-server engines in
+      ways a test can reach: advisory column types, foreign keys unenforced
+      by default, and dubious SQL accepted, so an application relying on
+      them fails when moved to a stricter engine.
+    confidence: evidenced
+    sources: [swe-book-test-doubles, sqlite-quirks]
 ---
 
 # Research: Go test quality
@@ -197,6 +215,31 @@ the `cmd/go` rule that `testdata` is ignored by the go tool. The finding is
 therefore `directional`, and the one check on it reads only the defect
 that makes a golden comparison vacuous: a test that rewrites the file it
 compares against on every run.
+
+## Stand-ins and property generators
+
+Read on 2026-11-26, with the same two subjects added to `python-testing` that
+day.
+
+- **The stand-in engine** is language-neutral, and Go states it in code: the
+  driver name passed to `sql.Open` and the driver package imported. The
+  check needs the same three quotes as Python's, a test engine, a different
+  application engine and a test reaching a behaviour the SQLite page lists
+  as differing, so a preference for the real engine with no mismatch to
+  quote is not reported. The finding is `evidenced` for the reason given in
+  the Python module: the differences are demonstrated, their cost in hidden
+  failures is not measured.
+- **A property generator that discards most inputs gets no check here.** The
+  standard library's fuzzing has no `assume` or filter to read: a fuzz
+  target is coverage-guided and takes no example count, so there is no
+  discard rate a reading could quote. Third-party property libraries do
+  filter: gopter's `SuchThat` adds a sieve, and its documentation, read at
+  <https://pkg.go.dev/github.com/leanovate/gopter> that day, warns that a
+  sieve too fine leaves the property undecided and reports the run as
+  exhausted. Whether that status fails `go test`, and whether gopter or
+  any such library can switch it off, was not confirmed, so there is no
+  suppressed guard to quote, the evidence the Python check rests on. Revisit
+  if a codebase this library serves uses one.
 
 ## What this does not cover
 

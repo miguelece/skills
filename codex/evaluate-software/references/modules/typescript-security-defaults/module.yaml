@@ -1,0 +1,156 @@
+# Security mistakes in TypeScript code that behave like the secure version
+# until someone attacks them, so a functional test passes on both. Each is
+# read from the source, the manifest and the lockfile, never by running the
+# code or a scanner. Every check rests on a finding in research.md beside this
+# file. What a check reads for a diff follows the module contract's `diff`
+# input kind. Any TypeScript file can mint a token or compare a secret, so the
+# triggers are the source globs alone, and a library a check names is read
+# from the code in scope, not used to decide whether the module loads.
+id: typescript-security-defaults
+languages: [typescript]
+concept: security
+triggers:
+  files:
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.mts"
+    - "**/*.cts"
+  manifests: []
+  design-markers: []
+  design-headings: []
+inputs: [diff, repository]
+phases: [static]
+checks:
+  - id: typescript-security-defaults/predictable-random-secret
+    statement: >-
+      A token, session id, reset code, one-time code or other secret is
+      drawn from a non-cryptographic random source, so it can be predicted.
+    evidence: >-
+      The call quoted with its file and line: `Math.random()`, or a helper
+      or library whose source or documentation names it as built on
+      `Math.random()`, such as `nanoid/non-secure`; and the value followed,
+      in the code read, to a use as a secret: stored or compared as a
+      credential, set as a session or authentication cookie, sent in a
+      reset or verification link or message, or returned as an API key or
+      one-time code. A name alone, such as `token`, is not the use. A
+      value used only for display, sampling, jitter, test data or a
+      non-secret identifier is not this defect. A helper whose source
+      cannot be read is named as unresolved.
+    severity: high
+    rationale: >-
+      The output of a non-cryptographic generator can be recovered from a
+      few observed values, so whoever can see some tokens can compute the
+      next one, and the forged session or reset link works as the real one
+      does.
+    references:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+      - https://nodejs.org/api/crypto.html#cryptorandombytessize-callback
+      - https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+    findings: [math-random-is-not-for-secrets, secrets-need-a-csprng]
+  - id: typescript-security-defaults/jwt-algorithm-not-pinned
+    statement: >-
+      JWT verification accepts the algorithm the token's own header names
+      instead of one pinned by the verifier, so a forged token can choose a
+      weaker check.
+    evidence: >-
+      The verify call quoted with its file and line, its key argument and
+      its options, in `jsonwebtoken`'s `verify` or `jose`'s `jwtVerify` or
+      `compactVerify`, showing one of three forms: the `algorithms` list,
+      or the key, chosen from the token's own unverified header, as from
+      `decode(token, { complete: true }).header.alg` or
+      `decodeProtectedHeader`; `none` listed in `algorithms` beside a
+      signing algorithm; or, for `jsonwebtoken`, no `algorithms` option
+      while the version the lockfile resolves is below 9.0.0. The version
+      is quoted from the lockfile, or the manifest where it pins one
+      exactly; when neither can be read, a call with no `algorithms` is
+      named as unresolved. A key chosen by the header's `kid` from keys
+      that each carry one algorithm is not this defect.
+    severity: critical
+    rationale: >-
+      An attacker who picks the algorithm can sign with `none` or verify a
+      token against a public key used as an HMAC secret, so a token they
+      wrote is accepted as one the issuer signed, with whatever identity
+      and claims they chose.
+    references:
+      - https://www.rfc-editor.org/rfc/rfc8725.html#section-3.1
+      - https://github.com/auth0/node-jsonwebtoken#jwtverifytoken-secretorpublickey-options-callback
+      - https://github.com/auth0/node-jsonwebtoken/security/advisories/GHSA-qwph-4952-7xr6
+      - https://github.com/auth0/node-jsonwebtoken/security/advisories/GHSA-hjrf-2m68-5959
+      - https://github.com/panva/jose/blob/main/docs/jwt/verify/interfaces/JWTVerifyOptions.md
+    findings: [jwt-header-names-its-own-algorithm, jsonwebtoken-defaults-before-9, jose-defaults-to-the-key]
+  - id: typescript-security-defaults/timing-safe-compare-undone
+    statement: >-
+      A secret is compared with `timingSafeEqual`, but code around the call
+      returns early on the secret's content or length, so the comparison
+      still leaks timing.
+    evidence: >-
+      The `crypto.timingSafeEqual` call quoted with its file and line, with
+      the code before it in the same function, showing an early return or
+      short-circuit on the compared values: a `===`, `startsWith` or loop
+      over their content; or a length check, where the secret compared is
+      not of a fixed, public length, such as a raw API key, password or
+      variable-length token rather than a digest both sides compute. A
+      length check on two digests of the same fixed size is not this
+      defect.
+    severity: medium
+    rationale: >-
+      An early return makes the response time depend on how much of the
+      guess is right, or on the secret's length, so an attacker can
+      recover the secret a piece at a time while the constant-time call
+      gives the code the look of safety.
+    references:
+      - https://nodejs.org/api/crypto.html#cryptotimingsafeequala-b
+    findings: [timing-safe-equal-covers-only-the-call]
+  - id: typescript-security-defaults/one-time-code-accepted-twice
+    statement: >-
+      A one-time code verifier accepts a code it has already accepted, so a
+      captured code can be replayed within its validity window.
+    evidence: >-
+      The verifying function quoted with its file and line: an `otplib`,
+      `speakeasy` or similar TOTP or HOTP verify call, or the lookup of an
+      emailed, texted or reset code; and the success path read to its
+      return, showing no write that consumes the code, such as a delete, a
+      used mark, a stored last time step or an advanced counter, and no
+      check against such a record before acceptance, such as `otplib`'s
+      `afterTimeStep`. When the success path calls code that cannot be
+      read, where the consumption may sit, the case is named as unresolved.
+    severity: high
+    rationale: >-
+      A code seen once, over a shoulder, in a log or by a phishing proxy,
+      logs in again, so the second factor or the reset link stops being
+      one-time and protects nothing against the attacker who already saw
+      it.
+    references:
+      - https://www.rfc-editor.org/rfc/rfc6238.html#section-5.2
+      - https://otplib.yeojz.dev/guide/security
+      - https://otplib.yeojz.dev/guide/advanced-usage
+      - https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
+    findings: [otp-must-be-refused-after-use, otp-libraries-are-stateless, reset-tokens-are-single-use]
+  - id: typescript-security-defaults/xml-external-entities-enabled
+    statement: >-
+      An XML parser is called with entity substitution or DTD loading
+      enabled on input the program did not write, so the document can read
+      files or reach the network.
+    evidence: >-
+      The `libxmljs` parse call, `parseXml` or `parseXmlAsync`, quoted
+      with its file and line and its
+      options showing `replaceEntities`, `noent`, `validateEntities` or
+      `dtdvalid` set true, or `flags` holding `XML_PARSE_NOENT` or
+      `XML_PARSE_DTDLOAD`; and the input traced to a request, an upload, a
+      message or a file the program does not ship. Input traced only to a
+      constant or a file the repository holds is not this defect, and input
+      whose origin cannot be read is named as unresolved. A parser this
+      check does not name, a fork of `libxmljs` included, is not reported
+      by it.
+    severity: high
+    rationale: >-
+      An entity the parser resolves can name a local file or a URL, so a
+      document an attacker sends reads secrets off the server, makes
+      requests from inside its network, or exhausts it, even when the
+      parsed result is never shown to them.
+    references:
+      - https://codeql.github.com/codeql-query-help/javascript/js-xxe/
+      - https://github.com/libxmljs/libxmljs/blob/v1.0.11/lib/types.ts
+      - https://github.com/libxmljs/libxmljs/blob/v1.0.11/lib/parse.ts
+      - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+    findings: [entity-substitution-enables-xxe, libxmljs-substitutes-only-when-asked]
