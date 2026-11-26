@@ -32,9 +32,9 @@ model here.
 ## Fresh board
 
 1. Confirm the board path and whether it is gitignored.
-2. Create the board root plus the six derived folders: `completed/`,
-   `manual-blocked/`, `owner-deferred/`, `task-blocked/`, `revisit/`,
-   `superseded/`.
+2. Create the board root plus the three derived folders: `completed/`,
+   `revisit/`, `superseded/`. Every unfinished task sits at the root, whatever
+   its gate or `blocked-by`.
 3. Write `README.md` with a short hand-written orientation section explaining
    what this board is for and where its conventions live, then the two index
    markers:
@@ -92,8 +92,10 @@ model here.
    assessment, and it is what lets the archive index be generated rather than
    hand-maintained.
 7. Move each file into the folder its frontmatter derives, using `git mv` so
-   history survives. Every move breaks the relative links into and out of the
-   moved file, and a pile adopted at once breaks many; repair them per
+   history survives: a finished or superseded task into its folder, and every
+   unfinished one to the board root, gated or blocked alike. Every move breaks
+   the relative links into and out of the moved file, and a pile adopted at
+   once breaks many; repair them per
    *Repairing the links a move breaks* in
    [references/board-model.md](references/board-model.md).
 8. Wire up cross-references: set `parent` (lineage) on anything split off

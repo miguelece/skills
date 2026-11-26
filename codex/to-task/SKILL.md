@@ -75,8 +75,8 @@ contract and folder mapping. Start from [assets/task.md](assets/task.md).
   evidence is a wish, not a task.
 - Do not copy the request's wording as the problem statement. Restate the
   problem in terms of observable behavior.
-- Do not set `gate: none` to make a task look actionable. The board root's value
-  is entirely in being trustworthy.
+- Do not set `gate: none` to make a task look actionable. The index's *Active*
+  group is worth reading only while it is trustworthy.
 - Do not use `blocked-by` for a dependency on a person; that is what `gate` is
   for. It names tasks on this board and nothing else.
 - Do not put a solution in `Why this exists`. The plan is a separate section

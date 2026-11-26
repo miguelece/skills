@@ -170,11 +170,13 @@ blocked-by: [data-layer-regional-expansion]
 ```
 
 Blocked while **any** listed id has not reached `done`. This is the one field
-whose folder effect depends on **another file's** state, which has a deliberate
-consequence: a task's derived folder can change while its own file is untouched.
-Closing a blocker makes every downstream task report a folder mismatch — and
-that mismatch is the unblock notification. It is the only mechanism here that
-tells you work became available without you going looking.
+whose effect depends on **another file's** state: closing a blocker makes a
+downstream task startable while its own file is untouched. **No file moves when
+that happens**, because an unfinished task sits at the board root whether or
+not it is blocked. So a close asks: `validate_board.py --closed <id>` lists each
+unfinished task whose last open blocker was that task. It is how a close learns
+that work became available, and the generated index shows it on the next
+regeneration, when the task leaves the *Task-blocked* group.
 
 Three rules keep it honest:
 
@@ -186,7 +188,7 @@ Three rules keep it honest:
   what the work came after. Only unfinished tasks are filed by it.
 
 Do not use `blocked-by` for a dependency on a person — that is what `gate` is
-for. A task with both is filed by its gate, because closing the sibling would
+for. A task with both is grouped by its gate, because closing the sibling would
 not make it startable.
 
 ### `revisit` — done, working, and deliberately not taken further
@@ -249,28 +251,45 @@ The subdirectory is derived from the frontmatter, first match wins:
 | Condition | Folder |
 | --- | --- |
 | `status: superseded` | `superseded/` |
-| `gate: manual` | `manual-blocked/` |
-| `gate: owner` | `owner-deferred/` |
 | `status: done` and `revisit: true` | `revisit/` |
 | `status: done` | `completed/` |
-| any `blocked-by` not yet `done` | `task-blocked/` |
 | otherwise | *(board root)* |
 
-The board root therefore holds exactly the tasks an agent can start right now.
-That is the property worth protecting: **if a task is sitting at the top level,
-it is actionable.** Everything else is filed by *what* it waits on — a person's
-action, a person's decision, or another task.
+**Only a close moves a file.** Every unfinished task sits at the board root,
+whatever its gate or `blocked-by`, and keeps that state in its frontmatter.
+`README.md` groups the root by what each task waits on, in this order, first
+match wins:
 
-Three orderings in that table are deliberate:
+| Condition | `README.md` group |
+| --- | --- |
+| `gate: manual` | *Manual-blocked*: a person's action |
+| `gate: owner` | *Owner-deferred*: a person's decision |
+| any `blocked-by` not yet `done` | *Task-blocked*: another task |
+| otherwise | *Active*: an agent can start it now |
 
-- **Gate outranks `done`**, encoding the rule above that a gated task is not
-  finished.
-- **Both gates outrank `blocked-by`.** A task waiting on a sibling *and* a
-  person is still un-startable when the sibling closes, so it files by the
-  person. Filing it under `task-blocked/` would promote it to the root on a
-  false signal.
+**Why a gate or a blocker moves nothing.** An earlier layout filed each of
+those three groups in a folder of its name, so the root held only what could
+start. Every gate set, blocker added or blocker cleared then moved the file,
+and every move broke the relative links into it and out of it. Measured over
+this model's own board, 53 of 330 renames were those mid-work moves; the other
+277 were a close, which happens once and where a repair is already a step. So
+the folder now records only whether a task is still in play, and *Generated
+views* is the one place that tells a startable task from a waiting one. A task
+found in a retired folder (`manual-blocked/`, `owner-deferred/`,
+`task-blocked/`) is reported as misfiled, with its fix: a move to the board
+root, which `task-board-triage` makes.
+
+Two orderings are deliberate:
+
+- **Both gates outrank `blocked-by`** in the grouping. A task waiting on a
+  sibling *and* a person is still un-startable when the sibling closes, so it
+  groups by the person. Grouping it as *Task-blocked* would list it as *Active*
+  on a false signal.
 - **`done` outranks `blocked-by`**, which is what lets a finished task keep its
-  `blocked-by` as provenance instead of being dragged back into `task-blocked/`.
+  `blocked-by` as provenance.
+
+A gated task is never `done`, by the rule above, so a gate never meets the
+`done` rows.
 
 ## Required body sections
 
@@ -325,8 +344,10 @@ about a link, not a link, and a generated region is repaired by regeneration.
 
 ### Repairing the links a move breaks
 
-The move and the repair are two passes and the second is not optional. The
-scripts report a broken link; **nothing in them repairs one.**
+Only a close moves a task file now, but a close does move it, and so does a
+refile out of a retired folder. The move and the repair are two passes and the
+second is not optional. The scripts report a broken link; **nothing in them
+repairs one.**
 
 **One rule covers both directions.** A link is a path from a directory to a
 target, so when either endpoint moves, re-express the target **relative to the
@@ -629,7 +650,7 @@ several regions, each derived from the same task frontmatter:
 
 | File | Holds | Grouped by |
 | --- | --- | --- |
-| `README.md` | everything still in play, plus `revisit/` | folder (status), then category |
+| `README.md` | everything still in play, plus `revisit/` | what it waits on (gate, then `blocked-by`), then category |
 | `ARCHIVE.md` | `completed/` and `superseded/` | folder, then month closed |
 | `TREE.md` | every task in a composition relation | `part-of` (nested tree) |
 | spec docs | each task's own direct slices | in-place `## Slices` rollup |
@@ -638,8 +659,8 @@ The live index shows completed and superseded only as a count and a pointer, so
 the file a person opens daily does not grow without bound as the board ages.
 
 `README.md` and `TREE.md` are the two axes the same tasks can be read along:
-README groups by *what a task is waiting on* (status/folder), for auditing and
-picking work; TREE groups by *what a task is a piece of* (composition), for
+README groups by *what a task is waiting on* (gate and blocker), for auditing
+and picking work; TREE groups by *what a task is a piece of* (composition), for
 seeing how an effort decomposes. `TREE.md` exists only when the board has
 composition.
 
@@ -668,7 +689,7 @@ differently on purpose.
 **Duplicate headings are prevented structurally.** Every heading the generator
 emits is qualified by the group it sits under — `Active — <category>` in the
 live index, `Completed — <month>` in the archive. The same category routinely
-appears in two folder groups, and the same month in both archive groups, which
+appears in two groups, and the same month in both archive groups, which
 would otherwise emit byte-identical headings. That is markdownlint MD024, and
 worse: two indistinguishable table-of-contents entries pointing at different
 sections, in a document whose job is orientation.

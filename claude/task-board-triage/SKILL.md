@@ -40,7 +40,10 @@ Fix findings in this order, because later ones depend on earlier ones:
    `done`, `superseded` with no successor, a `blocked-by` cycle. Treat a cycle
    as urgent: every task in one is permanently invisible until it is broken.
 4. **Folder mismatches** — decide which side is right. If the frontmatter is
-   correct, `git mv` the file to the derived folder. If the folder is correct,
+   correct, `git mv` the file to the derived folder. A task in a retired
+   folder (`manual-blocked/`, `owner-deferred/`, `task-blocked/`) is from a
+   layout that filed waiting tasks apart; move it to the board root, since its
+   gate or `blocked-by` stays in its frontmatter. If the folder is correct,
    fix the frontmatter. Never "fix" both to meet in the middle. A move breaks
    every relative link into and out of the file; repair them per *Repairing the
    links a move breaks* in
@@ -74,11 +77,11 @@ For each non-completed task:
    decision made. A gate nobody re-checks is how a board silently stops being a
    plan.
 
-   Task-to-task blockers need no such sweep: the validator reports them as
-   folder mismatches the moment a blocker reaches `done`, and those findings
-   read as good news. Move each one to the root and say which tasks became
-   available — a newly unblocked task is the most useful thing a triage pass can
-   surface.
+   Task-to-task blockers need no such sweep: a `blocked-by` clears itself
+   when its blocker reaches `done`, and the regenerated index moves the task
+   out of *Task-blocked*. Compare the index before and after pass 3 and say
+   which tasks became available — a newly unblocked task is the most useful
+   thing a triage pass can surface.
 3. **Is it actually still wanted?** A task whose premise was overtaken belongs
    in `superseded/` with a successor, not at the top level forever.
 4. **Is a `done` task genuinely done?** Its acceptance criterion, not its commit
@@ -99,8 +102,8 @@ scripts/generate_index.py --board <board>
 scripts/validate_board.py --board <board>
 ```
 
-Then read the board root. Every task sitting there should be one an agent could
-start today. If it is not, its gate is missing.
+Then read the index's *Active* group. Every task in it should be one an agent
+could start today. If it is not, its gate is missing.
 
 ## Report
 

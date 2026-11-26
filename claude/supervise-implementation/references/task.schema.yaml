@@ -129,22 +129,16 @@ fields:
 
 # First match wins. See references/board-model.md for the reasoning.
 #
-# Human gates outrank blocked-by: a task waiting on both a sibling and a person
-# stays un-startable when the sibling closes, so it files by the person. The
-# done checks outrank it too, so blocked-by can persist as provenance.
+# Only a close moves a file. Every unfinished task sits at the board root,
+# whatever its gate or blocked-by; the generated index groups the root by what
+# each task waits on.
 folder_mapping:
   - when: {status: superseded}
     folder: superseded
-  - when: {gate: manual}
-    folder: manual-blocked
-  - when: {gate: owner}
-    folder: owner-deferred
   - when: {status: done, revisit: true}
     folder: revisit
   - when: {status: done}
     folder: completed
-  - when: {blocked-by: unresolved}
-    folder: task-blocked
   - when: {}
     folder: ""
 

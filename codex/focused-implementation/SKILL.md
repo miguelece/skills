@@ -113,19 +113,18 @@ Set `status: in-progress` and update `updated` before starting.
 7. Verify:
 
    ```text
-   scripts/validate_board.py --board <board>
+   scripts/validate_board.py --board <board> --closed <this task's id>
    scripts/generate_index.py --board <board>
    ```
 
 8. **Act on the findings this close caused.** Read the validator's output,
-   not only its exit code. A task it reports unblocked by this close — a
-   folder mismatch naming the cleared blocker, which is the unblock
-   notification in [references/board-model.md](references/board-model.md) —
-   is refiled now to the folder its frontmatter derives, and its links are
-   repaired per *Repairing the links a move breaks*, the scan of the whole
-   repository for its id included. Fix every other error on the closed task,
-   on a task it unblocked or on a follow-on the close filed, then re-run both
-   scripts until they report none of these, before the close is committed.
+   not only its exit code. `--closed` lists each task this close unblocked:
+   an unfinished task whose last open blocker was this one. No file moves for
+   it, because an unfinished task already sits at the board root; name each
+   one in the close's report, since a newly startable task is news. Fix every
+   error on the closed task, on a task it unblocked or on a follow-on the
+   close filed, then re-run both scripts until they report none of these,
+   before the close is committed.
    An error on any other task was not this close's: it stays with
    `task-board-triage`, so the close never becomes a triage pass.
 

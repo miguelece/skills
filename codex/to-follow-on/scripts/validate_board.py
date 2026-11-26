@@ -7,16 +7,16 @@ required body sections, and cross-reference resolution.
 
     scripts/validate_board.py --board .scratch/task_board
     scripts/validate_board.py --board .scratch/task_board --json
+    scripts/validate_board.py --board .scratch/task_board --closed <task-id>
 
 Exits 0 when the board is clean, 1 when any finding is reported, and 2 when the
 board itself cannot be read. Reports findings; never edits or moves a file --
 moving is the caller's job, so it can use `git mv` and keep history.
 
-Most folder derivations read only the task's own frontmatter. `blocked-by` is
-the exception: it reads the *blocker's* status, so a task's derived folder can
-change while its own file is untouched. That is deliberate -- when a blocker
-closes, the resulting folder mismatch is how the board reports that the
-downstream task just became actionable.
+A file moves only when its task closes: every unfinished task sits at the
+board root, whatever its gate or `blocked-by`. So closing a blocker changes no
+folder, and `--closed <task-id>` is how a close learns what it unblocked: it
+lists each unfinished task whose last open blocker was that task.
 
 Standard library only, so the script runs in any repository without installing
 anything. The frontmatter dialect is deliberately small (flat scalars plus one
@@ -196,12 +196,23 @@ BLOCK_SCALAR = re.compile(r"^([>|])([-+]?)$")
 # Folders the board owns. Anything else at depth 1 is reported as unknown.
 DERIVED_FOLDERS = (
     "superseded",
-    "manual-blocked",
-    "owner-deferred",
-    "task-blocked",
     "revisit",
     "completed",
 )
+
+# What an unfinished task can wait on, as `derive_group` names it for the index:
+# a person's action, a person's decision, or another task. All of these sit at
+# the board root.
+WAITING_GROUPS = (
+    "manual-blocked",
+    "owner-deferred",
+    "task-blocked",
+)
+
+# An earlier layout filed each waiting group in a folder of its name. A task
+# found in one is misfiled rather than in an unknown folder, so the finding can
+# name its fix: a move to the board root.
+RETIRED_FOLDERS = WAITING_GROUPS
 
 REQUIRED_SECTIONS = ("why this exists", "plan", "open questions", "owner")
 
@@ -949,25 +960,56 @@ def find_cycles(graph: dict[str, list[str]]) -> list[list[str]]:
 # ---------------------------------------------------------------------------
 
 
-def derive_folder(front: dict, resolved_ids: frozenset[str] = frozenset()) -> str:
+def derive_folder(front: dict) -> str:
     """The one place the folder mapping is written down. First match wins.
 
-    Human gates outrank blocked-by: a task waiting on both a sibling and a
-    person is still un-startable once the sibling closes, so it files by the
-    person. The done checks outrank it too, which lets blocked-by survive on a
-    finished task as a permanent record of what it came after.
+    Only a close moves a file. A gate or a `blocked-by` is state an unfinished
+    task carries in its frontmatter, and the generated index groups the root by
+    it, so neither moves the file.
     """
     if front.get("status") == "superseded":
         return "superseded"
+    if front.get("status") == "done":
+        return "revisit" if front.get("revisit") is True else "completed"
+    return ""
+
+
+def derive_group(front: dict, resolved_ids: frozenset[str] = frozenset()) -> str:
+    """What an unfinished task waits on, for the index to group the root by.
+
+    The order is the one the folders used to encode. Human gates outrank
+    `blocked-by`: a task waiting on both a sibling and a person is still
+    un-startable once the sibling closes, so it groups by the person. A task
+    that has closed groups by its folder.
+    """
+    folder = derive_folder(front)
+    if folder:
+        return folder
     if front.get("gate") == "manual":
         return "manual-blocked"
     if front.get("gate") == "owner":
         return "owner-deferred"
-    if front.get("status") == "done":
-        return "revisit" if front.get("revisit") is True else "completed"
     if unresolved_blockers(front, resolved_ids):
         return "task-blocked"
     return ""
+
+
+def unblocked_by(
+    closed_id: str, tasks: list[dict], resolved_ids: frozenset[str]
+) -> list[dict]:
+    """Unfinished tasks whose last open blocker was `closed_id`.
+
+    A task that named `closed_id` and has no blocker left open is unblocked by
+    that close. One still waiting on another task, and one already finished,
+    are not.
+    """
+    return [
+        task
+        for task in tasks
+        if closed_id in blocker_ids(task)
+        and task.get("status") not in ("done", "superseded")
+        and not unresolved_blockers(task, resolved_ids)
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -1132,30 +1174,30 @@ def validate_one(
     # --- folder mapping ----------------------------------------------------
     actual_folder = path.parent.relative_to(board).as_posix()
     actual_folder = "" if actual_folder == "." else actual_folder
-    if actual_folder and actual_folder not in DERIVED_FOLDERS:
+    if actual_folder in RETIRED_FOLDERS:
+        report(
+            "folder-matches-frontmatter",
+            f"{actual_folder!r} is a retired folder; every unfinished task sits "
+            "at the board root, so move it to the board root and repair its links"
+            if not derive_folder(front)
+            else f"{actual_folder!r} is a retired folder; frontmatter derives "
+            f"{derive_folder(front)!r}",
+        )
+    elif actual_folder and actual_folder not in DERIVED_FOLDERS:
         report(
             "folder-unknown",
             f"{actual_folder!r} is not a board folder; expected one of "
             f"{list(DERIVED_FOLDERS)} or the board root",
         )
     elif status in STATUSES and gate in GATES:
-        expected = derive_folder(front, resolved_ids)
+        expected = derive_folder(front)
         if actual_folder != expected:
             where = expected or "the board root"
-            message = (
+            report(
+                "folder-matches-frontmatter",
                 f"frontmatter derives {where!r} but the file is in "
-                f"{actual_folder or 'the board root'!r}"
+                f"{actual_folder or 'the board root'!r}",
             )
-            # A blocked-by task moves without its own file changing, so name the
-            # blocker that cleared -- the mismatch is the unblock notification.
-            if actual_folder == "task-blocked" and expected != "task-blocked":
-                cleared = [b for b in blocker_ids(front) if b in resolved_ids]
-                if cleared:
-                    message = (
-                        f"blocker(s) {cleared} are done; frontmatter now derives "
-                        f"{where!r} -- this task is unblocked"
-                    )
-            report("folder-matches-frontmatter", message)
 
     # --- required sections -------------------------------------------------
     present = sections(body)
@@ -1596,13 +1638,36 @@ def validate_board(board: Path) -> list[Finding]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--board", type=Path, required=True, help="board root directory")
-    parser.add_argument("--json", action="store_true", help="emit findings as JSON")
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument("--json", action="store_true", help="emit findings as JSON")
+    output.add_argument(
+        "--closed",
+        metavar="TASK_ID",
+        help="also list the unfinished tasks closing this done task unblocked",
+    )
     args = parser.parse_args()
 
     board = args.board
     if not board.is_dir():
         print(f"not a directory: {board}", file=sys.stderr)
         return 2
+
+    unblocked: list[dict] = []
+    if args.closed:
+        tasks = []
+        for path in collect_tasks(board):
+            front, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+            if front:
+                tasks.append({**front, "_path": path.relative_to(board).as_posix()})
+        statuses = {str(t.get("id")): t.get("status") for t in tasks}
+        if statuses.get(args.closed) != "done":
+            print(
+                f"--closed {args.closed}: that task is not done on {board}",
+                file=sys.stderr,
+            )
+            return 2
+        resolved = frozenset(i for i, status in statuses.items() if status == "done")
+        unblocked = unblocked_by(args.closed, tasks, resolved)
 
     findings = validate_board(board)
     errors = [f for f in findings if f.severity == "error"]
@@ -1621,6 +1686,11 @@ def main() -> int:
     else:
         task_count = len(collect_tasks(board))
         print(f"OK: {task_count} task(s) on {board}, no findings")
+
+    if args.closed:
+        print(f"\n{len(unblocked)} task(s) unblocked by closing {args.closed}:")
+        for task in sorted(unblocked, key=lambda t: t["_path"]):
+            print(f"  {task['_path']}")
 
     # Warnings are policy nudges; only errors fail the run.
     return 1 if errors else 0

@@ -78,10 +78,8 @@ current value of a constant.
    - **The answer depends on another task landing first** → set `blocked-by`
      rather than guessing what that task will conclude.
 
-   Setting a gate or an unfinished `blocked-by` moves the file into another
-   folder, which breaks every relative link into and out of it; repair them per
-   *Repairing the links a move breaks* in
-   [references/board-model.md](references/board-model.md).
+   Setting a gate or a `blocked-by` moves no file: an unfinished task stays at
+   the board root, and the index groups it by what it waits on.
 7. **Promote and verify.** When no blocking question is left, set
    `status: scoped`, update `updated`, and run:
 

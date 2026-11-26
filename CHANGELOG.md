@@ -16,6 +16,22 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-26 — task-board-management (only a close moves a file)
+
+- **Behaviour change.** Every unfinished task sits at the board root,
+  whatever its gate or `blocked-by`; only `completed/`, `revisit/` and
+  `superseded/` remain. Setting a gate or a blocker moves no file, and the
+  generated `README.md` groups the root by what each task waits on.
+- **Behaviour change.** `manual-blocked/`, `owner-deferred/` and
+  `task-blocked/` are retired. The validator reports a task in one as
+  `folder-matches-frontmatter`, naming the fix: a move to the board root,
+  which `task-board-triage` makes. **A board adopted before this change
+  reports those errors until its next triage.**
+- **Behaviour change.** A cleared blocker no longer shows as a folder
+  mismatch. `validate_board.py --closed <id>` lists each unfinished task
+  whose last open blocker was that task, and `focused-implementation` runs
+  it at its close and names each one in its report, in place of refiling.
+
 ### 2026-11-25 — software-evaluation (unjudged checks, report schema version 2)
 
 - **Behaviour change.** The evaluation report is at `schema-version` 2, with
