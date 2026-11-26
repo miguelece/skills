@@ -16,6 +16,19 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-26 — quality-of-life (agent tooling advisories, the reuse ladder)
+
+- **Behaviour change.** `working-conventions`' advisory check covers skills,
+  MCP servers, plugins or mods and agent config beside runtimes and
+  packages, each pinned by exact version, commit or hash; it vets a first
+  fetch in a container or VM, reviews an agent config change as code, and
+  reads a distribution's own advisories for a packaged runtime.
+- **Behaviour change.** Its reuse reference is now a ladder applied before
+  writing any new code: skip the work, reuse what exists, then write the
+  least.
+- **Behaviour change.** `post-creation-audit` integrates a rejected push by
+  merging, never by rebasing.
+
 ### 2026-11-26 — software-evaluation (security defaults, test reruns, coverage)
 
 - **Behaviour change.** Three security-defaults modules load per language:

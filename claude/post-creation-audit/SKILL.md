@@ -114,7 +114,10 @@ covering all of it unless the boundary is written down.
   — a model composing its own invocation writes its own flags — and a push
   hands the work to a remote this session cannot recall it from. **Never
   force-push.** A push rejected as non-fast-forward is reconciled by fetching
-  and integrating what is already there — never by overriding it.
+  and integrating what is already there — never by overriding it. **A
+  rejected push is integrated by merging, never by rebasing**: a merge
+  rewrites nothing, and a rebase is safe only for commits that exist nowhere
+  else, which the audit is not placed to judge.
 
   **Ask once, in one approval listing every planned push**, after the last
   commit and before the first push. Each entry names the repository, the

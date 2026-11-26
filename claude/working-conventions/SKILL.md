@@ -1,6 +1,6 @@
 ---
 name: working-conventions
-description: 'Standing working conventions that hold in every project: check the hardware budget before a resource-heavy run, check a runtime or package against current security advisories before running or installing it, research a question before putting it to the user, search for an existing helper before writing one, and add a test only for a failure nothing else catches. Use when about to launch a heavy run (a GPU model, a large batch job, a big build), before running a runtime or package manager or installing or fetching a package, before putting a question or decision to the user, and before writing a helper or adding a test.'
+description: 'Standing working conventions that hold in every project: check the hardware budget before a resource-heavy run, check a runtime, package, skill, MCP server or plugin against current security advisories before running or installing it, research a question before putting it to the user, search for an existing helper before writing one, and add a test only for a failure nothing else catches. Use when about to launch a heavy run (a GPU model, a large batch job, a big build), before running a runtime or package manager or installing or fetching a package, before installing or adding a skill, an MCP server, a plugin or mod, or changing agent settings or hooks, before putting a question or decision to the user, and before writing a helper or adding a test.'
 ---
 
 # Working conventions
@@ -13,7 +13,7 @@ when it applies.
 | Moment | Convention |
 | --- | --- |
 | Before a resource-heavy run: a GPU model, a large batch job, a big build | [references/hardware-budget.md](references/hardware-budget.md) |
-| Before running a runtime or package manager, or installing or fetching a package | [references/tooling-advisories.md](references/tooling-advisories.md) |
+| Before running a runtime or package manager, installing or fetching a package, or adding a skill, an MCP server, a plugin or mod, or an agent config change | [references/tooling-advisories.md](references/tooling-advisories.md) |
 | Before putting a question or decision to the user | [references/research-before-asking.md](references/research-before-asking.md) |
 | Before writing a helper, a test helper or a fixture step | [references/reuse-before-writing-a-helper.md](references/reuse-before-writing-a-helper.md) |
 | Before adding a test | [references/one-test-per-failure.md](references/one-test-per-failure.md) |
