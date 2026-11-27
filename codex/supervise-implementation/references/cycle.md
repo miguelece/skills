@@ -95,12 +95,14 @@ a second stuck attempt still escalates.
 
 ## The size limit
 
-**8,000 changed lines**, declared by the gate and unmeasured. It is a trial,
-from the owner's ruling of 2026-11-22: tranches closed on the earlier 4,000
-well short of the running-time target, and no study sized either value. The
-next gates measure it, by their findings per changed line and by whether
-they read every chunk or sampled; a seeded replay at that size is the open
-measurement. Count it every cycle, at step 6 before leasing:
+**8,000 changed lines**, declared by the gate, from the owner's ruling of
+2026-11-22: tranches closed on the earlier 4,000 well short of the
+running-time target, and no study sized either value. A seeded replay
+measured it once: 22 of 26 plants found at about 8,300 lines, every chunk
+read, and kept by the owner on 2026-11-26. One replay at the keep threshold
+licenses no higher limit. Each gate keeps checking it, by its findings per
+changed line and by whether it read every chunk or sampled. Count it every
+cycle, at step 6 before leasing:
 
 ```text
 scripts/scan_tranche.py --repo <path> --base <tranche base> --tip HEAD --size --board <board>

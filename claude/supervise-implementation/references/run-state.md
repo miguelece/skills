@@ -62,7 +62,8 @@ these, in this order:
 ## Tranche
 
 - Opened: <date>, on the owner's word; base commit <sha>.
-- Size limit: 8,000 changed lines outside the board, the gate's, unmeasured.
+- Size limit: 8,000 changed lines outside the board, the gate's, measured
+  once and kept.
 - Target: 6 to 8 hours of running time, net of owner waits; pool estimate
   <hours> from <n> tickets at opening.
 - Running time: <hours, opening to last integration, net of owner waits,

@@ -13,7 +13,7 @@ block the next tranche; the rest is reviewed at leisure.
 
 - Gated: <date>; base <sha>, tip <sha>; gate commits <sha>..<sha>, or none.
 - Size: <n> changed lines outside the board, <m> in all, against a declared limit
-  of 8,000 (unmeasured, a trial).
+  of 8,000 (measured once by a seeded replay and kept).
 - Record: <the supervisor's | filed by the gate | none, uncommitted>.
 
 ### Open escalation entries
@@ -35,8 +35,9 @@ block the next tranche; the rest is reviewed at leisure.
 from `account_attempt.py --match-rate`>: each called model's median ratio of
 priced over billed cost. A median outside 0.90 to 1.02 means the price table
 is stale; a billed model no transcript called is listed apart and flags
-nothing, and so is one whose transcripts priced under a tenth of its billed
-cost, the harness's own side calls. "Not applicable: no supervisor ran" for any other batch.
+nothing, and so are the called rows of a model billed in more sessions with
+no call than with one, and a session's row priced under a tenth of its billed
+cost: the harness's own side calls. "Not applicable: no supervisor ran" for any other batch.
 
 ### Session costs
 
@@ -73,6 +74,9 @@ any other batch.
 - Chunks read: <n> of <m>; every chunk, or sampled: <which were skipped, and
   why>.
 - Not checked: no criteria: D5 and D7 for <task ids>, or "none".
+- Not checked: <linter> not run, <why: its advisory check flagged it or could
+  not be made>; D11 not checked for the rules it owns, never judged by reading
+  in its place. Or "none".
 - D6 declared: <test>, <change>, declared by <task>: <reason>; or "none".
 - D6 declared, nothing matched: <each `declared_unmatched` entry>, or "none".
 

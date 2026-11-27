@@ -7,9 +7,11 @@ one JSON verdict:
 
 - **deleted**: tests at the base that are gone at the tip. A test whose body
   reappears under another name or file is **moved**, not deleted.
-- **markers**: skip, expected-failure and focus markers added to a test that
-  existed at the base. A focus marker (`.only`, `fit`, `fdescribe`) is flagged
-  on any test, new ones included, because it disables the others.
+- **markers**: skip, expected-failure and focus markers. A test absent at the
+  base reports every one it carries, because a test written and skipped in
+  the same range stops failing as surely as an old one; a test present at the
+  base, or moved from one, reports only the markers it gained. A focus marker
+  (`.only`, `fit`, `fdescribe`) also disables the others.
 - **changed**: tests whose body changed, for the integrator to judge for
   weakening. Formatting alone is not a change for Python, which is compared
   by its syntax tree.
@@ -405,8 +407,8 @@ def verdict(repo: Path, base: str, tip: str, declared: list[dict], languages: li
     for key in sorted(after):
         test = after[key]
         source = before.get(key) or origin.get(key)
-        if source is None:  # a new test: only focus matters
-            added = {m for m in test.markers if m[0] == FOCUSED}
+        if source is None:  # a new test: every marker it carries was added
+            added = set(test.markers)
         else:
             added = test.markers - source.markers
             if key in before and test.body != source.body:

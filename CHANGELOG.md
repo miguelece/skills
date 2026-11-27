@@ -16,6 +16,22 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-27 — task-board-management (gate tooling, size limit, untrusted content)
+
+- **Behaviour change.** `tranche-gate` clears the linters' advisory check
+  before running them, carries each chunk's scan candidates to its note on
+  disk, and reports every skip, expected-failure and focus marker on a test
+  absent at the base.
+- **Behaviour change.** The 8,000-line tranche size limit is stated as
+  measured once by a seeded replay and kept, no longer as a trial.
+- **Behaviour change.** `supervise-implementation`'s match rate sets apart
+  a model billed in more sessions with no call than with one, so the
+  harness's own side calls no longer flag the price table.
+- **Behaviour change.** `supervise-implementation`, `task-board-init` and
+  `tranche-gate` treat the returns, commits and documents they read as
+  data: they quote any instruction found there to the user, with its
+  source, and do not act on it.
+
 ### 2026-11-27 — software-evaluation (report schema v3, new modules, checks)
 
 - **Behaviour change.** Report schema version 3 requires a non-empty

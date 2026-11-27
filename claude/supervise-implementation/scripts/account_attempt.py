@@ -75,10 +75,12 @@ the lab's 17 sessions with a recorded Opus cost (median 0.960, 16 of them
 between 0.916 and 0.985); a change in what the harness bills outside
 transcripts would move it. A billed model no transcript called is listed
 under `uncalled`, by name and recorded cost, and never flags the table. A
-called model priced under a tenth of what the harness billed for it is listed
-under `side_called`, with its priced and recorded cost, and never flags the
-table either: its transcripts hold a few of the harness's side calls, not the
-model's use. A model at half its bill still enters the medians. A
+called model is listed under `side_called`, with its priced and recorded cost,
+and never flags the table either, when the compared sessions billing it with
+no call outnumber those calling it, or when one session prices it under a
+tenth of its bill: its transcripts hold a few of the harness's side calls, not
+the model's use. A model called more often than not, at half or twice its
+bill, still enters the medians. A
 session with an unpriced call reports `incomplete` and one with no
 `cost-state` `absent`; both are left out of the medians. The entry is
 undocumented and may disappear.
@@ -121,6 +123,17 @@ BAND = (0.90, 1.02)
 # two side-call rows read 0.020 and 0.054, and no other called row of the lab's
 # 69 compared sessions read under 0.264. A price would have to be wrong by a
 # factor of ten to hide behind it, and a set-apart row is still listed.
+#
+# The cut alone let Haiku flag the table at 0.161 and 0.653, so a second rule
+# sets apart every called row, at any ratio, of a model billed in more of the
+# compared sessions with no transcript call than with one: the harness's own
+# model, not the lab's. Fitted, not derived: on 2026-11-26 the lab's 73
+# compared sessions billed Haiku in 34 with no call and called it in four, at
+# 0.020, 0.054, 0.161 and 0.653, while Opus was called in every session that
+# billed it and Sonnet in both of its two. No cut on the ratio clears 0.653
+# without hiding a price at half its bill, so the rule counts sessions: a model
+# called more often than not still enters the medians, and a 2x error on it
+# still flags.
 SIDE_CALLED_BELOW = 0.10
 
 TOKEN_CLASSES = ("input", "cache_write_5m", "cache_write_1h", "cache_read", "output")
@@ -482,21 +495,32 @@ def match_rate(project: Path, last: int, table: dict) -> dict:
     A session without a cost record is still running, or never wrote one, and
     one with an unpriced call understates its priced cost; both are counted
     apart and left out of the medians. A billed model no transcript called is
-    reported apart under `uncalled`, and a called one priced under
-    `SIDE_CALLED_BELOW` of its bill under `side_called`; neither flags the table.
+    reported apart under `uncalled`. A called one goes under `side_called`
+    when the sessions billing it with no call outnumber those calling it, or
+    when it is priced under `SIDE_CALLED_BELOW` of its bill; neither flags the
+    table.
     """
     mains = sorted(
         project.glob("*.jsonl"), key=lambda p: (-p.stat().st_mtime, p.name)
     )[:last]
     results = [reconcile(main, table) for main in mains]
     compared = [r for r in results if r["status"] == "compared"]
+    # Sessions per model that called it, against those billed for it with no call.
+    calls: dict[str, list[int]] = {}
+    for result in compared:
+        for model, row in result["models"].items():
+            if row["called"] or row["recorded_usd"]:
+                calls.setdefault(model, [0, 0])[0 if row["called"] else 1] += 1
+    harness_billed = {model for model, (on, off) in calls.items() if off > on}
     ratios: dict[str, list[float]] = {}
     uncalled: dict[str, dict] = {}
     side_called: dict[str, dict] = {}
     for result in compared:
         for model, row in result["models"].items():
             if row["called"]:
-                if row["ratio"] is not None and row["ratio"] < SIDE_CALLED_BELOW:
+                if row["ratio"] is not None and (
+                    model in harness_billed or row["ratio"] < SIDE_CALLED_BELOW
+                ):
                     seen = side_called.setdefault(
                         model, {"sessions": 0, "priced_usd": 0.0, "recorded_usd": 0.0}
                     )

@@ -12,7 +12,7 @@ the owner.
 
 | ID | Defect | How the gate finds it | Class |
 | --- | --- | --- | --- |
-| D1 | Churn: the same files or lines changed by several tasks, or lines added then removed inside the tranche | Scan `churn`: `files` two or more units changed, and `rewritten` lines | Structural, when condensing keeps behaviour |
+| D1 | Churn: the same files or lines changed by several tasks, or lines added then removed inside the tranche | Scan `churn`: `files` two or more units changed, and `rewritten` lines, each written into its chunk's note under `.tranche-gate/` before the chunk is read, every cross-unit `rewritten` entry whose `removed_by` commit is in the chunk's unit included; dismiss or report each with its reason | Structural, when condensing keeps behaviour |
 | D2 | Reinvention: new code re-implementing a helper the repository already has, often in different syntax | Judged: each function the tranche added, matched against existing ones by name, signature and docstring | Structural, when every caller is in the repository |
 | D3 | Copy-paste duplication across tasks, in code or Markdown | Scan `clones`: `python` groups and `text` windows of five meaningful lines | Structural |
 | D4 | Dead or deprecated code: unused functions, arguments, modules, unreachable branches | Scan `dead_code`, each candidate tagged `private` or `check published use` | Structural if private; report if published |
