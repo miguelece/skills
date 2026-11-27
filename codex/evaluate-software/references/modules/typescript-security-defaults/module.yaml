@@ -78,6 +78,108 @@ checks:
       - https://github.com/auth0/node-jsonwebtoken/security/advisories/GHSA-hjrf-2m68-5959
       - https://github.com/panva/jose/blob/main/docs/jwt/verify/interfaces/JWTVerifyOptions.md
     findings: [jwt-header-names-its-own-algorithm, jsonwebtoken-defaults-before-9, jose-defaults-to-the-key]
+  - id: typescript-security-defaults/jwt-signature-not-verified
+    statement: >-
+      A JWT's claims are read from a decode that skips signature
+      verification and then decide who the caller is or what they may do,
+      so a token anyone wrote is accepted.
+    evidence: >-
+      The decode call quoted with its file and line, `jsonwebtoken`'s
+      `decode` or `jose`'s `decodeJwt`, and the returned claims followed,
+      in the code read, to an identity or authorization decision on that
+      path: a user looked up or logged in by `sub`, a role, scope or tenant
+      checked, or a session or permission granted. And no `jsonwebtoken`
+      `verify`, or `jose` `jwtVerify` or `compactVerify`, of the same token
+      on the path before that decision. A path through code whose source
+      cannot be read, where the verify may sit, is named as unresolved. A
+      decode read only for the header's `kid` or the `iss` claim, to choose
+      the key before a verify of the same token, is not this defect, and
+      neither are claims only logged or displayed. A service that relies on
+      a gateway or proxy in front of it to verify the token is named as
+      unresolved, since whether every route to it passes that gateway is
+      not in the code read.
+    severity: critical
+    rationale: >-
+      Nothing ties the claims to the issuer, so an attacker writes a token
+      with any subject, role or expiry they choose and is treated as that
+      user.
+    references:
+      - https://www.rfc-editor.org/rfc/rfc8725.html#section-3.3
+      - https://github.com/auth0/node-jsonwebtoken#jwtdecodetoken--options
+      - https://github.com/panva/jose/blob/main/docs/util/decode_jwt/functions/decodeJwt.md
+      - https://github.com/github/codeql/blob/main/javascript/ql/src/experimental/Security/CWE-347/decodeJwtWithoutVerification.qhelp
+    findings: [unverified-jwt-must-be-rejected, jwt-decode-functions-do-not-verify]
+  - id: typescript-security-defaults/jwt-claims-not-validated
+    statement: >-
+      A JWT's signature is verified but its expiry, not-before time or
+      audience is not checked, so a token that has expired, is not yet
+      valid, or was issued for another application, is still accepted.
+    evidence: >-
+      The verify call quoted with its file and line, showing one of two
+      forms: a `jsonwebtoken` `verify` given `ignoreExpiration: true` or
+      `ignoreNotBefore: true`, on a token traced in the code read to the
+      request, such as an `Authorization` header, a cookie or the body; or
+      a `jsonwebtoken` `verify`, or a `jose` `jwtVerify`, whose key comes
+      from a third-party identity provider's key set (JWKS), with no
+      `audience` option. The key set is shown by its URL in the code read,
+      as passed to `jose`'s `createRemoteJWKSet` or to a JWKS client such
+      as `jwks-rsa`, naming an identity provider the repository does not
+      run, such as Google, Microsoft, Auth0, Okta or Amazon Cognito. A URL
+      read from configuration whose value is not in the code read leaves
+      the case unresolved, and so does an audience checked in a helper
+      whose source cannot be read. Not this defect: a refresh flow that
+      reads an expired token only to reissue one after a separate check,
+      such as a stored refresh token or session looked up and found valid;
+      a verify in a test; a token the repository's own service issues and
+      verifies, with a key it holds or a key set it publishes; an `aud`
+      compared, in the code read, with the application's own client id
+      before the claims are used; and a decode with no verify, which
+      `typescript-security-defaults/jwt-signature-not-verified` reads.
+    severity: high
+    rationale: >-
+      A token that leaked, expired or was issued for another application
+      keeps working here, so whoever holds one replays it as the user it
+      names long after it was meant to lapse, or, holding an identity
+      provider's token issued to any other application, presents it to
+      this one's backend as that user.
+    references:
+      - https://www.rfc-editor.org/rfc/rfc8725.html#section-3.9
+      - https://www.rfc-editor.org/rfc/rfc7519.html#section-4.1.4
+      - https://developers.google.com/identity/gsi/web/guides/verify-google-id-token
+      - https://github.com/auth0/node-jsonwebtoken/blob/v9.0.3/verify.js
+      - https://github.com/panva/jose/blob/main/docs/jwt/verify/interfaces/JWTVerifyOptions.md
+    findings: [jwt-expiry-must-be-enforced, jwt-audience-must-be-validated, jsonwebtoken-ignore-options-skip-the-check, audience-is-checked-only-when-named]
+  - id: typescript-security-defaults/secret-compared-by-plain-equality
+    statement: >-
+      A secret the server holds is compared with a value from the request by
+      plain equality rather than by a constant-time comparison, so the time
+      the comparison takes can depend on how much of a guess is right.
+    evidence: >-
+      The comparison quoted with its file and line, by `===`, `==`, `!==`
+      or `!=`, with each side traced in the code read: one to a secret the
+      server holds, such as a stored API key, a configured shared secret,
+      or a MAC or signature the server computes over the request; the other
+      to the request, such as a header, a query or form value, a cookie or
+      the body. And no `crypto.timingSafeEqual` call on the path from the
+      request's value to the decision. A name alone, such as `token` or
+      `secret`, is not the trace, and a side traced into a helper whose
+      source cannot be read leaves the case unresolved. Not this defect: a
+      digest looked up by hash, where the request's value is hashed and the
+      hash used to find the stored record; a password checked by a bcrypt
+      or argon2 verify call, such as `bcrypt.compare` or `argon2.verify`;
+      and a value that is not a secret, such as a user name or a public
+      identifier.
+    severity: medium
+    rationale: >-
+      Plain equality is not documented as constant-time, so its running time
+      can depend on the secret's content, and an attacker who can time many
+      requests can recover the secret a piece at a time, then present it as
+      the real key or signature.
+    references:
+      - https://nodejs.org/api/crypto.html#cryptotimingsafeequala-b
+      - https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+      - https://developers.cloudflare.com/workers/examples/protect-against-timing-attacks/
+    findings: [plain-equality-is-not-timing-safe, timing-safe-equal-covers-only-the-call]
   - id: typescript-security-defaults/timing-safe-compare-undone
     statement: >-
       A secret is compared with `timingSafeEqual`, but code around the call
@@ -136,12 +238,15 @@ checks:
       with its file and line and its
       options showing `replaceEntities`, `noent`, `validateEntities` or
       `dtdvalid` set true, or `flags` holding `XML_PARSE_NOENT` or
-      `XML_PARSE_DTDLOAD`; and the input traced to a request, an upload, a
-      message or a file the program does not ship. Input traced only to a
-      constant or a file the repository holds is not this defect, and input
-      whose origin cannot be read is named as unresolved. A parser this
-      check does not name, a fork of `libxmljs` included, is not reported
-      by it.
+      `XML_PARSE_DTDLOAD`; or the `libxmljs2` fork's `parseXml` or
+      `parseXmlString` quoted with its file and line and its options
+      showing `noent` or `dtdload` set true; and the input traced to a
+      request, an upload, a message or a file the program does not ship.
+      Input traced only to a constant or a file the repository holds is not
+      this defect, and input whose origin cannot be read is named as
+      unresolved. A parser this check does not name, another fork of
+      `libxmljs` included, is not reported by it, and neither is a
+      `libxmljs2` option other than `noent` and `dtdload`.
     severity: high
     rationale: >-
       An entity the parser resolves can name a local file or a URL, so a
@@ -153,4 +258,6 @@ checks:
       - https://github.com/libxmljs/libxmljs/blob/v1.0.11/lib/types.ts
       - https://github.com/libxmljs/libxmljs/blob/v1.0.11/lib/parse.ts
       - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
-    findings: [entity-substitution-enables-xxe, libxmljs-substitutes-only-when-asked]
+      - https://github.com/marudor/libxmljs2/blob/v0.37.0/index.d.ts
+      - https://github.com/marudor/libxmljs2/blob/v0.37.0/src/xml_document.cc
+    findings: [entity-substitution-enables-xxe, libxmljs-substitutes-only-when-asked, libxmljs2-sets-the-flags-only-when-asked]

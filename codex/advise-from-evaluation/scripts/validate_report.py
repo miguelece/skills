@@ -33,6 +33,7 @@ ENUMS: dict[str, list[str]] = {
     "severity": ["critical", "high", "medium", "low", "info"],
     "confidence": ["high", "medium", "low"],
     "churn-window": ["release-tag", "twelve-months"],
+    "isolation": ["none", "container", "virtual-machine"],
 }
 
 
@@ -67,7 +68,7 @@ _LOCATION_FIELDS = {
 REPORT: dict = {
     "type": "mapping",
     "fields": {
-        "schema-version": {"type": "integer", "required": True, "values": [2]},
+        "schema-version": {"type": "integer", "required": True, "values": [2, 3]},
         "input": {
             "type": "mapping",
             "required": True,
@@ -112,6 +113,7 @@ REPORT: dict = {
             "type": "mapping",
             "required": True,
             "fields": {
+                "isolation": _string(False, enum="isolation"),
                 "started": {
                     "type": "list",
                     "required": True,
@@ -460,6 +462,17 @@ def dynamic_fields_empty_in_a_static_run(report: dict) -> list[str]:
     return problems
 
 
+def isolation_recorded_at_version_3(report: dict) -> list[str]:
+    if report.get("schema-version") != 3 or "dynamic" not in _phases_run(report):
+        return []
+    if _mapping(report.get("dynamic")).get("isolation") is not None:
+        return []
+    return [
+        "report.dynamic.isolation: required at schema-version 3 when dynamic is "
+        "in phases.run, found nothing"
+    ]
+
+
 def coverage_module_was_loaded(report: dict) -> list[str]:
     return _module_was_loaded(report, "coverage")
 
@@ -470,6 +483,23 @@ def coverage_check_belongs_to_its_module(report: dict) -> list[str]:
 
 def coverage_phase_was_run(report: dict) -> list[str]:
     return _phase_was_run(report, "coverage")
+
+
+def coverage_required_at_version_3(report: dict) -> list[str]:
+    if report.get("schema-version") != 3 or report.get("coverage") is not None:
+        return []
+    return ["report.coverage: required at schema-version 3, found nothing"]
+
+
+def coverage_examined_not_empty_at_version_3(report: dict) -> list[str]:
+    if report.get("schema-version") != 3:
+        return []
+    return [
+        f"report.coverage[{number}].examined: empty at schema-version 3; a check "
+        "that examined nothing is an unresolved entry"
+        for number, entry in _entries(report, "coverage")
+        if entry.get("examined") == []
+    ]
 
 
 def _churns(report: dict) -> list[tuple[str, dict, dict]]:
@@ -533,9 +563,12 @@ CROSS_FIELD_RULES: dict[str, Callable[[dict], list[str]]] = {
     "unresolved-whole-check-has-no-finding": unresolved_whole_check_has_no_finding,
     "location-names-a-file-or-a-section": location_names_a_file_or_a_section,
     "dynamic-fields-empty-in-a-static-run": dynamic_fields_empty_in_a_static_run,
+    "isolation-recorded-at-version-3": isolation_recorded_at_version_3,
     "coverage-module-was-loaded": coverage_module_was_loaded,
     "coverage-check-belongs-to-its-module": coverage_check_belongs_to_its_module,
     "coverage-phase-was-run": coverage_phase_was_run,
+    "coverage-required-at-version-3": coverage_required_at_version_3,
+    "coverage-examined-not-empty-at-version-3": coverage_examined_not_empty_at_version_3,
     "churn-on-a-code-file": churn_on_a_code_file,
     "churn-counts-a-file-that-has-lines": churn_counts_a_file_that_has_lines,
     "churn-window-is-one-per-run": churn_window_is_one_per_run,

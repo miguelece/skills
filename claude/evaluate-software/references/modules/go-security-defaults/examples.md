@@ -52,6 +52,85 @@ func startPasswordReset(email string) error {
 }
 ```
 
+## go-security-defaults/chacha8-random-secret
+
+**Bad.** `go.mod` has a `go` line of 1.22 or later and nothing calls
+`rand.Seed`, so the top-level `math/rand/v2` function draws from ChaCha8; the
+value is still returned as the API key that authenticates the client:
+
+```text
+// go.mod
+go 1.25
+```
+
+```go
+import (
+    "encoding/hex"
+    "math/rand/v2"
+)
+
+func issueAPIKey(clientID string) (string, error) {
+    b := make([]byte, 32)
+    for i := range b {
+        b[i] = byte(rand.Uint32())
+    }
+    key := hex.EncodeToString(b)
+    if err := apiKeys.Insert(clientID, hashKey(key)); err != nil {
+        return "", err
+    }
+    return key, nil
+}
+```
+
+**Good.** The key comes from `crypto/rand`:
+
+```go
+import "crypto/rand"
+
+func issueAPIKey(clientID string) (string, error) {
+    key := rand.Text()
+    if err := apiKeys.Insert(clientID, hashKey(key)); err != nil {
+        return "", err
+    }
+    return key, nil
+}
+```
+
+## go-security-defaults/jwt-algorithm-not-pinned
+
+**Bad.** The issuer signs with RS256, but the key function returns the
+public key's PEM bytes as a `[]byte` and nothing restricts the method, so a
+token whose header names `HS256`, signed with those public bytes as the HMAC
+secret, verifies:
+
+```go
+import "github.com/golang-jwt/jwt/v5"
+
+var publicKeyPEM []byte // the issuer's RSA public key, PEM-encoded
+
+func parseSession(raw string) (*jwt.Token, error) {
+    return jwt.Parse(raw, func(t *jwt.Token) (any, error) {
+        return publicKeyPEM, nil
+    })
+}
+```
+
+**Good.** The key is parsed into an `*rsa.PublicKey`, which only the RSA
+method accepts, and the allowed method is pinned as well. Either alone
+closes the forgery; the example shows both:
+
+```go
+import "github.com/golang-jwt/jwt/v5"
+
+var publicKey = mustParseRSAPublicKey(publicKeyPEM) // *rsa.PublicKey
+
+func parseSession(raw string) (*jwt.Token, error) {
+    return jwt.Parse(raw, func(t *jwt.Token) (any, error) {
+        return publicKey, nil
+    }, jwt.WithValidMethods([]string{"RS256"}))
+}
+```
+
 ## go-security-defaults/bcrypt-input-past-72-bytes
 
 **Bad.** The email is joined before the password, and `go.mod` requires a
@@ -84,6 +163,49 @@ import "golang.org/x/crypto/bcrypt"
 
 func hashCredential(password string) ([]byte, error) {
     return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+}
+```
+
+## go-security-defaults/secret-compared-by-plain-equality
+
+**Bad.** The webhook's signature header is compared with the MAC the server
+computes over the body by `==`, with no constant-time call:
+
+```go
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+    "net/http"
+)
+
+func validWebhook(r *http.Request, body []byte) bool {
+    mac := hmac.New(sha256.New, webhookSecret)
+    mac.Write(body)
+    want := hex.EncodeToString(mac.Sum(nil))
+    return r.Header.Get("X-Signature") == want
+}
+```
+
+**Good.** The decoded header is compared with the computed MAC by
+`hmac.Equal`:
+
+```go
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+    "net/http"
+)
+
+func validWebhook(r *http.Request, body []byte) bool {
+    got, err := hex.DecodeString(r.Header.Get("X-Signature"))
+    if err != nil {
+        return false
+    }
+    mac := hmac.New(sha256.New, webhookSecret)
+    mac.Write(body)
+    return hmac.Equal(got, mac.Sum(nil))
 }
 ```
 

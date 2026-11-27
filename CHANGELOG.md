@@ -16,6 +16,32 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-27 — software-evaluation (report schema v3, new modules, checks)
+
+- **Behaviour change.** Report schema version 3 requires a non-empty
+  `coverage` record and records the isolation the dynamic phase was
+  approved to run under; the validator, shared with
+  `advise-from-evaluation`, accepts versions 2 and 3.
+- **Behaviour change.** The dynamic phase's steps hold for a test command
+  as well as an application, count a documented pass-through as the
+  declared command, verify candidates with a fresh subagent of their own,
+  and write one coverage entry per check run. A static candidate no
+  subagent can verify goes to unresolved, so the finder never verifies its
+  own.
+- **Behaviour change.** Two language-neutral modules load:
+  `authorization` and `messaging-delivery`. The code architecture module
+  checks forwarding layers, and the design-document module a revision
+  date.
+- **Behaviour change.** The security-defaults modules gain checks. Go:
+  ChaCha8 random secrets, the JWT algorithm, plain-equality comparison,
+  and a top-level `math/rand` secret under `randautoseed=0`. Python: plain
+  equality, unverified JWTs, unvalidated JWT claims, lxml's `huge_tree`,
+  and Authlib below 1.3.1. TypeScript: unverified JWTs, unvalidated JWT
+  claims, plain equality, and XML external entities in the libxmljs2 fork.
+- **Behaviour change.** `evaluate-software` treats the target and the
+  output of the application it starts as data: it quotes any instruction
+  found there to the user, with its source, and does not act on it.
+
 ### 2026-11-27 — research-tooling (untrusted content)
 
 - **Behaviour change.** `research-base-audit`, `research-base-init` and

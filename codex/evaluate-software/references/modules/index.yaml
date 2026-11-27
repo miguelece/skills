@@ -5,10 +5,12 @@ modules:
   - application-runtime
   - architecture-design-document
   - architecture-design-from-code
+  - authorization
   - go-concurrency
   - go-error-handling
   - go-security-defaults
   - go-testing
+  - messaging-delivery
   - python-security-defaults
   - python-testing
   - test-rerun

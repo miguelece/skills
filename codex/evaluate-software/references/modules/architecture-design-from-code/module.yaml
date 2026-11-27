@@ -1,5 +1,7 @@
 # Architecture, read from a codebase by reading its imports, not by running an
-# analyser. Each check rests on a finding in research.md beside this file. The
+# analyser, and, for the forwarding-layer check alone, by reading the bodies
+# of the functions that check quotes. Each check rests on a finding in
+# research.md beside this file. The
 # manifests are those of the languages the library's first modules cover; a
 # repository in another language does not load this module, and the report
 # records the skip.
@@ -92,3 +94,34 @@ checks:
       - https://adr.github.io/madr/
       - https://www.thoughtworks.com/radar/techniques/architectural-fitness-function
     findings: [decisions-name-their-confirmation]
+  - id: architecture-design-from-code/forwarding-layer
+    statement: >-
+      A class or module of the codebase is a layer whose every method only
+      passes its arguments on to one other object or module and returns what
+      that call returns.
+    evidence: >-
+      The layer, quoted with its file and the line of each of its methods,
+      showing every method's whole body: one call to another object or
+      module, with the method's own arguments passed on unchanged, and that
+      call's result returned unchanged. A layer is no finding where any
+      method adds work of its own, such as validating an argument,
+      translating an argument, a result or an error, logging, caching or
+      retrying; where a test substitutes the layer itself as a seam, quoted
+      with the test's file and line; where the repository exports it as a
+      public surface, such as a name in a package's `__init__.py`,
+      `__all__` or `index` file; or where it implements an interface the
+      repository declares, as a proxy or a decorator does. The tests and
+      export files read in looking for a seam or a surface are named. Where
+      a body cannot be read whole, such as one generated at runtime, this
+      check reports nothing.
+    severity: low
+    rationale: >-
+      A layer that only forwards adds an interface to learn and a file to
+      step through while hiding nothing behind it, so a reader pays for two
+      abstractions where one does the work, and every change to the inner
+      signature has to be repeated in the layer.
+    references:
+      - https://refactoring.com/catalog/removeMiddleMan.html
+      - https://refactoring.guru/smells/middle-man
+      - https://web.stanford.edu/~ouster/cgi-bin/aposd.php
+    findings: [forwarding-layers-are-shallow, purposeful-delegation-is-kept]

@@ -1,0 +1,186 @@
+# Messaging delivery, read from code or from a design document: whether code
+# that sends or receives messages through a broker or a queue survives a
+# message delivered twice or not at all. Each check rests on a finding in
+# research.md beside this file. The two code checks report nothing on a design
+# document, and the design check nothing on code; each says so in its
+# evidence. The triggers name broker clients and queue libraries, so the
+# module loads only where messaging appears; research.md records what was
+# left out of them.
+id: messaging-delivery
+languages: [language-neutral]
+concept: messaging-delivery
+triggers:
+  files:
+    - "**/*outbox*"
+  manifests:
+    - "pyproject.toml:pika"
+    - "pyproject.toml:kombu"
+    - "pyproject.toml:celery"
+    - "pyproject.toml:dramatiq"
+    - "pyproject.toml:kafka"
+    - "pyproject.toml:nats-py"
+    - "pyproject.toml:google-cloud-pubsub"
+    - "pyproject.toml:azure-servicebus"
+    - "requirements.txt:pika"
+    - "requirements.txt:kombu"
+    - "requirements.txt:celery"
+    - "requirements.txt:dramatiq"
+    - "requirements.txt:kafka"
+    - "requirements.txt:nats-py"
+    - "requirements.txt:google-cloud-pubsub"
+    - "requirements.txt:azure-servicebus"
+    - 'package.json:"amqplib"'
+    - 'package.json:"amqp-connection-manager"'
+    - 'package.json:"kafkajs"'
+    - 'package.json:"@confluentinc/kafka-javascript"'
+    - 'package.json:"bullmq"'
+    - 'package.json:"bull"'
+    - 'package.json:"@aws-sdk/client-sqs"'
+    - 'package.json:"@google-cloud/pubsub"'
+    - 'package.json:"@azure/service-bus"'
+    - 'package.json:"nats"'
+    - "go.mod:github.com/rabbitmq/amqp091-go"
+    - "go.mod:github.com/streadway/amqp"
+    - "go.mod:github.com/segmentio/kafka-go"
+    - "go.mod:/sarama"
+    - "go.mod:github.com/confluentinc/confluent-kafka-go"
+    - "go.mod:github.com/twmb/franz-go"
+    - "go.mod:github.com/nats-io/nats.go"
+    - "go.mod:cloud.google.com/go/pubsub"
+    - "go.mod:github.com/aws/aws-sdk-go-v2/service/sqs"
+    - "go.mod:github.com/hibiken/asynq"
+    - "go.mod:github.com/ThreeDotsLabs/watermill"
+  design-markers:
+    - Message broker
+    - Message queue
+    - Kafka
+    - RabbitMQ
+    - AMQP
+    - Pub/Sub
+    - SQS
+    - Service Bus
+    - NATS
+    - Event bus
+    - Outbox
+    - At-least-once
+    - At-most-once
+    - Exactly-once
+  design-headings:
+    - Messaging
+    - Message flow
+    - Queues
+    - Event flow
+inputs: [diff, repository, design-document]
+phases: [static]
+checks:
+  - id: messaging-delivery/write-and-publish-without-outbox
+    statement: >-
+      One operation writes to a database and publishes a message to a broker
+      as two separate steps, with no outbox or transaction joining them.
+    evidence: >-
+      For a code input only; on a design document this check reports
+      nothing. The database write, quoted with its file and line: an insert,
+      update or delete, or a commit of a unit of work holding one. The
+      publish in the same operation, quoted with its file and line: a call
+      that sends a message, event or task to a broker or a queue, made in
+      the same function or in a function it calls, before or after the
+      write. And the absence of what would join them: no insert of the
+      message into an outbox table, or into the written record itself, in
+      the same database transaction as the write, with a separate relay or
+      change data capture reading it out; and no single transaction spanning
+      both the database and the broker. A broker's own transaction, such as
+      a Kafka producer transaction, spans no database write and joins
+      nothing here. An outbox's relay, which publishes rows it read from the
+      outbox and then deletes or marks them, is out of this check's scope:
+      a crash between its steps publishes a message twice, never loses one,
+      and the consumer check covers the duplicate. The operation is unresolved, never reported, where the
+      write or the publish sits behind an abstraction whose body is not in
+      the repository, or where a framework not read may route the publish
+      through an outbox, as an event-dispatch library configured outside
+      the code read can. For a diff, the finding sits on the added or
+      changed write or publish, and the other half may be read anywhere in
+      the repository.
+    severity: high
+    rationale: >-
+      A crash between the two steps leaves them disagreeing: the write
+      commits and the message is never sent, so the services downstream
+      never learn of the change, or the message is sent and the write rolls
+      back, so they act on a change that never happened. Both pass every
+      test that does not crash the process between the steps.
+    references:
+      - https://microservices.io/patterns/data/transactional-outbox.html
+      - https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html
+    findings: [dual-write-loses-or-invents-messages]
+  - id: messaging-delivery/consumer-without-idempotency
+    statement: >-
+      A consumer applies a message's effect with no idempotency key,
+      deduplication or upsert, so a redelivered message applies it twice.
+    evidence: >-
+      For a code input only; on a design document this check reports
+      nothing. The consumer, quoted with its file and line: a handler
+      registered on a queue, topic or subscription, or a task a worker runs.
+      The effect it applies, quoted with its file and line, being one that
+      changes the outcome when applied a second time: an insert of a new
+      row, an increment or append, a charge or payment, or a call that sends
+      an email, a notification or a request to another system. And the
+      absence, in the handler and in the functions it calls, of each of
+      these: a check of the message's id or a business key against a record
+      of messages already processed, a unique constraint the insert relies
+      on to refuse the second copy, an upsert or a write that sets an
+      absolute value, a conditional write on a version or a state, and an
+      idempotency key passed to the system called. An effect that is the
+      same however often it is applied, such as setting a field to a value
+      the message carries or deleting by id, is out of this check's scope.
+      Deduplication by the broker on publish does not count, since a
+      message redelivered after a lost acknowledgement still reaches the
+      consumer twice. A consumer whose only effect is a write back to the
+      same broker inside that broker's transaction, with its offset
+      committed in the same transaction, is out of scope. The consumer is
+      unresolved where its effect sits in code not in the repository, or
+      where a uniqueness constraint may exist in a schema not read.
+    severity: high
+    rationale: >-
+      Brokers deliver at least once by default, so a consumer that assumes
+      each message arrives once passes its tests and then, on a redelivery
+      after a timeout or a restart, charges a customer twice, sends a second
+      email or counts an order twice.
+    references:
+      - https://microservices.io/patterns/communication-style/idempotent-consumer.html
+      - https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues-at-least-once-delivery.html
+      - https://www.rabbitmq.com/docs/reliability
+      - https://kafka.apache.org/44/design/design/
+    findings:
+      - brokers-redeliver-by-default
+      - consumers-must-be-idempotent
+  - id: messaging-delivery/design-without-delivery-guarantee
+    statement: >-
+      The design sends messages between components without stating the
+      delivery guarantee it relies on, or assumes exactly-once delivery
+      without saying how it is achieved.
+    evidence: >-
+      For a design-document input only; on code this check reports nothing.
+      The sections that describe messages, events or tasks passing between
+      components through a broker, a queue or a topic, quoted. And either
+      the absence in the whole document of a stated guarantee, at most
+      once, at least once or exactly once, or of a description of what
+      happens when a message is redelivered or lost that amounts to one;
+      or the passage that claims exactly-once delivery or processing,
+      quoted, with the absence in the whole document of how it is achieved:
+      an idempotent or deduplicating consumer, an outbox, or a transaction
+      spanning the message and its effect. A design that names a broker
+      feature as its mechanism, such as a subscription with exactly-once
+      delivery enabled, states how, and satisfies the check.
+    severity: medium
+    rationale: >-
+      A design that leaves the guarantee unstated leaves each team to assume
+      one, and the usual assumption, that a message arrives once, is the one
+      no broker gives by default; one that promises exactly-once without a
+      mechanism promises what the broker alone cannot keep, and the
+      duplicates surface only in production.
+    references:
+      - https://kafka.apache.org/44/design/design/
+      - https://docs.cloud.google.com/pubsub/docs/exactly-once-delivery
+      - https://www.rabbitmq.com/docs/reliability
+    findings:
+      - brokers-redeliver-by-default
+      - exactly-once-needs-a-mechanism

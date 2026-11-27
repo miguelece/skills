@@ -24,6 +24,14 @@ sources:
     title: "Design Docs at Google (Malte Ubl)"
     url: https://www.industrialempathy.com/posts/design-docs-at-google/
     date: 2020-07-06
+  - id: madr-template
+    title: "MADR: the full decision record template, adr-template.md, develop branch"
+    url: https://github.com/adr/madr/blob/develop/template/adr-template.md
+    date: 2026-11-26
+  - id: adr-tools-template
+    title: "adr-tools: the decision record template, template.md (Nat Pryce)"
+    url: https://github.com/npryce/adr-tools/blob/master/src/template.md
+    date: 2026-11-26
 findings:
   - id: significance-is-structural
     claim: >-
@@ -69,6 +77,23 @@ findings:
       readers' expectations.
     confidence: evidenced
     sources: [google-design-docs]
+  - id: revisions-carry-a-date
+    claim: >-
+      Decision record templates carry a date: MADR's front matter has a
+      `date` field, described as when the decision was last updated, and
+      adr-tools heads each record with its date. MADR marks the field
+      optional, so a record without it is a gap in practice, not a breach of
+      the format.
+    confidence: evidenced
+    sources: [madr-template, adr-tools-template]
+  - id: designs-and-decisions-change
+    claim: >-
+      A decision record is kept when its decision is reversed and is marked
+      superseded or deprecated, and a design document is updated during
+      implementation or followed by newer documents that link back to it, so
+      the same document can describe a decision that no longer holds.
+    confidence: evidenced
+    sources: [nygard-adr, google-design-docs]
 ---
 
 # Research: architecture in a design document
@@ -86,6 +111,16 @@ response, and the arc42 article states the measure's role directly. The SEI
 technical reports themselves are PDFs linked from their pages and were not
 read in full.
 
+The revision-date check's sources were read on 2026-11-26. MADR's date field
+was confirmed from its current template, `adr-template.md` on the project's
+`develop` branch, rather than recalled: the template's optional front matter
+holds `date`, filled with the date the decision was last updated. The
+adr-tools template puts a date under each record's title. Nygard's format
+carries no date of its own, which is why the finding rests on the two
+templates, and why `evidenced` rather than `strong`; his post and Ubl's
+carry the second finding, that a recorded decision can stop holding while
+its document stays.
+
 ## What this does not cover
 
 - **Confirmation.** MADR has an optional section on how compliance with a
@@ -96,9 +131,18 @@ read in full.
   design handles security, privacy and observability. Only one source
   supports it here, and it is a concern of its own rather than of
   architecture's decision structure, so it is left for a module on that
-  concept.
+  concept. The library's authorization module reads one part of it, whether
+  a design names where each request is authorized; privacy and
+  observability have no module yet.
 - **Risk judgement.** An architecture evaluation in the SEI sense judges
   whether a decision is sound for its scenarios, with stakeholders present.
   These checks only test whether the document records what such a judgement
   needs: they find a missing measure, alternative, reason or consequence,
   never a wrong decision.
+- **A one-page core.** Putting a design's core on one page, because
+  readers skim, is advice rather than a check. The practice read here sets
+  no length a finding could quote as a defect: Ubl's account puts a larger
+  project's design document at around ten to twenty pages and accepts a
+  mini design document of one to three for smaller work, and no source
+  read here makes one page a threshold. Only the revision date, which a
+  reading can quote as present or absent, is checked.

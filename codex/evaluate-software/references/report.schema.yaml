@@ -30,8 +30,13 @@
 # which SARIF keeps for a rule that does not apply to the target.
 # references/prior-art.md records the mapping and what this schema adds that
 # SARIF has no field for.
+#
+# A run writes version 3. Version 2 is still read: it is version 3 without the
+# rules whose ids end `-at-version-3`, which require `coverage`, refuse an
+# empty `examined` list and require `dynamic.isolation` when the dynamic phase
+# ran. A version 2 report was written before those records were required.
 
-schema-version: 2
+schema-version: 3
 
 enums:
   # What the run evaluated. A diff and a repository are code; the two design
@@ -49,6 +54,9 @@ enums:
   # Where a location's churn was counted from: the target's latest release tag,
   # or twelve months back where the target has no release tag.
   churn-window: [release-tag, twelve-months]
+  # The isolation the user approved for the dynamic phase's launches: none, a
+  # container or a virtual machine.
+  isolation: [none, container, virtual-machine]
 
 report:
   type: mapping
@@ -56,7 +64,7 @@ report:
     schema-version:
       type: integer
       required: true
-      values: [2]
+      values: [2, 3]
     input:
       type: mapping
       required: true
@@ -163,6 +171,15 @@ report:
         What the dynamic phase stood up. Reserved: empty in a run without the
         dynamic phase.
       fields:
+        isolation:
+          type: string
+          required: false
+          enum: isolation
+          note: >-
+            The isolation the user approved before the first launch, which
+            every launch of the run ran behind: `none` where no isolation was
+            approved. Required at version 3 when the dynamic phase ran, so a
+            reader can tell what each dynamic finding ran behind.
         started:
           type: list
           required: true
@@ -372,8 +389,8 @@ report:
         scope's root, or a design document's heading paths. One run finds
         only part of what repeated runs find, so a later run on the same
         target reads this record and aims first at the check and path pairs
-        it leaves out. Absent or null only in a report written before the
-        record was defined.
+        it leaves out. Required at version 3; absent or null only in a
+        version 2 report.
       items:
         type: mapping
         fields:
@@ -392,9 +409,9 @@ report:
             type: list
             required: true
             note: >-
-              the paths or globs the check examined, each stated; a check
-              that examined nothing is an `unresolved` entry, not an empty
-              list here
+              the paths or globs the check examined, each stated, at least one
+              at version 3; a check that examined nothing is an `unresolved`
+              entry, not an empty list here
             items:
               type: string
 
@@ -431,12 +448,22 @@ rules:
     statement: >-
       when `dynamic` is not in `phases.run`, every field under `dynamic` is
       empty and no finding carries a `dynamic` block
+  - id: isolation-recorded-at-version-3
+    statement: >-
+      at `schema-version` 3, when `dynamic` is in `phases.run`,
+      `dynamic.isolation` is present and not null
   - id: coverage-module-was-loaded
     statement: every `coverage` entry's `module` is in `modules.loaded`
   - id: coverage-check-belongs-to-its-module
     statement: every `coverage` entry's `check` starts with its `module` and a slash
   - id: coverage-phase-was-run
     statement: every `coverage` entry's `phase` is in `phases.run`
+  - id: coverage-required-at-version-3
+    statement: at `schema-version` 3, `coverage` is present and not null
+  - id: coverage-examined-not-empty-at-version-3
+    statement: >-
+      at `schema-version` 3, every `coverage` entry's `examined` list names at
+      least one path, glob or section
   - id: churn-on-a-code-file
     statement: >-
       a location, of a finding or of an `unresolved` entry, carries `churn`

@@ -67,6 +67,151 @@ function readSession(token: string): jwt.JwtPayload {
 }
 ```
 
+## typescript-security-defaults/jwt-signature-not-verified
+
+**Bad.** The bearer token is decoded, never verified, and its `sub` and
+`role` decide who the caller is and whether they are an administrator:
+
+```typescript
+import jwt from "jsonwebtoken";
+
+app.delete("/users/:id", async (req, res) => {
+  const token = req.get("authorization")?.replace(/^Bearer /, "") ?? "";
+  const claims = jwt.decode(token);
+  if (claims === null || typeof claims === "string" || claims.role !== "admin") {
+    return res.sendStatus(403);
+  }
+  await users.remove(req.params.id, { by: claims.sub });
+  res.sendStatus(204);
+});
+```
+
+**Good.** The token is verified, with the algorithm pinned, before its
+claims are read:
+
+```typescript
+app.delete("/users/:id", async (req, res) => {
+  const token = req.get("authorization")?.replace(/^Bearer /, "") ?? "";
+  let claims: jwt.JwtPayload;
+  try {
+    const verified = jwt.verify(token, publicKeyPem, { algorithms: ["RS256"] });
+    if (typeof verified === "string") return res.sendStatus(401);
+    claims = verified;
+  } catch {
+    return res.sendStatus(401);
+  }
+  if (claims.role !== "admin") return res.sendStatus(403);
+  await users.remove(req.params.id, { by: claims.sub });
+  res.sendStatus(204);
+});
+```
+
+## typescript-security-defaults/jwt-claims-not-validated
+
+**Bad, expiry.** The session cookie's token is verified with its expiry
+check turned off, so a token that lapsed long ago still logs in:
+
+```typescript
+app.use((req, res, next) => {
+  try {
+    req.user = jwt.verify(req.cookies.session, publicKeyPem, {
+      algorithms: ["RS256"],
+      ignoreExpiration: true,
+    });
+    next();
+  } catch {
+    res.sendStatus(401);
+  }
+});
+```
+
+**Good, expiry.** The expiry check keeps its default:
+
+```typescript
+app.use((req, res, next) => {
+  try {
+    req.user = jwt.verify(req.cookies.session, publicKeyPem, {
+      algorithms: ["RS256"],
+    });
+    next();
+  } catch {
+    res.sendStatus(401);
+  }
+});
+```
+
+**Bad, audience.** A Google ID token is verified against Google's key set
+with no audience, so a token Google issued to any other app is accepted as
+the user it names:
+
+```typescript
+import { createRemoteJWKSet, jwtVerify } from "jose";
+
+const googleKeys = createRemoteJWKSet(
+  new URL("https://www.googleapis.com/oauth2/v3/certs"),
+);
+
+async function signInWithGoogle(idToken: string): Promise<User> {
+  const { payload } = await jwtVerify(idToken, googleKeys, {
+    issuer: "https://accounts.google.com",
+  });
+  return users.findOrCreateByEmail(payload.email as string);
+}
+```
+
+**Good, audience.** The verify names this application's own client id as
+the audience it accepts:
+
+```typescript
+async function signInWithGoogle(idToken: string): Promise<User> {
+  const { payload } = await jwtVerify(idToken, googleKeys, {
+    issuer: "https://accounts.google.com",
+    audience: googleClientId,
+  });
+  return users.findOrCreateByEmail(payload.email as string);
+}
+```
+
+## typescript-security-defaults/secret-compared-by-plain-equality
+
+**Bad.** The webhook's signature header is compared with the HMAC the
+server computes over the body by `!==`, which stops at the first byte that
+differs:
+
+```typescript
+import { createHmac } from "node:crypto";
+
+app.post("/webhook", (req, res) => {
+  const expected =
+    "sha256=" + createHmac("sha256", webhookSecret).update(req.rawBody).digest("hex");
+  if (req.get("x-hub-signature-256") !== expected) {
+    return res.sendStatus(401);
+  }
+  handleEvent(req.body);
+  res.sendStatus(204);
+});
+```
+
+**Good.** Both are compared as digests of the same fixed size by
+`crypto.timingSafeEqual`:
+
+```typescript
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+
+app.post("/webhook", (req, res) => {
+  const expected =
+    "sha256=" + createHmac("sha256", webhookSecret).update(req.rawBody).digest("hex");
+  const presented = req.get("x-hub-signature-256") ?? "";
+  const a = createHash("sha256").update(presented).digest();
+  const b = createHash("sha256").update(expected).digest();
+  if (!timingSafeEqual(a, b)) {
+    return res.sendStatus(401);
+  }
+  handleEvent(req.body);
+  res.sendStatus(204);
+});
+```
+
 ## typescript-security-defaults/timing-safe-compare-undone
 
 **Bad.** The raw API key is compared in constant time, but the length check
@@ -152,5 +297,26 @@ DTD loading:
 app.post("/import", (req, res) => {
   const doc = parseXml(req.body);
   res.json({ items: doc.find("//item").length });
+});
+```
+
+**Bad, `libxmljs2`.** The fork is called on an uploaded document with
+entity substitution and external subset loading on:
+
+```typescript
+import { parseXml } from "libxmljs2";
+
+app.post("/feeds", upload.single("feed"), (req, res) => {
+  const doc = parseXml(req.file.buffer.toString(), { noent: true, dtdload: true });
+  res.json({ entries: doc.find("//entry").length });
+});
+```
+
+**Good, `libxmljs2`.** The fork keeps its default, which sets neither flag:
+
+```typescript
+app.post("/feeds", upload.single("feed"), (req, res) => {
+  const doc = parseXml(req.file.buffer.toString());
+  res.json({ entries: doc.find("//entry").length });
 });
 ```

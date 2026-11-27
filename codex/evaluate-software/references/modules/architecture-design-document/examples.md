@@ -152,3 +152,30 @@ named as out of scope:
 - Orders placed by phone or in store, which the warehouse receives today
   by another route and will go on receiving by it.
 ```
+
+## architecture-design-document/no-revision-date
+
+**Bad.** A decision record whose front matter gives its status and the
+people who made it, and nowhere a date:
+
+```markdown
+---
+status: accepted
+decision-makers: order team
+---
+
+# Publish accepted orders to a Kafka topic
+```
+
+**Good.** The same record, with the date it was last updated, so a reader
+can tell it from a later record that supersedes it:
+
+```markdown
+---
+status: accepted
+date: 2026-03-02
+decision-makers: order team
+---
+
+# Publish accepted orders to a Kafka topic
+```

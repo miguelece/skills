@@ -32,37 +32,133 @@ checks:
       set as a session or authentication cookie, sent in a reset or
       verification link or message, or returned as an API key or one-time
       code. A name alone, such as `token`, is not the use. The call shows
-      one of three forms: a method of a generator the code builds from a
+      one of four forms: a method of a generator the code builds from a
       seed, in any Go version, as `rand.New(rand.NewSource(seed))` in
       `math/rand`, `rand.New(rand.NewPCG(a, b))` in `math/rand/v2`, or
       `rand.NewChaCha8(seed)` with a seed not read from `crypto/rand`; a
       top-level `math/rand` function, such as `rand.Intn`, `rand.Int63` or
-      `rand.Read`, while the `go` line of `go.mod` is below 1.22; or a
+      `rand.Read`, while the `go` line of `go.mod` is below 1.22; a
       top-level `math/rand` function in a program that calls `rand.Seed`,
       while that `go` line is below 1.24 or a `randseednop=0` setting is
-      read in a `godebug` block or a `//go:debug` directive. The `go` line
-      is quoted from `go.mod`; when it cannot be read, a top-level call is
-      named as unresolved. A top-level `math/rand/v2` function, and a
+      read in a `godebug` block or a `//go:debug` directive; or a top-level
+      `math/rand` function, at any `go` line and with or without a
+      `rand.Seed` call, in a program where a `randautoseed=0` setting is
+      read in a `godebug` directive of `go.mod` or `go.work`, on one line
+      or in a block, or in a `//go:debug` directive before the `package`
+      clause of a main package's file. The `go` line is quoted from
+      `go.mod`; when it cannot be read, a top-level call is named as
+      unresolved, unless such a `randautoseed=0` setting is read. A
+      top-level `math/rand/v2` function, whatever its settings, and a
       top-level `math/rand` function on a `go` line of 1.22 or later with
-      no such `rand.Seed`, draw from the runtime's ChaCha8 generator and are
-      not this defect. A helper whose source cannot be read is named as
+      no such `rand.Seed` and no such `randautoseed=0` setting, draw from
+      the runtime's ChaCha8 generator and are not this defect. A helper
+      whose source cannot be read is named as
       unresolved, and a value used only for display, sampling, jitter, test
       data or a non-secret identifier is not this defect.
     severity: high
     rationale: >-
-      A seeded `math/rand` generator is deterministic, and before Go 1.20
-      the top-level one started from the same seed in every process, so
-      whoever knows or guesses the seed, or sees enough output, can compute
-      the other tokens, and the forged session or reset link works as the
-      real one does.
+      A seeded `math/rand` generator is deterministic, and before Go 1.20,
+      or at any version under a `randautoseed=0` setting, the top-level one
+      starts from the same seed in every process, so whoever knows or
+      guesses the seed, or sees enough output, can compute the other
+      tokens, and the forged session or reset link works as the real one
+      does.
     references:
       - https://pkg.go.dev/math/rand
       - https://pkg.go.dev/math/rand/v2
       - https://pkg.go.dev/crypto/rand
       - https://go.dev/blog/chacha8rand
       - https://go.dev/doc/toolchain
+      - https://go.dev/doc/godebug
       - https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html
-    findings: [math-rand-is-not-for-secrets, seeded-generators-are-predictable, top-level-math-rand-is-chacha8-from-1-22, go-line-is-the-minimum-toolchain, secrets-need-a-csprng]
+    findings: [math-rand-is-not-for-secrets, seeded-generators-are-predictable, top-level-math-rand-is-chacha8-from-1-22, randautoseed-zero-seeds-math-rand-with-one, go-line-is-the-minimum-toolchain, secrets-need-a-csprng]
+  - id: go-security-defaults/chacha8-random-secret
+    statement: >-
+      A token, session id, reset code, one-time code or other secret is
+      drawn from a top-level `math/rand` or `math/rand/v2` function that
+      draws from the runtime's ChaCha8 generator, a package Go's
+      documentation says is not for security-sensitive work, rather than
+      from `crypto/rand`.
+    evidence: >-
+      The call quoted with its file and line, and the value followed, in the
+      code read, to a use as a secret, by the rule the module's
+      `predictable-random-secret` check applies: stored or compared as a
+      credential, set as a session or authentication cookie, sent in a reset
+      or verification link or message, or returned as an API key or
+      one-time code. A name alone, such as `token`, is not the use. The call
+      is a top-level `math/rand/v2` function, such as `rand.IntN`,
+      `rand.Uint64` or `rand.N`, or a top-level `math/rand` function, such
+      as `rand.Intn`, `rand.Int63` or `rand.Read`, while the `go` line of
+      `go.mod` is 1.22 or later, the program calls no `rand.Seed`, and no
+      `randautoseed=0` setting is read in a `godebug` directive of `go.mod`
+      or `go.work`, on one line or in a block, or in a `//go:debug`
+      directive before the `package` clause of a main package's file. The
+      `go` line is quoted from `go.mod`; when it cannot be read, a top-level
+      `math/rand` call is named as unresolved, since it may be the
+      predictable generator that check reports. A call that check reports,
+      a method of a generator the code seeds or a top-level call it reads as
+      predictable, is reported there and not here. A helper whose source
+      cannot be read is named as unresolved, and a value used only for
+      display, sampling, jitter, test data or a non-secret identifier is not
+      this defect.
+    severity: low
+    rationale: >-
+      ChaCha8 makes the value hard to predict today, but `crypto/rand` is
+      still the better source: the kernel keeps its values secret from more
+      kinds of prying eyes and keeps adding entropy, while a read of the
+      process's memory exposes the generator's values since its last rekey,
+      and one `rand.Seed` call on a `go` line below 1.24 turns the same call
+      into the predictable generator.
+    references:
+      - https://pkg.go.dev/math/rand/v2
+      - https://pkg.go.dev/math/rand
+      - https://go.dev/blog/chacha8rand
+      - https://go.dev/doc/toolchain
+      - https://github.com/securego/gosec/blob/master/rules/rand.go
+      - https://codeql.github.com/codeql-query-help/go/go-insecure-randomness/
+    findings: [math-rand-is-not-for-secrets, top-level-math-rand-is-chacha8-from-1-22, chacha8-is-weaker-than-crypto-rand, scanners-report-math-rand-at-any-version, go-line-is-the-minimum-toolchain, secrets-need-a-csprng]
+  - id: go-security-defaults/jwt-algorithm-not-pinned
+    statement: >-
+      JWT verification lets the token's own unverified header choose the
+      algorithm, through a key picked from that header or public key
+      material handed over as an HMAC secret, so a token the attacker signed
+      passes a check the attacker chose.
+    evidence: >-
+      The parse call quoted with its file and line, with its key or key
+      function: a `github.com/golang-jwt/jwt` `Parse` or `ParseWithClaims`,
+      or a `github.com/go-jose/go-jose/v3` `jwt.ParseSigned` and the
+      `Claims` call that verifies it, showing one of two forms: the key
+      chosen from the unverified header's `alg`, as a key function that
+      switches on `token.Header["alg"]` and returns keys of more than one
+      family; or public key material, such as a PEM-encoded RSA or ECDSA
+      public key or a JWK's raw bytes, returned or passed as a `[]byte`,
+      which each library takes as an HMAC secret. And nothing restricts the
+      algorithm before the key is used: for `golang-jwt/jwt`, no
+      `jwt.WithValidMethods` parser option and no check of `token.Method` in
+      the key function; for `go-jose` v3, no check of the parsed token's
+      `Headers[i].Algorithm`. A `golang-jwt/jwt` key function that returns
+      one key of one Go type, such as an `*rsa.PublicKey`, is not this
+      defect, since each method's `Verify` refuses a key of another type. A
+      `go-jose/v4` `ParseSigned`, which takes a non-empty list of allowed
+      algorithms, and a `lestrrat-go/jwx` call, whose `WithKey(alg, key)`
+      names the algorithm with each key, are not this defect. A call through
+      any other JWT library, `gopkg.in/square/go-jose.v2` included, is named
+      as unresolved, as is a key function whose source cannot be read.
+    severity: critical
+    rationale: >-
+      An attacker who picks the algorithm can sign a token with HMAC under
+      the issuer's public key, which anyone may hold, so a token they wrote
+      is accepted as one the issuer signed, with whatever identity and
+      claims they chose.
+    references:
+      - https://www.rfc-editor.org/rfc/rfc8725.html#section-3.1
+      - https://pkg.go.dev/github.com/golang-jwt/jwt/v5
+      - https://github.com/golang-jwt/jwt/blob/main/parser.go
+      - https://pkg.go.dev/github.com/go-jose/go-jose/v3/jwt
+      - https://github.com/go-jose/go-jose/blob/v3/signing.go
+      - https://pkg.go.dev/github.com/go-jose/go-jose/v4/jwt
+      - https://pkg.go.dev/github.com/lestrrat-go/jwx/v3/jws
+    findings: [jwt-header-names-its-own-algorithm, golang-jwt-header-chooses-unless-restricted, golang-jwt-binds-each-method-to-a-key-type, go-jose-v3-chooses-the-verifier-by-key-type, go-jose-v4-requires-an-algorithm-list, jwx-names-the-algorithm-with-the-key]
   - id: go-security-defaults/bcrypt-input-past-72-bytes
     statement: >-
       A password is joined after another value before `x/crypto/bcrypt`
@@ -92,6 +188,36 @@ checks:
       - https://go.googlesource.com/crypto/+/refs/tags/v0.5.0
       - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
     findings: [bcrypt-reads-only-72-bytes, x-crypto-bcrypt-rejects-long-input-from-0-5-0]
+  - id: go-security-defaults/secret-compared-by-plain-equality
+    statement: >-
+      A secret the server holds is compared with a value from the request by
+      plain equality rather than by a constant-time comparison, so the time
+      the comparison takes can depend on how much of a guess is right.
+    evidence: >-
+      The comparison quoted with its file and line, by `==`, `!=`,
+      `bytes.Equal` or `strings.Compare`, with each side traced in the code
+      read: one to a secret the server holds, such as a stored API key, a
+      configured shared secret, or a MAC or signature the server computes
+      over the request; the other to the request, such as a header, a query
+      or form value, a cookie or the body. And no `subtle.ConstantTimeCompare`
+      or `hmac.Equal` call on the path from the request's value to the
+      decision. A name alone, such as `token` or `secret`, is not the trace,
+      and a side traced into a helper whose source cannot be read leaves the
+      case unresolved. Not this defect: a digest looked up by hash, where the
+      request's value is hashed and the hash used to find the stored record;
+      a password checked by a bcrypt or argon2 verify call, such as
+      `bcrypt.CompareHashAndPassword`; and a value that is not a secret, such
+      as a user name or a public identifier.
+    severity: medium
+    rationale: >-
+      Plain equality is not documented as constant-time, so its running time
+      can depend on the secret's content, and an attacker who can time many
+      requests can recover the secret a piece at a time, then present it as
+      the real key or signature.
+    references:
+      - https://pkg.go.dev/crypto/hmac#Equal
+      - https://pkg.go.dev/crypto/subtle#ConstantTimeCompare
+    findings: [plain-equality-is-not-timing-safe, constant-time-compare-covers-only-the-call]
   - id: go-security-defaults/timing-safe-compare-undone
     statement: >-
       A secret is compared with `subtle.ConstantTimeCompare` or

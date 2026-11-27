@@ -174,5 +174,6 @@ least one dated source, checks and findings linked both ways (each check's
 `findings` naming only ids its `research.md` records, and each finding there
 cited by some check), an examples file with a section for each check, in
 the checks' order, and none for anything else, no link out of the module and
-no home path, unique module and check ids, and an index that matches the
-directories both ways.
+no home path, unique module and check ids, an index that matches the
+directories both ways, and each check whose `evidence` names a version gate
+naming where the version is read and what is reported when it cannot be read.

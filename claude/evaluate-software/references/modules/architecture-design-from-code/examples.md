@@ -5,8 +5,10 @@ bad example that shows the defect the check states and a good example, the
 nearest correct version, that does not trigger it. The design is read from a
 codebase's imports, so each example quotes a few files' import lines, and,
 where a check needs one, the rule or record the repository states beside
-them. Every example is from the same invented Python repository, `shop/`,
-with a `domain`, a `service` and an `api` package.
+them; the forwarding-layer check alone reads function bodies, so its
+example quotes a class's methods. Every example is from the same invented
+Python repository, `shop/`, with a `domain`, a `service` and an `api`
+package.
 
 ## architecture-design-from-code/import-cycle
 
@@ -104,4 +106,44 @@ docs/adr/0004-domain-has-no-framework-imports.md:
     forbidden_modules =
         shop.api
         flask
+```
+
+## architecture-design-from-code/forwarding-layer
+
+**Bad.** A service class whose every method passes its own arguments on to
+the repository and returns what the repository returns, which no test
+substitutes and the package does not export:
+
+```text
+shop/service/orders.py:
+    5   class OrderService:
+    6       def __init__(self, repo):
+    7           self._repo = repo
+    8
+    9       def get(self, order_id):
+   10           return self._repo.get(order_id)
+   11
+   12       def save(self, order):
+   13           return self._repo.save(order)
+
+files read for a seam or a surface:
+    tests/test_api.py        builds OrderService(FakeRepo()); substitutes the
+                             repository behind it, never OrderService
+    shop/__init__.py         exports nothing from shop.service
+```
+
+**Good.** The nearest correct version removes the layer, and the API calls
+the repository it forwarded to. Keeping the layer is also correct once it
+does work of its own; here, one acceptable form, it checks the order before
+saving it and translates the repository's error:
+
+```text
+shop/service/orders.py:
+   12       def save(self, order):
+   13           if not order.lines:
+   14               raise EmptyOrder(order.id)
+   15           try:
+   16               return self._repo.save(order)
+   17           except DuplicateKey:
+   18               raise OrderExists(order.id) from None
 ```

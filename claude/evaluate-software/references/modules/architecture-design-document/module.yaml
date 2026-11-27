@@ -111,3 +111,28 @@ checks:
     references:
       - https://www.industrialempathy.com/posts/design-docs-at-google/
     findings: [non-goals-bound-the-design]
+  - id: architecture-design-document/no-revision-date
+    statement: >-
+      The design, or a decision record in it, carries no date of its latest
+      revision.
+    evidence: >-
+      The document's title block, front matter, status line or revision
+      history, quoted, and the absence anywhere in the document of a date
+      marking when it was last revised: a last-updated or revised date, a
+      MADR `date` field, a dated revision-history entry or a dated status
+      change. A single date the document gives itself, such as a decision
+      record's one date line, counts, since it is the latest the reader can
+      see; a date that marks something else, such as a deadline or a launch,
+      does not, and neither does a date held only outside the document, such
+      as a commit time. Where the input is a set of decision records, each
+      record without such a date is its own finding, quoted with its file.
+    severity: low
+    rationale: >-
+      Designs change during implementation and decisions are superseded, so
+      a reader of an undated design or record cannot tell whether it still
+      holds, and follows a decision that was overtaken as if it were
+      current.
+    references:
+      - https://github.com/adr/madr/blob/develop/template/adr-template.md
+      - https://www.cognitect.com/blog/2011/11/15/documenting-architecture-decisions
+    findings: [revisions-carry-a-date, designs-and-decisions-change]

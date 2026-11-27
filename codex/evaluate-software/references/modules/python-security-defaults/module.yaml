@@ -55,22 +55,28 @@ checks:
       weaker check.
     evidence: >-
       The verify call quoted with its file and line, its key argument and
-      its `algorithms`, in PyJWT's `jwt.decode` or `jwt.decode_complete`, or
-      python-jose's `jwt.decode` or `jws.verify`, with signature
-      verification left on, showing one of four forms: the `algorithms`
-      list, or the key, chosen from the token's own unverified header, as
-      from `get_unverified_header(token)["alg"]`; `none` listed in
-      `algorithms` beside a signing algorithm, or every algorithm passed,
-      as `jwt.algorithms.get_default_algorithms()`; a python-jose call with
-      no `algorithms`, in any version; or a PyJWT call with no `algorithms`
-      while the version the lockfile resolves is below 2.0.0. The PyJWT
-      version is quoted from the lockfile, or from the manifest where it
-      pins one exactly; when neither can be read, a PyJWT call with no
-      `algorithms` is named as unresolved. A PyJWT 2 call whose key is a
+      its `algorithms`, in PyJWT's `jwt.decode` or `jwt.decode_complete`,
+      python-jose's `jwt.decode` or `jws.verify`, or Authlib's
+      `authlib.jose` `jwt.decode`, with signature verification left on,
+      showing one of five forms: the `algorithms` list, or the key, chosen
+      from the token's own unverified header, as from
+      `get_unverified_header(token)["alg"]`; `none` listed in `algorithms`
+      beside a signing algorithm, or every algorithm passed, as
+      `jwt.algorithms.get_default_algorithms()`; a python-jose call with no
+      `algorithms`, in any version; a PyJWT call with no `algorithms` while
+      the version the lockfile resolves is below 2.0.0; or an Authlib
+      decode by the default `jwt` instance, or by a `JsonWebToken` whose
+      list mixes an HMAC algorithm with an asymmetric one, given one static
+      key, such as a PEM public key, while the Authlib version the lockfile
+      resolves is below 1.3.1. The PyJWT and Authlib versions are quoted
+      from the lockfile, or from the manifest where it pins one exactly;
+      when neither can be read, a PyJWT call with no `algorithms`, or such
+      an Authlib decode, is named as unresolved. A PyJWT 2 call whose key is a
       `PyJWK`, which binds the key's own algorithm, and a key chosen by the
       header's `kid` from keys that each carry one algorithm, are not this
       defect. A call that turns signature verification off is not read by
-      this check.
+      this check; `python-security-defaults/jwt-signature-not-verified`
+      reads it.
     severity: critical
     rationale: >-
       An attacker who picks the algorithm can sign with `none` or verify a
@@ -83,7 +89,106 @@ checks:
       - https://pyjwt.readthedocs.io/en/stable/changelog.html
       - https://github.com/jpadilla/pyjwt/security/advisories/GHSA-ffqj-6fqr-9h24
       - https://github.com/mpdavis/python-jose/blob/3.5.0/jose/jws.py
-    findings: [jwt-header-names-its-own-algorithm, pyjwt-requires-algorithms-from-2, python-jose-accepts-any-algorithm-by-default]
+      - https://docs.authlib.org/en/latest/jose/jwt.html
+      - https://github.com/advisories/GHSA-5357-c2jx-v7qh
+    findings: [jwt-header-names-its-own-algorithm, pyjwt-requires-algorithms-from-2, python-jose-accepts-any-algorithm-by-default, authlib-default-instance-accepts-every-algorithm]
+  - id: python-security-defaults/jwt-signature-not-verified
+    statement: >-
+      A JWT's claims are read from a decode that skips signature
+      verification and then decide who the caller is or what they may do,
+      so a token anyone wrote is accepted.
+    evidence: >-
+      The decode call quoted with its file and line, showing one of four
+      forms: PyJWT's `jwt.decode` or `jwt.decode_complete` with
+      `options={"verify_signature": False}`; PyJWT's `jwt.decode` with
+      `verify=False` while the PyJWT version the lockfile resolves is below
+      2.0.0; python-jose's `jwt.decode` with
+      `options={"verify_signature": False}`; or python-jose's
+      `jwt.get_unverified_claims`. And the returned claims followed, in the
+      code read, to an identity or authorization decision on that path: a
+      user looked up or logged in by `sub`, a role, scope or tenant checked,
+      or a session or permission granted. The PyJWT version is quoted from
+      the lockfile, or from the manifest where it pins one exactly; when
+      neither can be read, a `verify=False` call is named as unresolved,
+      since from 2.0.0 that argument does nothing. A header or `kid` read to
+      choose the key before a verifying decode of the same token is not
+      this defect, and neither are claims only logged or displayed. A
+      service that relies on a gateway or proxy in front of it to verify
+      the token is named as unresolved, since whether every route to it
+      passes that gateway is not in the code read.
+    severity: critical
+    rationale: >-
+      Nothing ties the claims to the issuer, so an attacker writes a token
+      with any subject, role or expiry they choose and is treated as that
+      user, and PyJWT's unverified decode skips the expiry and audience
+      checks as well.
+    references:
+      - https://www.rfc-editor.org/rfc/rfc8725.html#section-3.3
+      - https://github.com/jpadilla/pyjwt/blob/master/jwt/api_jwt.py
+      - https://github.com/mpdavis/python-jose/blob/master/jose/jwt.py
+    findings: [unverified-jwt-must-be-rejected, pyjwt-unverified-decode-skips-every-check, python-jose-decodes-unverified-when-asked]
+  - id: python-security-defaults/jwt-claims-not-validated
+    statement: >-
+      A JWT's signature is verified but its expiry or audience is not
+      checked, so a token that has expired, or was issued for another
+      service, is still accepted.
+    evidence: >-
+      The decode call quoted with its file and line, showing one of two
+      forms: an Authlib `authlib.jose` `jwt.decode`, or a `joserfc`
+      `jwt.decode`, whose returned claims are used, in the code read, with
+      no `validate()` call on them before the use, `JWTClaims.validate()`
+      for Authlib or a `JWTClaimsRegistry`'s `validate` for joserfc; or a
+      PyJWT `jwt.decode` or `jwt.decode_complete`, or a python-jose
+      `jwt.decode`, with signature verification left on and `verify_exp` or
+      `verify_aud` set false in its `options`. Validation done in a helper
+      whose source cannot be read leaves the case unresolved. Not this
+      defect: a PyJWT call that only omits `require=["exp"]`, since PyJWT
+      checks `exp` whenever the token carries one, and whether the issuer
+      always sets it is not in the code; and a decode with signature
+      verification off, which
+      `python-security-defaults/jwt-signature-not-verified` reads.
+    severity: high
+    rationale: >-
+      A token that leaked, was revoked by expiry, or was minted for another
+      service keeps working here, so whoever holds one replays it as the
+      user it names long after, or far from, where it was meant to be
+      accepted.
+    references:
+      - https://www.rfc-editor.org/rfc/rfc8725.html#section-3.9
+      - https://docs.authlib.org/en/latest/jose/jwt.html
+      - https://jose.authlib.org/en/guide/jwt/
+      - https://github.com/jpadilla/pyjwt/blob/master/jwt/api_jwt.py
+    findings: [jwt-audience-must-be-validated, authlib-and-joserfc-decode-leaves-claims-unvalidated, pyjwt-checks-exp-only-when-present]
+  - id: python-security-defaults/secret-compared-by-plain-equality
+    statement: >-
+      A secret the server holds is compared with a value from the request by
+      plain equality rather than by a constant-time comparison, so the time
+      the comparison takes can depend on how much of a guess is right.
+    evidence: >-
+      The comparison quoted with its file and line, by `==` or `!=`, with
+      each side traced in the code read: one to a secret the server holds,
+      such as a stored API key, a configured shared secret, or a MAC or
+      signature the server computes over the request; the other to the
+      request, such as a header, a query or form value, a cookie or the
+      body. And no `hmac.compare_digest` or `secrets.compare_digest` call on
+      the path from the request's value to the decision. A name alone, such
+      as `token` or `secret`, is not the trace, and a side traced into a
+      helper whose source cannot be read leaves the case unresolved. Not
+      this defect: a digest looked up by hash, where the request's value is
+      hashed and the hash used to find the stored record; a password checked
+      by a bcrypt or argon2 verify call, such as `bcrypt.checkpw` or
+      argon2-cffi's `PasswordHasher.verify`; and a value that is not a
+      secret, such as a user name or a public identifier.
+    severity: medium
+    rationale: >-
+      Plain equality is not documented as constant-time, so its running time
+      can depend on the secret's content, and an attacker who can time many
+      requests can recover the secret a piece at a time, then present it as
+      the real key or signature.
+    references:
+      - https://docs.python.org/3/library/hmac.html#hmac.compare_digest
+      - https://docs.python.org/3/library/secrets.html#secrets.compare_digest
+    findings: [plain-equality-is-not-timing-safe, compare-digest-covers-only-the-call]
   - id: python-security-defaults/timing-safe-compare-undone
     statement: >-
       A secret is compared with `hmac.compare_digest`, but code around the
@@ -166,3 +271,26 @@ checks:
       - https://docs.python.org/3/library/xml.sax.handler.html#xml.sax.handler.feature_external_ges
       - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
     findings: [entity-resolution-enables-xxe, lxml-resolves-only-internal-entities-from-5, stdlib-parsers-resolve-only-when-asked]
+  - id: python-security-defaults/xml-size-limits-disabled
+    statement: >-
+      XML the program did not write is parsed by lxml with `huge_tree=True`,
+      which lifts libxml2's limits against forged input, so a small document
+      can exhaust the server's memory or time.
+    evidence: >-
+      The parser quoted with its file and line: an `lxml.etree` parser,
+      `XMLParser`, `XMLPullParser`, `ETCompatXMLParser` or `iterparse`,
+      given `huge_tree=True`, in any version, and the parse that uses it.
+      And the input traced to a request, an upload, a message or a file the
+      program does not ship. Input traced only to a constant or a file the
+      repository holds is not this defect, since a large trusted document
+      is what the option is for, and input whose origin cannot be read is
+      named as unresolved.
+    severity: medium
+    rationale: >-
+      With the limits off, a document an attacker sends can expand nested
+      entities or build a tree far larger than itself, so one request ties
+      up the worker's memory or CPU and the service stops answering others.
+    references:
+      - https://lxml.de/FAQ.html
+      - https://codeql.github.com/codeql-query-help/python/py-xml-bomb/
+    findings: [lxml-limits-stay-on-unless-huge-tree]

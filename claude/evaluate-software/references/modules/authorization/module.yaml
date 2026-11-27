@@ -1,0 +1,121 @@
+# Authorization, read from code or from a design document: whether each
+# request is authorized at one shared point that refuses what no rule allows.
+# Each check rests on a finding in research.md beside this file. The two code
+# checks report nothing on a design document, and the design check nothing on
+# code; each says so in its evidence.
+id: authorization
+languages: [language-neutral]
+concept: authorization
+triggers:
+  files:
+    - "**/*authz*"
+    - "**/*authoriz*"
+    - "**/*authoris*"
+    - "**/*permission*"
+    - "**/*polic*"
+    - "**/*access-control*"
+    - "**/*access_control*"
+    - "**/*guard*"
+    - "**/middleware*/**"
+  manifests: []
+  design-markers:
+    - Authorization
+    - Authorisation
+    - Access control
+    - Permissions
+    - Authentication
+  design-headings:
+    - Roles
+    - API
+    - Endpoints
+    - Security
+    - Users
+inputs: [diff, repository, design-document]
+phases: [static]
+checks:
+  - id: authorization/route-outside-shared-check
+    statement: >-
+      A route or handler is reachable without passing through the shared
+      authorization point its sibling routes pass through.
+    evidence: >-
+      For a code input only; on a design document this check reports
+      nothing. The shared authorization point, quoted with its file: a
+      middleware, filter, decorator, guard, router group or base class that
+      two or more sibling routes pass through, siblings being routes of the
+      same router, controller, module or path prefix. The route outside it,
+      quoted as its registration line and its handler, showing that it is not
+      registered through that point. And the absence, in the handler and on
+      its registration, of an equivalent check of its own and of any marker
+      the repository uses to declare a route public, such as an allowlist
+      entry or a public or anonymous decorator. A route is unresolved, never
+      reported, where its registration cannot be traced by reading, as with
+      routes registered in a loop over data, by reflection or from
+      configuration outside the repository, or where a gateway or framework
+      configuration not read may apply a check to it. For a diff, the finding
+      sits on the added or changed route, and the siblings and the shared
+      point may be read anywhere in the repository.
+    severity: high
+    rationale: >-
+      A route that skips the check its siblings make behaves like them for
+      every caller who is allowed, so functional tests pass, while any caller
+      who finds it reads or changes what the others protect; one missed
+      check is enough to expose the resource.
+    references:
+      - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+      - https://top10.owasp.org/2025/A01_2025-Broken_Access_Control
+      - https://cwe.mitre.org/data/definitions/862.html
+    findings:
+      - every-access-is-checked
+      - one-mechanism-applied-everywhere
+      - public-routes-are-marked
+  - id: authorization/allow-when-no-rule-matches
+    statement: >-
+      An authorization decision grants a request that no rule allows.
+    evidence: >-
+      For a code input only; on a design document this check reports
+      nothing. The authorization decision, quoted with its file: a function,
+      policy, rule table or middleware that grants or refuses a request by
+      matching it against rules. And the path it takes when no rule matches,
+      quoted, showing that it grants: a final return of true or allow, a call
+      on to the next handler, an empty or missing rule set read as
+      permission, or an error caught and turned into a grant. A rule that
+      names a resource as public is a rule that matched, not a default. A
+      decision whose fall-through cannot be read, such as one delegated to a
+      policy engine whose policies are not in the repository, is unresolved.
+    severity: high
+    rationale: >-
+      A decision that allows by default grants everything its rules forget,
+      so a new resource, action or role is open until someone writes a rule
+      to close it, and a mistake in the rules fails open, unnoticed, rather
+      than refusing a caller who then reports it.
+    references:
+      - https://web.mit.edu/Saltzer/www/publications/protection/Basic.html
+      - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+      - https://top10.owasp.org/2025/A01_2025-Broken_Access_Control
+    findings: [deny-by-default]
+  - id: authorization/design-without-central-authorization-point
+    statement: >-
+      The design names no central point at which each request is authorized.
+    evidence: >-
+      For a design-document input only; on code this check reports nothing.
+      The sections that describe how requests, calls or operations reach the
+      system, such as its API, its entry points or its components, quoted,
+      showing that callers with different access reach it. And the absence
+      in the whole document of a named component, layer, service or gateway
+      at which each of those requests is authorized. A design that names an
+      external system to which every request's authorization is delegated
+      names its point, and satisfies the check; one whose callers all have
+      the same access is out of this check's scope.
+    severity: medium
+    rationale: >-
+      A design that leaves authorization to each component has every
+      component decide it on its own, so the checks are written many times,
+      drift apart and are missed on whatever is added later, and no review of
+      the design can say where a request is refused.
+    references:
+      - https://github.com/OWASP/ASVS/blob/master/5.0/en/0x17-V8-Authorization.md
+      - https://top10.owasp.org/2025/A01_2025-Broken_Access_Control
+    findings:
+      - design-states-where-authorization-is-enforced
+      - one-mechanism-applied-everywhere
+      - every-access-is-checked
