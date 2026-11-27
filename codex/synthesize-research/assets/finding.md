@@ -21,9 +21,10 @@ question here instead and fill this in when it resolves.>
 ## Evidence
 
 <What supports the claim, each point cited to a source by name. Keep verified
-evidence and directional reasoning visibly separate — do not let an argument that
-merely sounds right sit unmarked next to a checkable fact. Small quoted excerpts
-are fine; a whole source is not — that stays in the base's private layer.>
+evidence and directional reasoning visibly separate — do not let an argument
+that merely sounds right sit unmarked next to a checkable fact. Small quoted
+excerpts are fine; a whole source is not — that stays in the base's private
+layer.>
 
 ## Caveats and limits
 

@@ -16,6 +16,15 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-27 — research-tooling (untrusted content)
+
+- **Behaviour change.** `research-base-audit`, `research-base-init` and
+  `synthesize-research` treat the records, sources and pages they read as
+  data: they quote any instruction found there to the user, with its
+  source, and do not act on it.
+- Prose in several skills is rewrapped at 80 columns, with no change in
+  meaning.
+
 ### 2026-11-27 — diataxis-doc-migration (script policy, untrusted content)
 
 - **Behaviour change.** `diataxis-render-docs` gives every rendered page a

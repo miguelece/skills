@@ -62,8 +62,9 @@ accept.
 
 Run `python ${CLAUDE_SKILL_DIR}/scripts/capture_path.py --base <base> --slug <slug>`,
 where `${CLAUDE_SKILL_DIR}` is this skill's own directory, which a Codex agent
-resolves itself; the script is [scripts/capture_path.py](scripts/capture_path.py),
-and its docstring carries every refusal. It reads `base.json` through
+resolves itself; the script is
+[scripts/capture_path.py](scripts/capture_path.py), and its docstring carries
+every refusal. It reads `base.json` through
 [scripts/validate_base.py](scripts/validate_base.py)'s reader, picks the one
 untracked layer of kind `source`, checks that git ignores the path, and prints
 `<base>/<layer>/<date>-<slug>.md`. It writes nothing.
