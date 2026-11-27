@@ -2,11 +2,11 @@
 
 ## Completion record
 
-Keep the manifest resumable until every blocker is resolved. Add evidence entries
-for local source locations, official external URLs with access dates, and
-user-confirmed facts. Findings must identify category, severity, blocking state,
-affected pages, evidence, resolution, and status. Verification entries must name
-the command or inspection, scope, revision, and result.
+Keep the manifest resumable until every blocker is resolved. Add evidence
+entries for local source locations, official external URLs with access dates,
+and user-confirmed facts. Findings must identify category, severity, blocking
+state, affected pages, evidence, resolution, and status. Verification entries
+must name the command or inspection, scope, revision, and result.
 
 ## Archive coverage
 

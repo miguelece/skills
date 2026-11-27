@@ -27,7 +27,8 @@ behavior.
 ## Change policy
 
 1. Update the closest canonical page instead of adding a competing summary.
-2. Update the documentation index and all tracked-text inbound links after moves.
+2. Update the documentation index and all tracked-text inbound links after
+   moves.
 3. Add redirects when the documentation platform supports them.
 4. Keep generated output, vendored material, patch notes, and verification
    transcripts out of the durable taxonomy unless explicitly governed.

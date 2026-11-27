@@ -3,11 +3,11 @@
 ## Delegation contract
 
 Pass the selected Git root, docs domain, locale, current manifest path, explicit
-exclusions, baseline failures, and user-approved phase intent to the phase skill.
-Do not pass conclusions that replace its evidence gathering.
+exclusions, baseline failures, and user-approved phase intent to the phase
+skill. Do not pass conclusions that replace its evidence gathering.
 
-Each phase writes its own report under `.docs-migration/reports/` and updates the
-same manifest. The orchestrator reads the result before continuing.
+Each phase writes its own report under `.docs-migration/reports/` and updates
+the same manifest. The orchestrator reads the result before continuing.
 
 ## Resume precedence
 

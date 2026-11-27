@@ -10,9 +10,9 @@ Recorded in `.docs-migration/manifest.yaml`.
 
 ## Context
 
-The previous documentation mixed learning, task, lookup, and explanatory content.
-That made navigation difficult, duplicated facts, and allowed claims to drift from
-the implementation.
+The previous documentation mixed learning, task, lookup, and explanatory
+content. That made navigation difficult, duplicated facts, and allowed claims to
+drift from the implementation.
 
 ## Decision
 

@@ -24,6 +24,8 @@ edits the Markdown or `.gitignore`.
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import html
 import json
 import os
@@ -383,6 +385,33 @@ link.href=entry.url;link.textContent=entry.title;item.appendChild(link);results.
 })();
 """
 
+# The policy allows the template's own script and style by hash, so a page runs
+# nothing a slot adds. A test pins both hashes to the text above.
+SCRIPT_HASH = "sha256-/KlBwAtIbgZ40uHA/+iNh/PsKErz4+Mv6HaQr40APzM="
+STYLE_HASH = "sha256-T5+8TXiGPrKueuuRaGBcWAq91D2gqFeFwOhlxUGM0p8="
+POLICY = (f"default-src 'none'; script-src '{SCRIPT_HASH}'; style-src '{STYLE_HASH}'; "
+          "img-src 'self' data:; base-uri 'none'; form-action 'none'")
+POLICY_META = f'<meta http-equiv="Content-Security-Policy" content="{POLICY}">'
+
+# Every template script, style and policy ever shipped, append-only: `check`
+# allows each only by one of these, so a page rendered by an older version passes.
+SHIPPED_SCRIPT_HASHES: tuple[str, ...] = (
+    "sha256-/KlBwAtIbgZ40uHA/+iNh/PsKErz4+Mv6HaQr40APzM=",
+)
+SHIPPED_STYLE_HASHES: tuple[str, ...] = (
+    "sha256-T5+8TXiGPrKueuuRaGBcWAq91D2gqFeFwOhlxUGM0p8=",
+)
+SHIPPED_POLICIES: tuple[str, ...] = (
+    "default-src 'none'; script-src 'sha256-/KlBwAtIbgZ40uHA/+iNh/PsKErz4+Mv6HaQr40APzM='; "
+    "style-src 'sha256-T5+8TXiGPrKueuuRaGBcWAq91D2gqFeFwOhlxUGM0p8='; "
+    "img-src 'self' data:; base-uri 'none'; form-action 'none'",
+)
+
+
+def source_hash(text: str) -> str:
+    """A policy hash source for an inline script or style's exact text."""
+    return "sha256-" + base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode()
+
 
 def document(page: Page, nav: str, index: list[dict], meta: str) -> str:
     toc = "".join(
@@ -396,6 +425,7 @@ def document(page: Page, nav: str, index: list[dict], meta: str) -> str:
         "<head>",
         '<meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
+        POLICY_META,
         *([meta] if meta else []),
         f"<title>{page.title}</title>",
         f"<style>{STYLE}</style>",
@@ -544,31 +574,97 @@ def render(args: argparse.Namespace) -> int:
 
 
 class Scan(HTMLParser):
-    FETCHING = {"script": "src", "link": "href", "img": "src", "iframe": "src",
-                "source": "src", "video": "src", "audio": "src", "embed": "src",
-                "object": "data"}
+    """Reads a page for `check`: headings, fetches, the policy and active content.
+
+    The whole page is scanned, not only its slots, so markup edited outside a
+    slot, or a lost policy, fails too.
+    """
+
+    FETCHING = ("src", "poster", "data", "action", "formaction")  # on any element
+    FETCHING_HREF = ("link", "use", "image", "base")
+    LINKING = ("href", "xlink:href")
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.headings: list[str] = []
         self.fetches: list[str] = []
+        self.active: list[str] = []
         self.meta: dict[str, str] = {}
+        self.policies: list[str] = []
+        self.ids: set[str] = set()
+        self.fragments: list[str] = []  # SVG link targets, checked once every id is read
         self._heading: list[str] | None = None
         self._code: str | None = None
+        self._script: list[str] | None = None
+        self._style: list[str] | None = None
+        self._svg = 0
+        self._body = False
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
         attributes = {name: value or "" for name, value in attrs}
-        wanted = self.FETCHING.get(tag)
-        if wanted and REMOTE.match(attributes.get(wanted, "")):
-            self.fetches.append(f"<{tag} {wanted}={attributes[wanted]}>")
-        if tag == "img" and "srcset" in attributes:
-            self.fetches.append("<img srcset>")
+        names = self.FETCHING + (self.LINKING if tag in self.FETCHING_HREF else ())
+        for name in names:
+            if REMOTE.match(attributes.get(name, "")):
+                self.fetches.append(f"<{tag} {name}={attributes[name]}>")
+        for name in ("srcset", "imagesrcset"):
+            if name in attributes:
+                self.fetches.append(f"<{tag} {name}>")
+        self.read_active(tag, attributes)
+        if "id" in attributes:
+            self.ids.add(attributes["id"])
+        if tag == "body":
+            self._body = True
         if tag == "meta" and "name" in attributes:
             self.meta[attributes["name"]] = attributes.get("content", "")
+        # A browser honours a policy <meta> only in the head.
+        if (tag == "meta" and not self._body
+                and attributes.get("http-equiv", "").lower() == "content-security-policy"):
+            self.policies.append(attributes.get("content", ""))
         if re.fullmatch(r"h[1-6]", tag):
             self._heading = []
         if tag in ("script", "style"):
             self._code = tag
+        if tag == "style":
+            self._style = []
+        # A JSON block never runs; a script with a src fails as active content.
+        if (tag == "script" and "src" not in attributes
+                and attributes.get("type", "").lower() != "application/json"):
+            self._script = []
+
+    def read_active(self, tag: str, attributes: dict[str, str]) -> None:
+        for name, value in attributes.items():
+            if name.startswith("on"):
+                self.active.append(f"event handler {name} on <{tag}>")
+            # A browser ignores whitespace and control characters in a URL.
+            url = re.sub(r"[\x00-\x20]", "", value).lower()
+            if url.startswith("javascript:"):
+                self.active.append(f"javascript: URL in <{tag} {name}>")
+            # Inside an SVG the same-page #id rule below fails it already.
+            if url.startswith("data:") and name in self.LINKING and not self._svg:
+                self.active.append(f"data: URL in <{tag} {name}>")
+            if name == "style":
+                self.active.append(f"style attribute on <{tag}>")
+        if tag == "script" and "src" in attributes:
+            self.active.append(f"<script> carries src={attributes['src']}")
+        if tag in ("iframe", "frame", "object", "embed"):
+            self.active.append(f"<{tag}> element")
+        if tag == "meta" and attributes.get("http-equiv", "").lower() == "refresh":
+            self.active.append("meta refresh")
+        if tag == "svg":
+            self._svg += 1
+        if tag == "foreignobject":
+            self.active.append("<foreignObject> in an SVG")
+        for name in self.LINKING:
+            if name not in attributes:
+                continue
+            if tag in ("use", "image"):
+                self.active.append(f"<{tag}> carries {name}")
+            elif tag == "a" and self._svg:
+                if re.fullmatch(r"#[^\s#]+", attributes[name]):
+                    self.fragments.append(attributes[name][1:])
+                else:
+                    self.active.append(
+                        f"SVG link is not a same-page #id: {name}={attributes[name]}")
 
     def handle_endtag(self, tag: str) -> None:
         if re.fullmatch(r"h[1-6]", tag) and self._heading is not None:
@@ -576,10 +672,26 @@ class Scan(HTMLParser):
             self._heading = None
         if tag in ("script", "style"):
             self._code = None
+        if tag == "svg":
+            self._svg = max(0, self._svg - 1)
+        if tag == "script" and self._script is not None:
+            digest = source_hash("".join(self._script))
+            if digest not in SHIPPED_SCRIPT_HASHES:
+                self.active.append(f"inline script not shipped by the template: {digest}")
+            self._script = None
+        if tag == "style" and self._style is not None:
+            digest = source_hash("".join(self._style))
+            if digest not in SHIPPED_STYLE_HASHES:
+                self.active.append(f"style not shipped by the template: {digest}")
+            self._style = None
 
     def handle_data(self, data: str) -> None:
         if self._heading is not None:
             self._heading.append(data)
+        if self._script is not None:
+            self._script.append(data)
+        if self._style is not None:
+            self._style.append(data)
         if self._code == "script":
             for call in ("fetch(", "XMLHttpRequest", "import(", "WebSocket", "EventSource"):
                 if call in data:
@@ -619,12 +731,24 @@ def check(args: argparse.Namespace) -> int:
                 failures.append(f"{name}: heading missing from the HTML: {heading.title}")
         for fetch in scan.fetches:
             failures.append(f"{name}: network fetch: {fetch}")
+        if not scan.policies:
+            failures.append(f"{name}: the strict policy <meta> is missing from the head")
+        for policy in scan.policies:
+            if policy not in SHIPPED_POLICIES:
+                failures.append(f"{name}: the policy <meta> is not one the template shipped")
+        for fragment in scan.fragments:
+            if fragment not in scan.ids:
+                failures.append(f"{name}: active content: SVG link names no id on the page: "
+                                f"#{fragment}")
+        for item in scan.active:
+            failures.append(f"{name}: active content: {item}")
     if failures:
         print(f"Hybrid check failed ({checked} page(s) checked):")
         for failure in failures:
             print(f"- {failure}")
         return 1
-    print(f"{checked} hybrid page(s) checked; each matches its Markdown and fetches nothing.")
+    print(f"{checked} hybrid page(s) checked; each matches its Markdown, fetches nothing "
+          "and runs only the template's script and style.")
     return 0
 
 

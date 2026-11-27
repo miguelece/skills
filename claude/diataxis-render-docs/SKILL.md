@@ -31,9 +31,17 @@ nothing over the network.
   writing surface is the marked slots of a hybrid page.
 - Never reference anything over the network: no external script, stylesheet,
   font or image, and no `fetch`. Diagrams are inline SVG.
+- Never write script or event handlers into a page: no `<script>`, no `on*`
+  attribute, no `javascript:` URL, and in SVG no `<foreignObject>`, no
+  `<use>` or `<image>` reference, and no link but a `#id` to one of the page's
+  own sections. A slot's markup runs in the reader's browser, and the docs tree
+  is content this skill did not write, so text in a source page can steer it.
+  Every page carries a strict Content Security Policy that runs only the
+  template's own script and style; style a diagram with presentation
+  attributes such as `fill`, since a `style` attribute is blocked.
 - Show raw HTML in the Markdown as escaped text, never pass it through: a
-  passed-through tag could reference the network. Leave an HTML comment out of
-  the page, since no Markdown viewer shows one.
+  passed-through tag could reference the network or run script. Leave an HTML
+  comment out of the page, since no Markdown viewer shows one.
 - Do not record HTML pages in `.docs-migration/manifest.yaml`; the embedded
   fingerprint is the hybrid page's record.
 - Never commit target changes. Committing a hybrid page is the user's step.
@@ -115,8 +123,23 @@ fingerprint `<meta>` is present) and fails, exit 1, on any of:
 - **fingerprint drift**: the Markdown changed after the render;
 - **a missing heading**: a source heading, `scripts/check_coverage.py`'s
   reading of the Markdown, is absent from the HTML;
-- **a network fetch**: a remote script, stylesheet, image or frame, or a script
-  that fetches.
+- **a network fetch**: a remote script, stylesheet, image, frame, `<base>`,
+  form action, poster or SVG reference, a `srcset`, or a script that fetches;
+- **active content** anywhere on the page, in a slot or not: an `on*`
+  attribute, a `javascript:` URL, a `<foreignObject>`, an `href` or
+  `xlink:href` on `<use>` or `<image>`, an SVG link that is not a `#id` naming
+  one of the page's own ids, an inline `<script>` that is not one the
+  template has shipped, a `<script>` with a `src`, local or remote, an
+  `<iframe>`, `<frame>`, `<object>` or `<embed>`, a
+  `<meta http-equiv="refresh">`, a `data:` URL in an `href` or `xlink:href`
+  outside SVG, a `<style>`, in SVG or not, that is not one the template has
+  shipped, or a `style` attribute on any element;
+- **a missing or weakened policy**: no Content Security Policy `<meta>` in the
+  head, or one whose text is not a policy the template has shipped.
+
+A page rendered by an earlier version of the script still passes: `check`
+allows every template policy, script and style ever shipped, not only the
+current one.
 
 Exit 0 means every hybrid page matches its Markdown. On drift, report each page
 the check names and offer a fresh hybrid render of it, with its estimate, and

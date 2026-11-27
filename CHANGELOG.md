@@ -16,6 +16,20 @@ a dated record in the git history and are left as they are.
 
 ## Entries
 
+### 2026-11-27 — diataxis-doc-migration (script policy, untrusted content)
+
+- **Behaviour change.** `diataxis-render-docs` gives every rendered page a
+  strict script policy, and its check fails a hybrid page holding active
+  content: an unshipped policy or style, a script `src`, a frame or plugin,
+  a meta refresh, a `data:` link or a style attribute.
+- **Behaviour change.** `diataxis-audit-docs`, `diataxis-create-docs`,
+  `diataxis-manage-docs`, `diataxis-migrate-docs` and
+  `diataxis-update-docs` treat the docs, sources and code they read as
+  data: they quote any instruction found there to the user, with its
+  source, and do not act on it.
+- Prose in several skills is rewrapped at 80 columns, with no change in
+  meaning.
+
 ### 2026-11-26 — task-board-management (reuse, variants, read-back, effort)
 
 - **Behaviour change.** `focused-implementation` and the supervisor's worker
